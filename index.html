@@ -100,15 +100,16 @@ body::before {
 }
 
 .panel-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--crimson);
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--crimson-dim);
-  opacity: 0.85;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--crimson-dim);
+  opacity: 1;
 }
 
 /* ── CLOCK PANEL ── */
@@ -119,7 +120,7 @@ body::before {
 }
 
 #clock-panel::before { background: var(--navy-light); opacity: 0.6; }
-#clock-panel .panel-label { color: var(--chrome-dim); border-color: var(--navy-light); opacity: 1; }
+#clock-panel .panel-label { color: var(--chrome); border-color: var(--navy-light); font-size: 12px; }
 
 #clock-time {
   font-family: var(--font-mono);
@@ -155,15 +156,15 @@ body::before {
 
 #period-name {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--crimson-bright);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   margin-bottom: 4px;
 }
 
 #period-detail {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--chrome-dim);
   margin-bottom: 8px;
 }
@@ -184,7 +185,7 @@ body::before {
 
 #period-remaining {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--chrome-dim);
   text-align: right;
   margin-top: 4px;
@@ -200,10 +201,11 @@ body::before {
 }
 
 #board-panel .panel-label {
-  padding: 10px 14px 8px;
+  padding: 12px 14px 10px;
   margin-bottom: 0;
-  color: var(--chrome-dim);
+  color: var(--chrome);
   border-color: var(--navy-light);
+  font-size: 12px;
 }
 
 #board-inner {
@@ -212,9 +214,9 @@ body::before {
 
 .board-row {
   display: grid;
-  grid-template-columns: 56px 1fr 14px;
+  grid-template-columns: 64px 1fr 14px;
   align-items: center;
-  padding: 5px 12px;
+  padding: 7px 12px;
   border-bottom: 1px solid #111825;
   transition: opacity 0.8s ease;
   gap: 6px;
@@ -224,13 +226,13 @@ body::before {
 
 .board-time {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: #334466;
 }
 
 .board-name {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   color: #5577AA;
   white-space: nowrap;
   overflow: hidden;
@@ -260,9 +262,9 @@ body::before {
 /* ── CALENDAR / EVENTS ── */
 .event-item {
   display: grid;
-  grid-template-columns: 46px 1fr auto;
-  gap: 8px;
-  padding: 6px 0;
+  grid-template-columns: 56px 1fr auto;
+  gap: 10px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--pearl-dark);
   align-items: start;
 }
@@ -270,27 +272,27 @@ body::before {
 
 .event-date {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   color: var(--crimson);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   padding-top: 1px;
 }
 
 .event-title {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-main);
   line-height: 1.35;
 }
 
 .event-tag {
   font-family: var(--font-mono);
-  font-size: 8px;
-  padding: 2px 5px;
+  font-size: 10px;
+  padding: 2px 6px;
   border: 1px solid var(--chrome-dim);
   color: var(--text-dim);
   border-radius: 1px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
@@ -321,8 +323,8 @@ body::before {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 10px;
-  padding: 3px 0;
+  font-size: 12px;
+  padding: 5px 0;
   border-bottom: 1px solid var(--pearl-dark);
   color: var(--text-dim);
 }
@@ -341,55 +343,55 @@ body::before {
 .forecast-item {
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .forecast-day { color: var(--crimson); letter-spacing: 0.06em; margin-bottom: 2px; }
-.forecast-icon { font-size: 16px; margin: 2px 0; }
+.forecast-icon { font-size: 18px; margin: 3px 0; }
 .forecast-temps { color: var(--text-main); }
-.forecast-rain { color: var(--text-dim); }
+.forecast-rain { color: var(--text-dim); font-size: 10px; }
 
 /* ── COUNTDOWNS ── */
 .cd-item {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 7px 0;
+  align-items: center;
+  padding: 12px 0;
   border-bottom: 1px solid var(--pearl-dark);
 }
 .cd-item:last-child { border-bottom: none; }
 
 .cd-label {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 17px;
   color: var(--text-mid);
 }
 
 .cd-value {
   font-family: var(--font-mono);
-  font-size: 22px;
+  font-size: 28px;
   color: var(--crimson);
   line-height: 1;
 }
 
 .cd-unit {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--text-dim);
-  margin-left: 2px;
+  margin-left: 3px;
 }
 
 /* ── HISTORY ── */
 #history-year {
   font-family: var(--font-mono);
-  font-size: 28px;
+  font-size: 32px;
   color: var(--crimson);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   line-height: 1;
 }
 
 #history-text {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-mid);
   line-height: 1.6;
   font-style: italic;
@@ -397,22 +399,22 @@ body::before {
 
 /* ── NEWS ── */
 .news-item {
-  padding: 7px 0;
+  padding: 9px 0;
   border-bottom: 1px solid var(--pearl-dark);
 }
 .news-item:last-child { border-bottom: none; }
 
 .news-meta {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   color: var(--crimson);
   letter-spacing: 0.1em;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .news-headline {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-main);
   line-height: 1.4;
 }
@@ -1129,7 +1131,7 @@ function renderCountdowns() {
     </div>`;
   }).join('');
 
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0">${items}</div>`;
+  el.innerHTML = items;
 }
 
 // ═══════════════════════════════════════════
