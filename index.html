@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classroom Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pearl: #F2EEE8;
+  --pearl-dark: #E0D8CE;
+  --pearl-mid: #EBE4DB;
+  --navy: #0E1628;
+  --navy-mid: #1A2540;
+  --navy-light: #243050;
+  --crimson: #9B1B2A;
+  --crimson-bright: #C0233A;
+  --crimson-dim: #6B1020;
+  --chrome: #C8C4BE;
+  --chrome-bright: #E8E4DE;
+  --chrome-dim: #9A968F;
+  --text-main: #0E1628;
+  --text-mid: #3A3830;
+  --text-dim: #7A7268;
+  --gold-accent: #8B6914;
+  --board-bg: #070D1A;
+  --board-row: #0D1525;
+  --board-active: #180A10;
+  --board-past: #0A1020;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-body: 'Cormorant Garamond', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--pearl);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 1fr auto;
+  min-height: 100vh;
+  padding: 14px;
+  gap: 12px;
+}
+
+/* ── DECORATIVE BORDER FRAME ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 6px;
+  border: 1px solid var(--crimson);
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.3;
+}
+
+/* ── LEFT COLUMN ── */
+#left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── RIGHT AREA ── */
+#right-area {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto auto auto;
+  gap: 10px;
+  align-content: start;
+}
+
+/* ── PANEL BASE ── */
+.panel {
+  background: var(--pearl-mid);
+  border: 1px solid var(--chrome-dim);
+  border-radius: 2px;
+  padding: 12px 14px;
+  position: relative;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px; right: 3px;
+  height: 1px;
+  background: var(--chrome);
+  opacity: 0.5;
+}
+
+.panel-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--crimson-dim);
+  opacity: 0.85;
+}
+
+/* ── CLOCK PANEL ── */
+#clock-panel {
+  background: var(--navy);
+  border-color: var(--crimson-dim);
+  padding: 16px;
+}
+
+#clock-panel::before { background: var(--navy-light); opacity: 0.6; }
+#clock-panel .panel-label { color: var(--chrome-dim); border-color: var(--navy-light); opacity: 1; }
+
+#clock-time {
+  font-family: var(--font-mono);
+  font-size: 58px;
+  color: var(--chrome-bright);
+  line-height: 1;
+  letter-spacing: -1px;
+  text-shadow: 0 0 30px rgba(200,196,190,0.15);
+}
+
+#clock-ampm {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--chrome-dim);
+  margin-left: 4px;
+  vertical-align: super;
+}
+
+#clock-date {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--chrome-dim);
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+#period-status {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--navy-light);
+}
+
+#period-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--crimson-bright);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+#period-detail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--chrome-dim);
+  margin-bottom: 8px;
+}
+
+.progress-track {
+  height: 3px;
+  background: var(--navy-light);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--crimson-bright);
+  border-radius: 1px;
+  transition: width 30s linear;
+}
+
+#period-remaining {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--chrome-dim);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* ── DEPARTURES BOARD ── */
+#board-panel {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+  background: var(--navy);
+  border-color: var(--crimson-dim);
+}
+
+#board-panel .panel-label {
+  padding: 10px 14px 8px;
+  margin-bottom: 0;
+  color: var(--chrome-dim);
+  border-color: var(--navy-light);
+}
+
+#board-inner {
+  background: var(--board-bg);
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 14px;
+  align-items: center;
+  padding: 5px 12px;
+  border-bottom: 1px solid #111825;
+  transition: opacity 0.8s ease;
+  gap: 6px;
+}
+
+.board-row:last-child { border-bottom: none; }
+
+.board-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #334466;
+}
+
+.board-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #5577AA;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-indicator { width: 6px; height: 6px; border-radius: 50%; }
+
+.board-row.past .board-time { color: #1E2A3A; }
+.board-row.past .board-name { color: #2A3A4A; }
+
+.board-row.active {
+  background: var(--board-active);
+  border-left: 2px solid var(--crimson-bright);
+}
+.board-row.active .board-time { color: var(--crimson); }
+.board-row.active .board-name { color: #E8E4DE; font-weight: normal; }
+.board-row.active .board-indicator { background: var(--crimson-bright); box-shadow: 0 0 6px var(--crimson); }
+
+.board-row.break-row .board-name { color: #445566; font-style: italic; }
+.board-row.break-row.active .board-name { color: #C8C4BE; }
+
+/* ── SPAN HELPERS ── */
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+
+/* ── CALENDAR / EVENTS ── */
+.event-item {
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--pearl-dark);
+  align-items: start;
+}
+.event-item:last-child { border-bottom: none; }
+
+.event-date {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--crimson);
+  letter-spacing: 0.05em;
+  padding-top: 1px;
+}
+
+.event-title {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+
+.event-tag {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 2px 5px;
+  border: 1px solid var(--chrome-dim);
+  color: var(--text-dim);
+  border-radius: 1px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* ── WEATHER ── */
+#weather-main {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+#weather-temp {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+#weather-cond {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-mid);
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.weather-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--pearl-dark);
+  color: var(--text-dim);
+}
+.weather-row:last-child { border-bottom: none; }
+.weather-row span:last-child { color: var(--text-main); }
+
+.forecast-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pearl-dark);
+}
+
+.forecast-item {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.forecast-day { color: var(--crimson); letter-spacing: 0.06em; margin-bottom: 2px; }
+.forecast-icon { font-size: 16px; margin: 2px 0; }
+.forecast-temps { color: var(--text-main); }
+.forecast-rain { color: var(--text-dim); }
+
+/* ── COUNTDOWNS ── */
+.cd-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--pearl-dark);
+}
+.cd-item:last-child { border-bottom: none; }
+
+.cd-label {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-mid);
+}
+
+.cd-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  color: var(--crimson);
+  line-height: 1;
+}
+
+.cd-unit {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+
+/* ── HISTORY ── */
+#history-year {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  color: var(--crimson);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+#history-text {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-mid);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* ── NEWS ── */
+.news-item {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--pearl-dark);
+}
+.news-item:last-child { border-bottom: none; }
+
+.news-meta {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--crimson);
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+
+.news-headline {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.news-headline a {
+  color: inherit;
+  text-decoration: none;
+}
+.news-headline a:hover { color: var(--crimson); }
+
+/* ── LINK BAR ── */
+#links-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: var(--navy);
+  color: var(--chrome-bright);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.link-pill:hover {
+  background: var(--navy-mid);
+  border-color: var(--crimson);
+}
+
+.link-pill.add-link {
+  background: transparent;
+  color: var(--crimson);
+  border-color: var(--crimson-dim);
+}
+
+.link-pill.add-link:hover {
+  background: var(--crimson-dim);
+  color: var(--pearl);
+}
+
+/* ── SETTINGS BUTTON ── */
+#settings-btn {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  background: var(--navy);
+  border: 1px solid var(--crimson-dim);
+  border-radius: 50%;
+  color: var(--chrome-dim);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  transition: border-color 0.15s, color 0.15s;
+}
+#settings-btn:hover { border-color: var(--crimson-bright); color: var(--crimson-bright); }
+
+/* ── SETTINGS MODAL ── */
+#settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(7,13,26,0.88);
+  z-index: 900;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+#settings-overlay.open { display: block; }
+
+#settings-modal {
+  background: var(--pearl-mid);
+  border: 1px solid var(--crimson-dim);
+  border-radius: 2px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+#settings-modal h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--text-main);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--crimson-dim);
+}
+
+.settings-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--pearl-dark);
+}
+.settings-section:last-of-type { border-bottom: none; }
+
+.settings-section h3 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+input[type="text"], input[type="password"], input[type="time"], input[type="date"], select, textarea {
+  width: 100%;
+  background: var(--pearl);
+  border: 1px solid var(--chrome-dim);
+  border-radius: 2px;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-main);
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--crimson);
+}
+
+.period-editor {
+  border: 1px solid var(--pearl-dark);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.period-edit-row {
+  display: grid;
+  grid-template-columns: 70px 70px 1fr auto;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--pearl-dark);
+  align-items: center;
+  background: var(--pearl);
+}
+.period-edit-row:last-child { border-bottom: none; }
+.period-edit-row input { padding: 4px 6px; font-size: 10px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+  border: 1px solid;
+}
+
+.btn-primary {
+  background: var(--navy);
+  color: var(--chrome-bright);
+  border-color: var(--navy-mid);
+}
+.btn-primary:hover { background: var(--crimson); border-color: var(--crimson-bright); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--chrome-dim);
+}
+.btn-secondary:hover { background: var(--pearl-dark); color: var(--text-main); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--crimson-dim);
+  border-color: var(--crimson-dim);
+  padding: 4px 8px;
+  font-size: 10px;
+}
+.btn-danger:hover { background: var(--crimson-dim); color: var(--pearl); }
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--pearl-dark);
+}
+
+.oauth-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 2px;
+  margin-top: 8px;
+}
+.oauth-connected { background: #0a2a0a; color: #4aaa4a; border: 1px solid #1a4a1a; }
+.oauth-disconnected { background: #2a0a0a; color: #aa4a4a; border: 1px solid #4a1a1a; }
+
+.countdown-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 140px auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.link-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.special-day-row {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+/* ── HEADER TITLE ── */
+#site-title {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--chrome-dim);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ── DECO CORNER ── */
+.deco-corner {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  z-index: 1001;
+  pointer-events: none;
+  opacity: 0.4;
+}
+.deco-corner svg { fill: none; stroke: var(--crimson); stroke-width: 1; }
+.dc-tl { top: 6px; left: 6px; }
+.dc-tr { top: 6px; right: 6px; transform: scaleX(-1); }
+.dc-bl { bottom: 6px; left: 6px; transform: scaleY(-1); }
+.dc-br { bottom: 6px; right: 6px; transform: scale(-1); }
+
+/* ── STATUS / LOADING ── */
+.loading-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.day-type-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border: 1px solid var(--crimson-dim);
+  color: var(--crimson);
+  border-radius: 1px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ── GOOGLE SIGNIN ── */
+#google-signin-btn {
+  display: none;
+  padding: 8px 16px;
+  background: var(--navy);
+  color: var(--chrome-bright);
+  border: 1px solid var(--crimson-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 2px;
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+#google-signin-btn:hover { background: var(--crimson); }
+
+.no-api-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 6px 0;
+}
+</style>
+</head>
+<body>
+
+<div id="site-title">Classroom Command Center</div>
+
+<!-- Deco corners -->
+<div class="deco-corner dc-tl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-tr"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-bl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-br"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+
+<!-- LEFT COLUMN -->
+<div id="left-col">
+  <div class="panel" id="clock-panel">
+    <div class="panel-label">Station clock <span class="day-type-badge" id="day-type-badge">Regular</span></div>
+    <div id="clock-time">9:47<span id="clock-ampm">AM</span></div>
+    <div id="clock-date">Friday · May 16 · 2026</div>
+    <div id="period-status">
+      <div id="period-name">— No active period —</div>
+      <div id="period-detail"></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div id="period-remaining"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="board-panel">
+    <div class="panel-label">Departures — today</div>
+    <div id="board-inner"></div>
+  </div>
+</div>
+
+<!-- RIGHT AREA -->
+<div id="right-area">
+
+  <!-- Calendar Events -->
+  <div class="panel span2" id="calendar-panel">
+    <div class="panel-label">Field dispatches — upcoming</div>
+    <div id="calendar-content">
+      <button id="google-signin-btn" onclick="initiateGoogleAuth()">Sign in with Google</button>
+      <div class="no-api-key" id="cal-setup-msg">Configure Google Calendar in settings to see events.</div>
+    </div>
+  </div>
+
+  <!-- Weather -->
+  <div class="panel" id="weather-panel">
+    <div class="panel-label">Conditions — local</div>
+    <div id="weather-content">
+      <div class="loading-text">Detecting location...</div>
+    </div>
+  </div>
+
+  <!-- Countdowns -->
+  <div class="panel span2" id="countdown-panel">
+    <div class="panel-label">Countdowns</div>
+    <div id="countdown-content"></div>
+  </div>
+
+  <!-- History -->
+  <div class="panel" id="history-panel">
+    <div class="panel-label">This day in history</div>
+    <div id="history-year">—</div>
+    <div id="history-text" class="loading-text">Loading...</div>
+  </div>
+
+  <!-- News -->
+  <div class="panel span3" id="news-panel">
+    <div class="panel-label">Intelligence dispatch — world news</div>
+    <div id="news-content">
+      <div class="no-api-key" id="news-setup-msg">Add your NewsAPI key in settings to enable news.</div>
+    </div>
+  </div>
+
+  <!-- Links -->
+  <div class="panel span3" id="links-panel">
+    <div class="panel-label">Quick links</div>
+    <div id="links-wrap"></div>
+  </div>
+
+</div>
+
+<!-- Settings Button -->
+<button id="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-overlay">
+  <div id="settings-modal">
+    <h2>Command Center Settings</h2>
+
+    <!-- Schedule -->
+    <div class="settings-section">
+      <h3>Schedule — Regular Day (Mon/Tue/Thu/Fri)</h3>
+      <div class="period-editor" id="regular-editor"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addPeriod('regular')">+ Add period</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Schedule — Wednesday</h3>
+      <div class="period-editor" id="wednesday-editor"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addPeriod('wednesday')">+ Add period</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Special Day Overrides</h3>
+      <p style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-bottom:10px;">For finals, early release, assemblies, etc. Set a date and a schedule name to use.</p>
+      <div id="special-days-list"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addSpecialDay()">+ Add special day</button>
+    </div>
+
+    <!-- Google Calendar -->
+    <div class="settings-section">
+      <h3>Google Calendar</h3>
+      <label>Google OAuth Client ID</label>
+      <input type="text" id="s-client-id" placeholder="123456789-abc....apps.googleusercontent.com">
+      <div id="oauth-status-display" style="margin-top:8px"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="saveClientIdAndAuth()">Save & Connect Google</button>
+    </div>
+
+    <!-- News -->
+    <div class="settings-section">
+      <h3>News (NewsAPI.org)</h3>
+      <label>API Key</label>
+      <input type="password" id="s-news-key" placeholder="Paste your NewsAPI key here">
+    </div>
+
+    <!-- Countdowns -->
+    <div class="settings-section">
+      <h3>Countdowns</h3>
+      <div id="countdown-editor"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addCountdown()">+ Add countdown</button>
+    </div>
+
+    <!-- Links -->
+    <div class="settings-section">
+      <h3>Quick Links</h3>
+      <div id="links-editor"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addLink()">+ Add link</button>
+    </div>
+
+    <div class="settings-actions">
+      <button class="btn btn-primary" onclick="saveSettings()">Save all settings</button>
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+// ═══════════════════════════════════════════
+// DEFAULT DATA
+// ═══════════════════════════════════════════
+
+const DEFAULT_REGULAR = [
+  {name:'AM Homeroom', start:'8:19', end:'8:25', isBreak:false},
+  {name:'6th Grade Geography · P2', start:'8:29', end:'9:11', isBreak:false},
+  {name:'6th Grade Geography · P3', start:'9:15', end:'9:57', isBreak:false},
+  {name:'Break', start:'9:58', end:'10:08', isBreak:true},
+  {name:'6th Grade Geography · P4', start:'10:11', end:'10:53', isBreak:false},
+  {name:'6th Grade Geography · P5', start:'10:57', end:'11:39', isBreak:false},
+  {name:'Lunch', start:'11:39', end:'12:11', isBreak:true},
+  {name:'Planning · P6', start:'12:15', end:'12:57', isBreak:false},
+  {name:'7th Grade Geography · P7', start:'13:01', end:'13:43', isBreak:false},
+  {name:'7th Grade Geography · P8', start:'13:47', end:'14:29', isBreak:false},
+  {name:'7th Grade Geography · P9', start:'14:33', end:'15:15', isBreak:false},
+  {name:'PM Homeroom', start:'15:15', end:'15:19', isBreak:false},
+];
+
+const DEFAULT_WEDNESDAY = [
+  {name:'Homeroom · P1', start:'8:19', end:'9:04', isBreak:false},
+  {name:'Period 2', start:'9:08', end:'9:33', isBreak:false},
+  {name:'Period 3', start:'9:37', end:'10:02', isBreak:false},
+  {name:'Break', start:'10:02', end:'10:12', isBreak:true},
+  {name:'Period 4', start:'10:16', end:'10:41', isBreak:false},
+  {name:'Period 5', start:'10:45', end:'11:10', isBreak:false},
+  {name:'Lunch', start:'11:10', end:'11:42', isBreak:true},
+  {name:'Period 6', start:'11:46', end:'12:11', isBreak:false},
+  {name:'Period 7', start:'12:15', end:'12:40', isBreak:false},
+  {name:'Period 8', start:'12:44', end:'13:09', isBreak:false},
+  {name:'Period 9', start:'13:13', end:'13:39', isBreak:false},
+  {name:'Homeroom · P10', start:'13:43', end:'13:49', isBreak:false},
+];
+
+const DEFAULT_COUNTDOWNS = [
+  {label:'Summer break', date:'2025-06-13'},
+  {label:'Memorial Day', date:'2025-05-26'},
+];
+
+const DEFAULT_LINKS = [
+  {label:'Google Calendar', url:'https://calendar.google.com'},
+  {label:'Gmail', url:'https://mail.google.com'},
+  {label:'Google Drive', url:'https://drive.google.com'},
+  {label:'Schoology', url:'https://www.schoology.com'},
+  {label:'Gradebook', url:'#'},
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+
+let cfg = {};
+
+function loadCfg() {
+  const saved = localStorage.getItem('ccc_config');
+  const defaults = {
+    regular: DEFAULT_REGULAR,
+    wednesday: DEFAULT_WEDNESDAY,
+    specialDays: [],
+    countdowns: DEFAULT_COUNTDOWNS,
+    links: DEFAULT_LINKS,
+    newsKey: '',
+    clientId: '',
+    calToken: '',
+    calTokenExpiry: 0,
+  };
+  cfg = saved ? Object.assign(defaults, JSON.parse(saved)) : defaults;
+}
+
+function saveCfg() {
+  localStorage.setItem('ccc_config', JSON.stringify(cfg));
+}
+
+// ═══════════════════════════════════════════
+// SCHEDULE HELPERS
+// ═══════════════════════════════════════════
+
+function getSchedule() {
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+
+  const special = cfg.specialDays && cfg.specialDays.find(s => s.date === dateStr);
+  if (special) {
+    const sched = special.scheduleType === 'wednesday' ? cfg.wednesday : cfg.regular;
+    document.getElementById('day-type-badge').textContent = special.label || 'Special';
+    return sched;
+  }
+
+  const day = now.getDay();
+  if (day === 3) {
+    document.getElementById('day-type-badge').textContent = 'Wednesday';
+    return cfg.wednesday;
+  }
+  if (day === 0 || day === 6) {
+    document.getElementById('day-type-badge').textContent = 'Weekend';
+    return [];
+  }
+  document.getElementById('day-type-badge').textContent = 'Regular';
+  return cfg.regular;
+}
+
+function timeToMinutes(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function getCurrentPeriod(schedule) {
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  for (let i = 0; i < schedule.length; i++) {
+    const s = timeToMinutes(schedule[i].start);
+    const e = timeToMinutes(schedule[i].end);
+    if (cur >= s && cur < e) return {period: schedule[i], index: i, start: s, end: e};
+  }
+  return null;
+}
+
+function fmt12(t24) {
+  let [h, m] = t24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+// ═══════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════
+
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  const ampm = h >= 12 ? 'AM' : 'PM';
+  h = h % 12 || 12;
+  const timeStr = h + ':' + String(m).padStart(2,'0');
+  document.getElementById('clock-time').childNodes[0].textContent = timeStr;
+  document.getElementById('clock-ampm').textContent = ampm;
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('clock-date').textContent =
+    days[now.getDay()] + ' · ' + months[now.getMonth()] + ' ' + now.getDate() + ' · ' + now.getFullYear();
+
+  updatePeriodStatus();
+}
+
+function updatePeriodStatus() {
+  const schedule = getSchedule();
+  const active = getCurrentPeriod(schedule);
+  const pName = document.getElementById('period-name');
+  const pDetail = document.getElementById('period-detail');
+  const pRem = document.getElementById('period-remaining');
+  const pFill = document.getElementById('progress-fill');
+
+  if (!active) {
+    pName.textContent = '— No active period —';
+    pDetail.textContent = '';
+    pRem.textContent = '';
+    pFill.style.width = '0%';
+    return;
+  }
+
+  const now = new Date();
+  const curMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  const total = active.end - active.start;
+  const elapsed = curMin - active.start;
+  const pct = Math.min(100, (elapsed / total) * 100);
+  const remaining = active.end - Math.floor(curMin);
+
+  pName.textContent = active.period.name;
+  pDetail.textContent = fmt12(active.period.start) + ' – ' + fmt12(active.period.end);
+  pFill.style.width = pct.toFixed(1) + '%';
+
+  if (remaining <= 1) {
+    pRem.textContent = 'Ending now';
+  } else {
+    pRem.textContent = remaining + ' min remaining';
+  }
+}
+
+// ═══════════════════════════════════════════
+// DEPARTURES BOARD
+// ═══════════════════════════════════════════
+
+function renderBoard() {
+  const schedule = getSchedule();
+  const board = document.getElementById('board-inner');
+
+  if (!schedule.length) {
+    board.innerHTML = '<div style="padding:12px;font-family:var(--font-mono);font-size:10px;color:#334466;text-align:center">— No school today —</div>';
+    return;
+  }
+
+  const active = getCurrentPeriod(schedule);
+  const now = new Date();
+  const curMin = now.getHours() * 60 + now.getMinutes();
+
+  board.innerHTML = schedule.map((p, i) => {
+    const startMin = timeToMinutes(p.start);
+    const endMin = timeToMinutes(p.end);
+    let cls = 'board-row';
+    if (p.isBreak) cls += ' break-row';
+
+    if (active && active.index === i) {
+      cls += ' active';
+    } else if (endMin <= curMin) {
+      cls += ' past';
+    } else {
+      cls += ' future';
+    }
+
+    const isActive = active && active.index === i;
+    return `<div class="${cls}">
+      <div class="board-time">${fmt12(p.start).replace(' AM','').replace(' PM','')}</div>
+      <div class="board-name">${p.name}</div>
+      <div class="board-indicator"></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// COUNTDOWNS
+// ═══════════════════════════════════════════
+
+function renderCountdowns() {
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const el = document.getElementById('countdown-content');
+
+  if (!cfg.countdowns || !cfg.countdowns.length) {
+    el.innerHTML = '<div class="no-api-key">Add countdowns in settings.</div>';
+    return;
+  }
+
+  const items = cfg.countdowns.map(cd => {
+    const target = new Date(cd.date + 'T00:00:00');
+    const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+    const val = diff > 0 ? diff : 0;
+    const unit = val === 1 ? 'day' : 'days';
+    return `<div class="cd-item">
+      <span class="cd-label">${cd.label}</span>
+      <span class="cd-value">${val}<span class="cd-unit">${unit}</span></span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0">${items}</div>`;
+}
+
+// ═══════════════════════════════════════════
+// WEATHER
+// ═══════════════════════════════════════════
+
+const WMO_CODES = {
+  0:'Clear sky', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast',
+  45:'Fog', 48:'Icy fog', 51:'Light drizzle', 53:'Drizzle', 55:'Heavy drizzle',
+  61:'Light rain', 63:'Rain', 65:'Heavy rain', 71:'Light snow', 73:'Snow', 75:'Heavy snow',
+  80:'Rain showers', 81:'Rain showers', 82:'Violent showers',
+  95:'Thunderstorm', 96:'Thunderstorm w/ hail', 99:'Thunderstorm w/ hail',
+};
+
+const WMO_ICON = {
+  0:'☀️', 1:'🌤', 2:'⛅', 3:'☁️', 45:'🌫', 48:'🌫',
+  51:'🌦', 53:'🌦', 55:'🌧', 61:'🌦', 63:'🌧', 65:'🌧',
+  71:'🌨', 73:'❄️', 75:'❄️', 80:'🌦', 81:'🌧', 82:'⛈',
+  95:'⛈', 96:'⛈', 99:'⛈',
+};
+
+async function loadWeather() {
+  const el = document.getElementById('weather-content');
+  if (!navigator.geolocation) {
+    el.innerHTML = '<div class="no-api-key">Geolocation not supported.</div>';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const {latitude: lat, longitude: lon} = pos.coords;
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=5`;
+      const r = await fetch(url);
+      const d = await r.json();
+      const c = d.current;
+      const daily = d.daily;
+
+      const cond = WMO_CODES[c.weather_code] || 'Unknown';
+      const forecastDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+      const forecastHTML = daily.time.slice(1,5).map((dt, i) => {
+        const dayName = forecastDays[new Date(dt+'T12:00:00').getDay()];
+        const icon = WMO_ICON[daily.weather_code[i+1]] || '—';
+        return `<div class="forecast-item">
+          <div class="forecast-day">${dayName}</div>
+          <div class="forecast-icon">${icon}</div>
+          <div class="forecast-temps">${Math.round(daily.temperature_2m_max[i+1])}° / ${Math.round(daily.temperature_2m_min[i+1])}°</div>
+          <div class="forecast-rain">${daily.precipitation_probability_max[i+1]}%</div>
+        </div>`;
+      }).join('');
+
+      el.innerHTML = `
+        <div id="weather-main">
+          <div id="weather-temp">${Math.round(c.temperature_2m)}°F</div>
+          <div id="weather-cond">${cond}</div>
+        </div>
+        <div class="weather-row"><span>Feels like</span><span>${Math.round(c.apparent_temperature)}°F</span></div>
+        <div class="weather-row"><span>Rain chance</span><span>${c.precipitation_probability}%</span></div>
+        <div class="weather-row"><span>Wind</span><span>${Math.round(c.wind_speed_10m)} mph</span></div>
+        <div class="weather-row"><span>High / Low</span><span>${Math.round(daily.temperature_2m_max[0])}° / ${Math.round(daily.temperature_2m_min[0])}°</span></div>
+        <div class="forecast-row">${forecastHTML}</div>
+      `;
+    } catch(e) {
+      el.innerHTML = '<div class="no-api-key">Weather unavailable.</div>';
+    }
+  }, () => {
+    el.innerHTML = '<div class="no-api-key">Location access denied.</div>';
+  });
+}
+
+// ═══════════════════════════════════════════
+// THIS DAY IN HISTORY
+// ═══════════════════════════════════════════
+
+async function loadHistory() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  try {
+    const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const events = d.events;
+    if (!events || !events.length) throw new Error('No events');
+    const pick = events[Math.floor(Math.random() * Math.min(events.length, 10))];
+    document.getElementById('history-year').textContent = pick.year;
+    document.getElementById('history-text').textContent = pick.text;
+    document.getElementById('history-text').style.fontStyle = 'normal';
+  } catch(e) {
+    document.getElementById('history-year').textContent = '—';
+    document.getElementById('history-text').textContent = 'Could not load today\'s history.';
+  }
+}
+
+// ═══════════════════════════════════════════
+// NEWS
+// ═══════════════════════════════════════════
+
+async function loadNews() {
+  const el = document.getElementById('news-content');
+  const key = cfg.newsKey;
+  if (!key) {
+    el.innerHTML = '<div class="no-api-key" id="news-setup-msg">Add your NewsAPI key in settings to enable news.</div>';
+    return;
+  }
+  try {
+    el.innerHTML = '<div class="loading-text">Fetching dispatch...</div>';
+    const url = `https://newsapi.org/v2/top-headlines?sources=bbc-news,associated-press,reuters&pageSize=6&apiKey=${key}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.status !== 'ok' || !d.articles.length) throw new Error('No articles');
+
+    el.innerHTML = d.articles.map(a => {
+      const src = a.source.name || '';
+      const ago = getTimeAgo(a.publishedAt);
+      return `<div class="news-item">
+        <div class="news-meta">${src.toUpperCase()} · ${ago}</div>
+        <div class="news-headline"><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="no-api-key">News unavailable. Check your API key in settings.</div>';
+  }
+}
+
+function getTimeAgo(iso) {
+  const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (diff < 60) return diff + 'min ago';
+  if (diff < 1440) return Math.floor(diff/60) + 'h ago';
+  return Math.floor(diff/1440) + 'd ago';
+}
+
+// ═══════════════════════════════════════════
+// LINKS
+// ═══════════════════════════════════════════
+
+function renderLinks() {
+  const wrap = document.getElementById('links-wrap');
+  const links = cfg.links || [];
+  wrap.innerHTML = links.map(l =>
+    `<a class="link-pill" href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`
+  ).join('') + `<button class="link-pill add-link" onclick="openSettings()">+ Add link</button>`;
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE CALENDAR OAUTH
+// ═══════════════════════════════════════════
+
+function initiateGoogleAuth() {
+  if (!cfg.clientId) {
+    alert('Please enter your Google OAuth Client ID in settings first.');
+    openSettings();
+    return;
+  }
+  const params = new URLSearchParams({
+    client_id: cfg.clientId,
+    redirect_uri: window.location.origin + window.location.pathname,
+    response_type: 'token',
+    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    include_granted_scopes: 'true',
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+function checkOAuthCallback() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.substring(1));
+  const token = params.get('access_token');
+  const expiresIn = params.get('expires_in');
+  if (token) {
+    cfg.calToken = token;
+    cfg.calTokenExpiry = Date.now() + (parseInt(expiresIn) - 60) * 1000;
+    saveCfg();
+    window.history.replaceState({}, document.title, window.location.pathname);
+    loadCalendar();
+  }
+}
+
+async function loadCalendar() {
+  const el = document.getElementById('calendar-content');
+  const signinBtn = document.getElementById('google-signin-btn');
+  const setupMsg = document.getElementById('cal-setup-msg');
+
+  if (!cfg.clientId) {
+    if(signinBtn) signinBtn.style.display = 'none';
+    if(setupMsg) setupMsg.style.display = 'block';
+    return;
+  }
+
+  if (!cfg.calToken || Date.now() > cfg.calTokenExpiry) {
+    if(signinBtn) signinBtn.style.display = 'inline-block';
+    if(setupMsg) setupMsg.style.display = 'none';
+    el.innerHTML = '<button id="google-signin-btn" onclick="initiateGoogleAuth()">Sign in with Google</button>';
+    return;
+  }
+
+  try {
+    el.innerHTML = '<div class="loading-text">Loading events...</div>';
+    const now = new Date().toISOString();
+    const future = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now}&timeMax=${future}&singleEvents=true&orderBy=startTime&maxResults=8`;
+    const r = await fetch(url, {headers: {Authorization: 'Bearer ' + cfg.calToken}});
+    if (!r.ok) throw new Error('Auth failed');
+    const d = await r.json();
+    const events = d.items || [];
+
+    if (!events.length) {
+      el.innerHTML = '<div class="no-api-key">No upcoming events in the next 14 days.</div>';
+      return;
+    }
+
+    el.innerHTML = events.map(ev => {
+      const start = ev.start.dateTime || ev.start.date;
+      const dt = new Date(start);
+      const isAllDay = !ev.start.dateTime;
+      const dateLabel = isAllDay
+        ? dt.toLocaleDateString('en-US', {month:'short', day:'numeric'})
+        : dt.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' ' + dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+      return `<div class="event-item">
+        <div class="event-date">${dateLabel}</div>
+        <div class="event-title">${ev.summary || '(No title)'}</div>
+        <div class="event-tag">${ev.organizer && ev.organizer.self ? 'Mine' : 'Invited'}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    cfg.calToken = '';
+    cfg.calTokenExpiry = 0;
+    saveCfg();
+    el.innerHTML = '<button id="google-signin-btn" onclick="initiateGoogleAuth()">Re-connect Google Calendar</button>';
+  }
+}
+
+function saveClientIdAndAuth() {
+  cfg.clientId = document.getElementById('s-client-id').value.trim();
+  saveCfg();
+  closeSettings();
+  initiateGoogleAuth();
+}
+
+function updateOAuthStatusDisplay() {
+  const el = document.getElementById('oauth-status-display');
+  if (!el) return;
+  if (cfg.calToken && Date.now() < cfg.calTokenExpiry) {
+    el.innerHTML = '<span class="oauth-status oauth-connected">● Connected</span>';
+  } else if (cfg.clientId) {
+    el.innerHTML = '<span class="oauth-status oauth-disconnected">○ Not signed in</span>';
+  } else {
+    el.innerHTML = '<span class="oauth-status oauth-disconnected">○ Client ID not set</span>';
+  }
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS UI
+// ═══════════════════════════════════════════
+
+function openSettings() {
+  renderScheduleEditor('regular');
+  renderScheduleEditor('wednesday');
+  renderSpecialDaysEditor();
+  renderCountdownEditor();
+  renderLinksEditor();
+  document.getElementById('s-news-key').value = cfg.newsKey || '';
+  document.getElementById('s-client-id').value = cfg.clientId || '';
+  updateOAuthStatusDisplay();
+  document.getElementById('settings-overlay').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+
+function renderScheduleEditor(type) {
+  const schedule = type === 'regular' ? cfg.regular : cfg.wednesday;
+  const el = document.getElementById(type + '-editor');
+  el.innerHTML = schedule.map((p, i) =>
+    `<div class="period-edit-row">
+      <input type="time" value="${p.start}" onchange="updatePeriod('${type}',${i},'start',this.value)">
+      <input type="time" value="${p.end}" onchange="updatePeriod('${type}',${i},'end',this.value)">
+      <input type="text" value="${p.name}" onchange="updatePeriod('${type}',${i},'name',this.value)" placeholder="Period name">
+      <button class="btn btn-danger" onclick="removePeriod('${type}',${i})">✕</button>
+    </div>`
+  ).join('');
+}
+
+function updatePeriod(type, idx, field, val) {
+  const sched = type === 'regular' ? cfg.regular : cfg.wednesday;
+  sched[idx][field] = val;
+}
+
+function addPeriod(type) {
+  const sched = type === 'regular' ? cfg.regular : cfg.wednesday;
+  sched.push({name:'New period', start:'08:00', end:'09:00', isBreak:false});
+  renderScheduleEditor(type);
+}
+
+function removePeriod(type, idx) {
+  const sched = type === 'regular' ? cfg.regular : cfg.wednesday;
+  sched.splice(idx, 1);
+  renderScheduleEditor(type);
+}
+
+function renderSpecialDaysEditor() {
+  const el = document.getElementById('special-days-list');
+  cfg.specialDays = cfg.specialDays || [];
+  el.innerHTML = cfg.specialDays.map((s, i) =>
+    `<div class="special-day-row">
+      <input type="date" value="${s.date}" onchange="cfg.specialDays[${i}].date=this.value">
+      <input type="text" value="${s.label}" placeholder="e.g. Finals Day" onchange="cfg.specialDays[${i}].label=this.value">
+      <button class="btn btn-danger" onclick="cfg.specialDays.splice(${i},1);renderSpecialDaysEditor()">✕</button>
+    </div>`
+  ).join('');
+}
+
+function addSpecialDay() {
+  cfg.specialDays = cfg.specialDays || [];
+  cfg.specialDays.push({date: new Date().toISOString().split('T')[0], label:'Special Day', scheduleType:'regular'});
+  renderSpecialDaysEditor();
+}
+
+function renderCountdownEditor() {
+  const el = document.getElementById('countdown-editor');
+  cfg.countdowns = cfg.countdowns || [];
+  el.innerHTML = cfg.countdowns.map((cd, i) =>
+    `<div class="countdown-edit-row">
+      <input type="text" value="${cd.label}" placeholder="Event name" onchange="cfg.countdowns[${i}].label=this.value">
+      <input type="date" value="${cd.date}" onchange="cfg.countdowns[${i}].date=this.value">
+      <button class="btn btn-danger" onclick="cfg.countdowns.splice(${i},1);renderCountdownEditor()">✕</button>
+    </div>`
+  ).join('');
+}
+
+function addCountdown() {
+  cfg.countdowns = cfg.countdowns || [];
+  cfg.countdowns.push({label:'Event', date: new Date().toISOString().split('T')[0]});
+  renderCountdownEditor();
+}
+
+function renderLinksEditor() {
+  const el = document.getElementById('links-editor');
+  cfg.links = cfg.links || [];
+  el.innerHTML = cfg.links.map((l, i) =>
+    `<div class="link-edit-row">
+      <input type="text" value="${l.label}" placeholder="Label" onchange="cfg.links[${i}].label=this.value">
+      <input type="text" value="${l.url}" placeholder="https://..." onchange="cfg.links[${i}].url=this.value">
+      <button class="btn btn-danger" onclick="cfg.links.splice(${i},1);renderLinksEditor()">✕</button>
+    </div>`
+  ).join('');
+}
+
+function addLink() {
+  cfg.links = cfg.links || [];
+  cfg.links.push({label:'New Link', url:'https://'});
+  renderLinksEditor();
+}
+
+function saveSettings() {
+  cfg.newsKey = document.getElementById('s-news-key').value.trim();
+  cfg.clientId = document.getElementById('s-client-id').value.trim();
+  saveCfg();
+  closeSettings();
+  renderAll();
+}
+
+// ═══════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════
+
+function renderAll() {
+  renderBoard();
+  renderCountdowns();
+  renderLinks();
+  loadCalendar();
+  loadNews();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+loadCfg();
+checkOAuthCallback();
+updateClock();
+renderAll();
+loadWeather();
+loadHistory();
+
+setInterval(updateClock, 1000);
+setInterval(renderBoard, 60000);
+setInterval(renderCountdowns, 60000);
+
+// Refresh news every 15 min, weather every 30 min
+setInterval(loadNews, 15 * 60 * 1000);
+setInterval(loadWeather, 30 * 60 * 1000);
+setInterval(loadHistory, 60 * 60 * 1000);
+</script>
+</body>
+</html>
