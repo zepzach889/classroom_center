@@ -1325,6 +1325,7 @@ function initGoogleTokenClient() {
     client_id: cfg.clientId,
     scope: 'https://www.googleapis.com/auth/calendar.readonly',
     callback: (response) => {
+      console.log('GSI response:', JSON.stringify(response));
       if (response.error) {
         console.error('Google auth error:', response.error);
         return;
