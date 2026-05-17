@@ -1144,7 +1144,7 @@ function renderBoard() {
 
     const isActive = active && active.index === i;
     return `<div class="${cls}">
-      <div class="board-time">${fmt12(p.start).replace(' AM','').replace(' PM','')}</div>
+      <div class="board-time">${fmt12(p.start).replace(' AM','a').replace(' PM','p')}</div>
       <div class="board-name">${p.name}</div>
       <div class="board-indicator"></div>
     </div>`;
