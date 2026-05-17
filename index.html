@@ -1330,10 +1330,21 @@ function initGoogleTokenClient() {
         console.error('Google auth error:', response.error);
         return;
       }
-      // GSI may return token directly or nested in oauth_metadata
-      const token = response.access_token || 
-                    (response.oauth_metadata && JSON.parse(response.oauth_metadata).access_token);
-      const expiresIn = response.expires_in || 3599;
+      // Try direct access_token first, then parse oauth_metadata string
+      let token = response.access_token;
+      let expiresIn = response.expires_in || 3599;
+      if (!token && response.oauth_metadata) {
+        try {
+          const meta = typeof response.oauth_metadata === 'string'
+            ? JSON.parse(response.oauth_metadata)
+            : response.oauth_metadata;
+          token = meta.access_token;
+          expiresIn = meta.expires_in || expiresIn;
+        } catch(e) {
+          console.error('Failed to parse oauth_metadata:', e);
+        }
+      }
+      console.log('Extracted token:', token ? token.substring(0,20) + '...' : 'NONE');
       if (!token) {
         console.error('No access token found in response');
         return;
