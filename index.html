@@ -1321,7 +1321,7 @@ function initiateGoogleAuth() {
     openSettings();
     return;
   }
-  const redirectUri = window.location.origin + window.location.pathname;
+  const redirectUri = window.location.origin + window.location.pathname.replace(/\/$/, '/index.html');
   const params = new URLSearchParams({
     client_id: cfg.clientId,
     redirect_uri: redirectUri,
