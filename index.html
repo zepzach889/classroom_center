@@ -1478,13 +1478,20 @@ function closeSettings() {
   document.getElementById('settings-overlay').classList.remove('open');
 }
 
+// Ensures time strings are in HH:MM format for <input type="time">
+function padTime(t) {
+  if (!t) return '08:00';
+  const [h, m] = t.split(':');
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
 function renderScheduleEditor(type) {
   const schedule = type === 'regular' ? cfg.regular : cfg.wednesday;
   const el = document.getElementById(type + '-editor');
   el.innerHTML = schedule.map((p, i) =>
     `<div class="period-edit-row">
-      <input type="time" value="${p.start}" onchange="updatePeriod('${type}',${i},'start',this.value)">
-      <input type="time" value="${p.end}" onchange="updatePeriod('${type}',${i},'end',this.value)">
+      <input type="time" value="${padTime(p.start)}" onchange="updatePeriod('${type}',${i},'start',this.value)">
+      <input type="time" value="${padTime(p.end)}" onchange="updatePeriod('${type}',${i},'end',this.value)">
       <input type="text" value="${p.name}" onchange="updatePeriod('${type}',${i},'name',this.value)" placeholder="Period name">
       <button class="btn btn-danger" onclick="removePeriod('${type}',${i})">✕</button>
     </div>`
