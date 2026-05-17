@@ -381,20 +381,25 @@ body::before {
 }
 
 /* ── HISTORY ── */
-#history-year {
+.history-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--pearl-dark);
+}
+.history-item:last-child { border-bottom: none; }
+
+.history-year {
   font-family: var(--font-mono);
-  font-size: 32px;
+  font-size: 22px;
   color: var(--crimson);
-  margin-bottom: 10px;
   line-height: 1;
+  margin-bottom: 4px;
 }
 
-#history-text {
+.history-text {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-mid);
-  line-height: 1.6;
-  font-style: italic;
+  line-height: 1.5;
 }
 
 /* ── NEWS ── */
@@ -798,8 +803,7 @@ input:focus, select:focus, textarea:focus {
   <!-- History -->
   <div class="panel" id="history-panel">
     <div class="panel-label">This day in history</div>
-    <div id="history-year">—</div>
-    <div id="history-text" class="loading-text">Loading...</div>
+    <div id="history-content"><div class="loading-text">Loading...</div></div>
   </div>
 
   <!-- News -->
@@ -1206,6 +1210,20 @@ async function loadWeather() {
 // ═══════════════════════════════════════════
 
 async function loadHistory() {
+  const el = document.getElementById('history-content');
+  const today = new Date().toISOString().split('T')[0]; // e.g. "2026-05-17"
+
+  // Check localStorage for today's cached events
+  const cached = localStorage.getItem('ccc_history');
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    if (parsed.date === today) {
+      renderHistoryEvents(parsed.events);
+      return;
+    }
+  }
+
+  // Fetch fresh from Wikipedia
   const now = new Date();
   const month = now.getMonth() + 1;
   const day = now.getDate();
@@ -1215,14 +1233,31 @@ async function loadHistory() {
     const d = await r.json();
     const events = d.events;
     if (!events || !events.length) throw new Error('No events');
-    const pick = events[Math.floor(Math.random() * Math.min(events.length, 10))];
-    document.getElementById('history-year').textContent = pick.year;
-    document.getElementById('history-text').textContent = pick.text;
-    document.getElementById('history-text').style.fontStyle = 'normal';
+
+    // Spread picks across the full list for variety — pick at positions 0%, 40%, 75%
+    const len = events.length;
+    const picks = [
+      events[Math.floor(len * 0.0)],
+      events[Math.floor(len * 0.4)],
+      events[Math.floor(len * 0.75)],
+    ].map(e => ({ year: e.year, text: e.text }));
+
+    // Cache for the day
+    localStorage.setItem('ccc_history', JSON.stringify({ date: today, events: picks }));
+    renderHistoryEvents(picks);
   } catch(e) {
-    document.getElementById('history-year').textContent = '—';
-    document.getElementById('history-text').textContent = 'Could not load today\'s history.';
+    el.innerHTML = '<div class="loading-text">Could not load today\'s history.</div>';
   }
+}
+
+function renderHistoryEvents(events) {
+  const el = document.getElementById('history-content');
+  el.innerHTML = events.map(e => `
+    <div class="history-item">
+      <div class="history-year">${e.year}</div>
+      <div class="history-text">${e.text}</div>
+    </div>
+  `).join('');
 }
 
 // ═══════════════════════════════════════════
