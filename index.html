@@ -888,7 +888,7 @@ input:focus, select:focus, textarea:focus {
 </div>
 
 <!-- Google Identity Services -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://accounts.google.com/gsi/client" onload="initGoogleTokenClient()" async defer></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -1312,8 +1312,31 @@ function renderLinks() {
 }
 
 // ═══════════════════════════════════════════
-// GOOGLE CALENDAR OAUTH — redirect flow
+// GOOGLE CALENDAR — Identity Services token client
+// No redirect URI registration needed — GSI handles
+// auth entirely via a popup it controls internally.
 // ═══════════════════════════════════════════
+
+let tokenClient = null;
+
+function initGoogleTokenClient() {
+  if (!cfg.clientId || !window.google) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cfg.clientId,
+    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    callback: (response) => {
+      if (response.error) {
+        console.error('Google auth error:', response.error);
+        return;
+      }
+      cfg.calToken = response.access_token;
+      cfg.calTokenExpiry = Date.now() + (response.expires_in - 60) * 1000;
+      saveCfg();
+      updateOAuthStatusDisplay();
+      loadCalendar();
+    },
+  });
+}
 
 function initiateGoogleAuth() {
   if (!cfg.clientId) {
@@ -1321,48 +1344,27 @@ function initiateGoogleAuth() {
     openSettings();
     return;
   }
-  const redirectUri = window.location.origin + window.location.pathname.replace(/\/$/, '/index.html');
-  const params = new URLSearchParams({
-    client_id: cfg.clientId,
-    redirect_uri: redirectUri,
-    response_type: 'token',
-    scope: 'https://www.googleapis.com/auth/calendar.readonly',
-    include_granted_scopes: 'true',
-    prompt: 'select_account',
-  });
-  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+  if (!window.google) {
+    alert('Google Identity Services not loaded yet. Please wait a moment and try again.');
+    return;
+  }
+  if (!tokenClient) initGoogleTokenClient();
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 function checkOAuthCallback() {
-  const hash = window.location.hash;
-  if (!hash) return;
-  const params = new URLSearchParams(hash.substring(1));
-  const token = params.get('access_token');
-  const expiresIn = params.get('expires_in');
-  if (token) {
-    cfg.calToken = token;
-    cfg.calTokenExpiry = Date.now() + (parseInt(expiresIn) - 60) * 1000;
-    saveCfg();
-    // Clean the token out of the URL bar
-    window.history.replaceState({}, document.title, window.location.pathname);
-    loadCalendar();
-  }
+  // No longer needed for GSI token client — kept as no-op for compatibility
 }
 
 async function loadCalendar() {
   const el = document.getElementById('calendar-content');
-  const signinBtn = document.getElementById('google-signin-btn');
-  const setupMsg = document.getElementById('cal-setup-msg');
 
   if (!cfg.clientId) {
-    if(signinBtn) signinBtn.style.display = 'none';
-    if(setupMsg) setupMsg.style.display = 'block';
+    el.innerHTML = '<div class="no-api-key">Configure Google Calendar in settings to see events.</div>';
     return;
   }
 
   if (!cfg.calToken || Date.now() > cfg.calTokenExpiry) {
-    if(signinBtn) signinBtn.style.display = 'inline-block';
-    if(setupMsg) setupMsg.style.display = 'none';
     el.innerHTML = '<button id="google-signin-btn" onclick="initiateGoogleAuth()">Sign in with Google</button>';
     return;
   }
@@ -1406,6 +1408,8 @@ async function loadCalendar() {
 function saveClientIdAndAuth() {
   cfg.clientId = document.getElementById('s-client-id').value.trim();
   saveCfg();
+  // Re-initialize token client with new client ID
+  tokenClient = null;
   closeSettings();
   initiateGoogleAuth();
 }
