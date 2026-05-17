@@ -1321,9 +1321,11 @@ function initiateGoogleAuth() {
     openSettings();
     return;
   }
+  // For implicit flow, redirect_uri must be the exact page URL registered in Cloud Console
+  const redirectUri = window.location.origin + window.location.pathname;
   const params = new URLSearchParams({
     client_id: cfg.clientId,
-    redirect_uri: window.location.origin + window.location.pathname,
+    redirect_uri: redirectUri,
     response_type: 'token',
     scope: 'https://www.googleapis.com/auth/calendar.readonly',
     include_granted_scopes: 'true',
