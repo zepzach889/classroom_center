@@ -41,17 +41,17 @@ html, body {
   background: var(--pearl);
   color: var(--text-main);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
+  overflow: hidden;
 }
 
 body {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  grid-template-rows: 1fr auto;
-  min-height: 100vh;
-  padding: 14px;
-  gap: 12px;
+  grid-template-columns: 300px 1fr;
+  height: 100vh;
+  padding: 12px;
+  gap: 10px;
 }
 
 /* ── DECORATIVE BORDER FRAME ── */
@@ -69,16 +69,20 @@ body::before {
 #left-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ── RIGHT AREA ── */
 #right-area {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto auto auto;
-  gap: 10px;
+  gap: 8px;
   align-content: start;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ── PANEL BASE ── */
@@ -86,8 +90,9 @@ body::before {
   background: var(--pearl-mid);
   border: 1px solid var(--chrome-dim);
   border-radius: 2px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   position: relative;
+  overflow: hidden;
 }
 
 .panel::before {
@@ -101,13 +106,13 @@ body::before {
 
 .panel-label {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--crimson);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
   border-bottom: 2px solid var(--crimson-dim);
   opacity: 1;
 }
@@ -216,7 +221,7 @@ body::before {
   display: grid;
   grid-template-columns: 64px 1fr 14px;
   align-items: center;
-  padding: 7px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid #111825;
   transition: opacity 0.8s ease;
   gap: 6px;
@@ -226,13 +231,13 @@ body::before {
 
 .board-time {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   color: #334466;
 }
 
 .board-name {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   color: #5577AA;
   white-space: nowrap;
   overflow: hidden;
@@ -257,14 +262,13 @@ body::before {
 
 /* ── SPAN HELPERS ── */
 .span2 { grid-column: span 2; }
-.span3 { grid-column: span 3; }
 
 /* ── CALENDAR / EVENTS ── */
 .event-item {
   display: grid;
-  grid-template-columns: 56px 1fr auto;
+  grid-template-columns: 62px 1fr auto;
   gap: 10px;
-  padding: 8px 0;
+  padding: 7px 0;
   border-bottom: 1px solid var(--pearl-dark);
   align-items: start;
 }
@@ -272,7 +276,7 @@ body::before {
 
 .event-date {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--crimson);
   letter-spacing: 0.04em;
   padding-top: 1px;
@@ -280,9 +284,9 @@ body::before {
 
 .event-title {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 17px;
   color: var(--text-main);
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .event-tag {
@@ -356,26 +360,26 @@ body::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--pearl-dark);
 }
 .cd-item:last-child { border-bottom: none; }
 
 .cd-label {
   font-family: var(--font-body);
-  font-size: 17px;
+  font-size: 19px;
   color: var(--text-mid);
 }
 
 .cd-value {
   font-family: var(--font-mono);
-  font-size: 28px;
+  font-size: 32px;
   color: var(--crimson);
   line-height: 1;
 }
 
 .cd-unit {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
   margin-left: 3px;
 }
@@ -404,24 +408,24 @@ body::before {
 
 /* ── NEWS ── */
 .news-item {
-  padding: 9px 0;
+  padding: 7px 0;
   border-bottom: 1px solid var(--pearl-dark);
 }
 .news-item:last-child { border-bottom: none; }
 
 .news-meta {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--crimson);
   letter-spacing: 0.1em;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .news-headline {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text-main);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .news-headline a {
@@ -777,7 +781,7 @@ input:focus, select:focus, textarea:focus {
 <!-- RIGHT AREA -->
 <div id="right-area">
 
-  <!-- Calendar Events -->
+  <!-- Calendar Events — full width, most important -->
   <div class="panel span2" id="calendar-panel">
     <div class="panel-label">Field dispatches — upcoming</div>
     <div id="calendar-content">
@@ -786,7 +790,13 @@ input:focus, select:focus, textarea:focus {
     </div>
   </div>
 
-  <!-- Weather -->
+  <!-- Countdowns — left -->
+  <div class="panel" id="countdown-panel">
+    <div class="panel-label">Countdowns</div>
+    <div id="countdown-content"></div>
+  </div>
+
+  <!-- Weather — right -->
   <div class="panel" id="weather-panel">
     <div class="panel-label">Conditions — local</div>
     <div id="weather-content">
@@ -794,28 +804,22 @@ input:focus, select:focus, textarea:focus {
     </div>
   </div>
 
-  <!-- Countdowns -->
-  <div class="panel span2" id="countdown-panel">
-    <div class="panel-label">Countdowns</div>
-    <div id="countdown-content"></div>
-  </div>
-
-  <!-- History -->
-  <div class="panel" id="history-panel">
-    <div class="panel-label">This day in history</div>
-    <div id="history-content"><div class="loading-text">Loading...</div></div>
-  </div>
-
-  <!-- News -->
-  <div class="panel span3" id="news-panel">
-    <div class="panel-label">Intelligence dispatch — world news</div>
+  <!-- News — left, compact -->
+  <div class="panel" id="news-panel">
+    <div class="panel-label">Dispatch — world news</div>
     <div id="news-content">
       <div class="no-api-key" id="news-setup-msg">Add your TheNewsAPI key in settings to enable news.</div>
     </div>
   </div>
 
-  <!-- Links -->
-  <div class="panel span3" id="links-panel">
+  <!-- History — right, compact -->
+  <div class="panel" id="history-panel">
+    <div class="panel-label">This day in history</div>
+    <div id="history-content"><div class="loading-text">Loading...</div></div>
+  </div>
+
+  <!-- Links — full width -->
+  <div class="panel span2" id="links-panel">
     <div class="panel-label">Quick links</div>
     <div id="links-wrap"></div>
   </div>
@@ -935,7 +939,7 @@ const DEFAULT_LINKS = [
   {label:'Gmail', url:'https://mail.google.com'},
   {label:'Google Drive', url:'https://drive.google.com'},
   {label:'Schoology', url:'https://www.schoology.com'},
-  {label:'Gradebook', url:'#'},
+  {label:'Gradebook', url:'https://or-csd.edupoint.com/Login.aspx'},
 ];
 
 // ═══════════════════════════════════════════
@@ -1022,7 +1026,7 @@ function fmt12(t24) {
 function updateClock() {
   const now = new Date();
   let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-  const ampm = h >= 12 ? 'AM' : 'PM';
+  const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
   const timeStr = h + ':' + String(m).padStart(2,'0');
   document.getElementById('clock-time').childNodes[0].textContent = timeStr;
@@ -1234,12 +1238,10 @@ async function loadHistory() {
     const events = d.events;
     if (!events || !events.length) throw new Error('No events');
 
-    // Spread picks across the full list for variety — pick at positions 0%, 40%, 75%
+    // Pick 1 event at the midpoint of the list for variety
     const len = events.length;
     const picks = [
-      events[Math.floor(len * 0.0)],
       events[Math.floor(len * 0.4)],
-      events[Math.floor(len * 0.75)],
     ].map(e => ({ year: e.year, text: e.text }));
 
     // Cache for the day
@@ -1274,7 +1276,7 @@ async function loadNews() {
   try {
     el.innerHTML = '<div class="loading-text">Fetching dispatch...</div>';
     // TheNewsAPI.com — free tier, works from any domain, no CORS issues
-    const url = `https://api.thenewsapi.com/v1/news/top?api_token=${key}&language=en&limit=6`;
+    const url = `https://api.thenewsapi.com/v1/news/top?api_token=${key}&language=en&limit=3`;
     const r = await fetch(url);
     const d = await r.json();
     if (!d.data || !d.data.length) throw new Error('No articles');
@@ -1325,12 +1327,10 @@ function initGoogleTokenClient() {
     client_id: cfg.clientId,
     scope: 'https://www.googleapis.com/auth/calendar.readonly',
     callback: (response) => {
-      console.log('GSI response:', JSON.stringify(response));
       if (response.error) {
         console.error('Google auth error:', response.error);
         return;
       }
-      // Try direct access_token first, then parse oauth_metadata string
       let token = response.access_token;
       let expiresIn = response.expires_in || 3599;
       if (!token && response.oauth_metadata) {
@@ -1344,11 +1344,7 @@ function initGoogleTokenClient() {
           console.error('Failed to parse oauth_metadata:', e);
         }
       }
-      console.log('Extracted token:', token ? token.substring(0,20) + '...' : 'NONE');
-      if (!token) {
-        console.error('No access token found in response');
-        return;
-      }
+      if (!token) return;
       cfg.calToken = token;
       cfg.calTokenExpiry = Date.now() + (expiresIn - 60) * 1000;
       saveCfg();
