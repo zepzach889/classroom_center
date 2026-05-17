@@ -1500,7 +1500,29 @@ function closeSettings() {
   document.getElementById('settings-overlay').classList.remove('open');
 }
 
-// Ensures time strings are in HH:MM format for <input type="time">
+// Convert 24h "13:01" to display "1:01 PM"
+function to12h(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+// Convert display "1:01 PM" back to 24h "13:01"
+function to24h(str) {
+  if (!str) return '08:00';
+  const match = str.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return '08:00';
+  let h = parseInt(match[1]);
+  const m = parseInt(match[2]);
+  const ampm = (match[3] || '').toUpperCase();
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+// Ensures time strings are in HH:MM format for internal storage
 function padTime(t) {
   if (!t) return '08:00';
   const [h, m] = t.split(':');
@@ -1512,8 +1534,10 @@ function renderScheduleEditor(type) {
   const el = document.getElementById(type + '-editor');
   el.innerHTML = schedule.map((p, i) =>
     `<div class="period-edit-row">
-      <input type="time" value="${padTime(p.start)}" onchange="updatePeriod('${type}',${i},'start',this.value)">
-      <input type="time" value="${padTime(p.end)}" onchange="updatePeriod('${type}',${i},'end',this.value)">
+      <input type="text" value="${to12h(p.start)}" placeholder="8:19 AM"
+        onchange="updatePeriod('${type}',${i},'start',to24h(this.value))">
+      <input type="text" value="${to12h(p.end)}" placeholder="9:11 AM"
+        onchange="updatePeriod('${type}',${i},'end',to24h(this.value))">
       <input type="text" value="${p.name}" onchange="updatePeriod('${type}',${i},'name',this.value)" placeholder="Period name">
       <button class="btn btn-danger" onclick="removePeriod('${type}',${i})">✕</button>
     </div>`
@@ -1565,8 +1589,10 @@ function renderTemplatesList() {
       <div class="template-periods period-editor" id="tmpl-editor-${ti}">
         ${t.periods.map((p, pi) => `
           <div class="period-edit-row">
-            <input type="time" value="${padTime(p.start)}" onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].start=this.value">
-            <input type="time" value="${padTime(p.end)}" onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].end=this.value">
+            <input type="text" value="${to12h(p.start)}" placeholder="8:00 AM"
+              onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].start=to24h(this.value)">
+            <input type="text" value="${to12h(p.end)}" placeholder="9:00 AM"
+              onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].end=to24h(this.value)">
             <input type="text" value="${p.name}" placeholder="Period name" onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].name=this.value">
             <button class="btn btn-danger" onclick="cfg.scheduleTemplates[${ti}].periods.splice(${pi},1);renderTemplatesList()">✕</button>
           </div>`).join('')}
