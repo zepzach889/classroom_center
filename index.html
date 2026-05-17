@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -669,6 +669,30 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
 }
 
+.template-block {
+  border: 1px solid var(--pearl-dark);
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.template-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--pearl-dark);
+}
+
+.template-header input {
+  flex: 1;
+  background: var(--pearl);
+}
+
+.template-periods {
+  background: var(--pearl);
+}
+
 /* ── HEADER TITLE ── */
 #site-title {
   position: fixed;
@@ -848,8 +872,15 @@ input:focus, select:focus, textarea:focus {
     </div>
 
     <div class="settings-section">
+      <h3>Schedule Templates</h3>
+      <p style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-bottom:10px;">Create named schedules for finals, early release, assembly days, etc. Then assign them to specific dates below.</p>
+      <div id="templates-list"></div>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="addTemplate()">+ Add template</button>
+    </div>
+
+    <div class="settings-section">
       <h3>Special Day Overrides</h3>
-      <p style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-bottom:10px;">For finals, early release, assemblies, etc. Set a date and a schedule name to use.</p>
+      <p style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-bottom:10px;">Assign a schedule template to a specific date.</p>
       <div id="special-days-list"></div>
       <button class="btn btn-secondary" style="margin-top:8px" onclick="addSpecialDay()">+ Add special day</button>
     </div>
@@ -954,6 +985,7 @@ function loadCfg() {
     regular: DEFAULT_REGULAR,
     wednesday: DEFAULT_WEDNESDAY,
     specialDays: [],
+    scheduleTemplates: [],
     countdowns: DEFAULT_COUNTDOWNS,
     links: DEFAULT_LINKS,
     newsKey: '',
@@ -978,9 +1010,14 @@ function getSchedule() {
 
   const special = cfg.specialDays && cfg.specialDays.find(s => s.date === dateStr);
   if (special) {
-    const sched = special.scheduleType === 'wednesday' ? cfg.wednesday : cfg.regular;
     document.getElementById('day-type-badge').textContent = special.label || 'Special';
-    return sched;
+    // Check built-in types first, then named templates
+    if (special.scheduleType === 'regular') return cfg.regular;
+    if (special.scheduleType === 'wednesday') return cfg.wednesday;
+    // Look up named template
+    const tmpl = (cfg.scheduleTemplates || []).find(t => t.id === special.scheduleType);
+    if (tmpl) return tmpl.periods;
+    return cfg.regular; // fallback
   }
 
   const day = now.getDay();
@@ -1449,6 +1486,7 @@ function updateOAuthStatusDisplay() {
 function openSettings() {
   renderScheduleEditor('regular');
   renderScheduleEditor('wednesday');
+  renderTemplatesList();
   renderSpecialDaysEditor();
   renderCountdownEditor();
   renderLinksEditor();
@@ -1499,13 +1537,73 @@ function removePeriod(type, idx) {
   renderScheduleEditor(type);
 }
 
+function getTemplateOptions() {
+  const builtIn = [
+    '<option value="regular">Regular Day</option>',
+    '<option value="wednesday">Wednesday</option>',
+  ];
+  const custom = (cfg.scheduleTemplates || []).map(t =>
+    `<option value="${t.id}">${t.name}</option>`
+  );
+  return [...builtIn, ...custom].join('');
+}
+
+function renderTemplatesList() {
+  const el = document.getElementById('templates-list');
+  cfg.scheduleTemplates = cfg.scheduleTemplates || [];
+  if (!cfg.scheduleTemplates.length) {
+    el.innerHTML = '<div class="no-api-key" style="margin-bottom:8px">No templates yet. Add one below.</div>';
+    return;
+  }
+  el.innerHTML = cfg.scheduleTemplates.map((t, ti) => `
+    <div class="template-block">
+      <div class="template-header">
+        <input type="text" value="${t.name}" placeholder="Template name (e.g. Finals Day)"
+          onchange="cfg.scheduleTemplates[${ti}].name=this.value">
+        <button class="btn btn-danger" onclick="cfg.scheduleTemplates.splice(${ti},1);renderTemplatesList();renderSpecialDaysEditor()">Remove</button>
+      </div>
+      <div class="template-periods period-editor" id="tmpl-editor-${ti}">
+        ${t.periods.map((p, pi) => `
+          <div class="period-edit-row">
+            <input type="time" value="${padTime(p.start)}" onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].start=this.value">
+            <input type="time" value="${padTime(p.end)}" onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].end=this.value">
+            <input type="text" value="${p.name}" placeholder="Period name" onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].name=this.value">
+            <button class="btn btn-danger" onclick="cfg.scheduleTemplates[${ti}].periods.splice(${pi},1);renderTemplatesList()">✕</button>
+          </div>`).join('')}
+      </div>
+      <button class="btn btn-secondary" style="margin:6px 8px 8px"
+        onclick="cfg.scheduleTemplates[${ti}].periods.push({name:'New period',start:'08:00',end:'09:00',isBreak:false});renderTemplatesList()">
+        + Add period
+      </button>
+    </div>
+  `).join('');
+}
+
+function addTemplate() {
+  cfg.scheduleTemplates = cfg.scheduleTemplates || [];
+  cfg.scheduleTemplates.push({
+    id: 'tmpl_' + Date.now(),
+    name: 'New Template',
+    periods: [{name:'Period 1', start:'08:00', end:'09:00', isBreak:false}]
+  });
+  renderTemplatesList();
+  renderSpecialDaysEditor();
+}
+
 function renderSpecialDaysEditor() {
   const el = document.getElementById('special-days-list');
   cfg.specialDays = cfg.specialDays || [];
+  if (!cfg.specialDays.length) {
+    el.innerHTML = '<div class="no-api-key" style="margin-bottom:8px">No special days yet.</div>';
+    return;
+  }
   el.innerHTML = cfg.specialDays.map((s, i) =>
-    `<div class="special-day-row">
+    `<div class="special-day-row" style="grid-template-columns:130px 1fr 1fr auto">
       <input type="date" value="${s.date}" onchange="cfg.specialDays[${i}].date=this.value">
-      <input type="text" value="${s.label}" placeholder="e.g. Finals Day" onchange="cfg.specialDays[${i}].label=this.value">
+      <input type="text" value="${s.label||''}" placeholder="Label (e.g. Finals)" onchange="cfg.specialDays[${i}].label=this.value">
+      <select onchange="cfg.specialDays[${i}].scheduleType=this.value">
+        ${getTemplateOptions().replace(`value="${s.scheduleType}"`, `value="${s.scheduleType}" selected`)}
+      </select>
       <button class="btn btn-danger" onclick="cfg.specialDays.splice(${i},1);renderSpecialDaysEditor()">✕</button>
     </div>`
   ).join('');
