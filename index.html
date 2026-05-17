@@ -806,7 +806,7 @@ input:focus, select:focus, textarea:focus {
   <div class="panel span3" id="news-panel">
     <div class="panel-label">Intelligence dispatch — world news</div>
     <div id="news-content">
-      <div class="no-api-key" id="news-setup-msg">Add your NewsAPI key in settings to enable news.</div>
+      <div class="no-api-key" id="news-setup-msg">Add your TheNewsAPI key in settings to enable news.</div>
     </div>
   </div>
 
@@ -857,9 +857,9 @@ input:focus, select:focus, textarea:focus {
 
     <!-- News -->
     <div class="settings-section">
-      <h3>News (NewsAPI.org)</h3>
-      <label>API Key</label>
-      <input type="password" id="s-news-key" placeholder="Paste your NewsAPI key here">
+      <h3>News (TheNewsAPI.com)</h3>
+      <label>API Key — register free at thenewsapi.com</label>
+      <input type="password" id="s-news-key" placeholder="Paste your TheNewsAPI key here">
     </div>
 
     <!-- Countdowns -->
@@ -1233,19 +1233,20 @@ async function loadNews() {
   const el = document.getElementById('news-content');
   const key = cfg.newsKey;
   if (!key) {
-    el.innerHTML = '<div class="no-api-key" id="news-setup-msg">Add your NewsAPI key in settings to enable news.</div>';
+    el.innerHTML = '<div class="no-api-key">Add your TheNewsAPI key in settings to enable news.</div>';
     return;
   }
   try {
     el.innerHTML = '<div class="loading-text">Fetching dispatch...</div>';
-    const url = `https://newsapi.org/v2/top-headlines?sources=bbc-news,associated-press,reuters&pageSize=6&apiKey=${key}`;
+    // TheNewsAPI.com — free tier, works from any domain, no CORS issues
+    const url = `https://api.thenewsapi.com/v1/news/top?api_token=${key}&language=en&limit=6`;
     const r = await fetch(url);
     const d = await r.json();
-    if (d.status !== 'ok' || !d.articles.length) throw new Error('No articles');
+    if (!d.data || !d.data.length) throw new Error('No articles');
 
-    el.innerHTML = d.articles.map(a => {
-      const src = a.source.name || '';
-      const ago = getTimeAgo(a.publishedAt);
+    el.innerHTML = d.data.map(a => {
+      const src = a.source || '';
+      const ago = getTimeAgo(a.published_at);
       return `<div class="news-item">
         <div class="news-meta">${src.toUpperCase()} · ${ago}</div>
         <div class="news-headline"><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></div>
