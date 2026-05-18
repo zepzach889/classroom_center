@@ -42,14 +42,14 @@ html, body {
   background: var(--pearl);
   color: var(--text-main);
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.5;
   overflow: hidden;
 }
 
 body {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 1fr 380px;
   height: 100vh;
   padding: 12px;
   gap: 10px;
@@ -130,18 +130,26 @@ body::before {
 
 #clock-time {
   font-family: var(--font-mono);
-  font-size: 58px;
+  font-size: 64px;
   color: var(--chrome-bright);
   line-height: 1;
   letter-spacing: -1px;
   text-shadow: 0 0 30px rgba(200,196,190,0.15);
 }
 
+#clock-seconds {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  color: var(--chrome-dim);
+  letter-spacing: 0;
+  vertical-align: baseline;
+}
+
 #clock-ampm {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: 22px;
   color: var(--chrome-dim);
-  margin-left: 4px;
+  margin-left: 6px;
   vertical-align: super;
 }
 
@@ -162,7 +170,7 @@ body::before {
 
 #period-name {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--crimson-bright);
   letter-spacing: 0.05em;
   margin-bottom: 4px;
@@ -170,7 +178,7 @@ body::before {
 
 #period-detail {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--chrome-dim);
   margin-bottom: 8px;
 }
@@ -251,12 +259,13 @@ body::before {
 .board-row.past .board-name { color: #2A3A4A; }
 
 .board-row.active {
-  background: var(--board-active);
-  border-left: 2px solid var(--crimson-bright);
+  background: #220810;
+  border-left: 4px solid var(--crimson-bright);
+  box-shadow: inset 0 0 0 1px var(--crimson-dim);
 }
-.board-row.active .board-time { color: var(--crimson); }
-.board-row.active .board-name { color: #E8E4DE; font-weight: normal; }
-.board-row.active .board-indicator { background: var(--crimson-bright); box-shadow: 0 0 6px var(--crimson); }
+.board-row.active .board-time { color: var(--crimson-bright); }
+.board-row.active .board-name { color: #F0EAE0; font-weight: bold; font-size: 15px; }
+.board-row.active .board-indicator { background: var(--crimson-bright); box-shadow: 0 0 8px var(--crimson); }
 
 .board-row.break-row .board-name { color: #445566; font-style: italic; }
 .board-row.break-row.active .board-name { color: #C8C4BE; }
@@ -694,22 +703,6 @@ input:focus, select:focus, textarea:focus {
   background: var(--pearl);
 }
 
-/* ── HEADER TITLE ── */
-#site-title {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-display);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--chrome-dim);
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 999;
-}
-
 /* ── DECO CORNER ── */
 .deco-corner {
   position: fixed;
@@ -771,11 +764,130 @@ input:focus, select:focus, textarea:focus {
   font-style: italic;
   padding: 6px 0;
 }
+
+/* ══════════════════════════════════════════
+   MOBILE LAYOUT — stacked, scrollable
+   ══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  html, body {
+    overflow: auto;
+    height: auto;
+    font-size: 16px;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  /* Hide deco corners on mobile — too small to matter */
+  .deco-corner { display: none; }
+  body::before { display: none; }
+
+  /* Clock panel — full width, prominent at top */
+  #left-col {
+    order: -1;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  #clock-panel {
+    padding: 14px 16px;
+  }
+
+  #clock-time {
+    font-size: 56px;
+  }
+
+  #clock-seconds {
+    font-size: 30px;
+  }
+
+  #clock-ampm {
+    font-size: 18px;
+  }
+
+  #board-panel {
+    flex: none;
+  }
+
+  /* Content area — full width, single column, scrollable */
+  #right-area {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    gap: 8px;
+  }
+
+  /* All panels full width on mobile */
+  .panel, .panel.span2 {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  /* Links stack vertically */
+  #links-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .link-pill {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  /* Bigger touch targets for countdown and event rows */
+  .cd-item {
+    padding: 14px 0;
+  }
+
+  .event-item {
+    padding: 10px 0;
+  }
+
+  .event-title {
+    font-size: 16px;
+  }
+
+  /* Settings button bigger on mobile */
+  #settings-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    bottom: 14px;
+    right: 14px;
+  }
+
+  /* Settings modal full screen on mobile */
+  #settings-overlay {
+    padding: 8px;
+  }
+
+  #settings-modal {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  /* Period editor columns stack better on narrow screens */
+  .period-edit-row {
+    grid-template-columns: 90px 90px 1fr auto;
+    font-size: 13px;
+  }
+}
 </style>
 </head>
 <body>
-
-<div id="site-title">Classroom Command Center</div>
 
 <!-- Deco corners -->
 <div class="deco-corner dc-tl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
@@ -783,27 +895,7 @@ input:focus, select:focus, textarea:focus {
 <div class="deco-corner dc-bl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
 <div class="deco-corner dc-br"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
 
-<!-- LEFT COLUMN -->
-<div id="left-col">
-  <div class="panel" id="clock-panel">
-    <div class="panel-label">Station clock <span class="day-type-badge" id="day-type-badge">Regular</span></div>
-    <div id="clock-time">9:47<span id="clock-ampm">AM</span></div>
-    <div id="clock-date">Friday · May 16 · 2026</div>
-    <div id="period-status">
-      <div id="period-name">— No active period —</div>
-      <div id="period-detail"></div>
-      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-      <div id="period-remaining"></div>
-    </div>
-  </div>
-
-  <div class="panel" id="board-panel">
-    <div class="panel-label">Departures — today</div>
-    <div id="board-inner"></div>
-  </div>
-</div>
-
-<!-- RIGHT AREA -->
+<!-- LEFT AREA — content panels -->
 <div id="right-area">
 
   <!-- Calendar Events — full width, most important -->
@@ -849,6 +941,26 @@ input:focus, select:focus, textarea:focus {
     <div id="links-wrap"></div>
   </div>
 
+</div>
+
+<!-- RIGHT COLUMN — clock and schedule -->
+<div id="left-col">
+  <div class="panel" id="clock-panel">
+    <div class="panel-label">Station clock <span class="day-type-badge" id="day-type-badge">Regular</span></div>
+    <div id="clock-time">9:47<span id="clock-seconds">:00</span><span id="clock-ampm">AM</span></div>
+    <div id="clock-date">Friday · May 16 · 2026</div>
+    <div id="period-status">
+      <div id="period-name">— No active period —</div>
+      <div id="period-detail"></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div id="period-remaining"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="board-panel">
+    <div class="panel-label">Departures — today</div>
+    <div id="board-inner"></div>
+  </div>
 </div>
 
 <!-- Settings Button -->
@@ -1071,6 +1183,7 @@ function updateClock() {
   h = h % 12 || 12;
   const timeStr = h + ':' + String(m).padStart(2,'0');
   document.getElementById('clock-time').childNodes[0].textContent = timeStr;
+  document.getElementById('clock-seconds').textContent = ':' + String(s).padStart(2,'0');
   document.getElementById('clock-ampm').textContent = ampm;
 
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1098,20 +1211,27 @@ function updatePeriodStatus() {
   }
 
   const now = new Date();
-  const curMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-  const total = active.end - active.start;
-  const elapsed = curMin - active.start;
-  const pct = Math.min(100, (elapsed / total) * 100);
-  const remaining = active.end - Math.floor(curMin);
+  const curSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  const startSec = active.start * 60;
+  const endSec = active.end * 60;
+  const totalSec = endSec - startSec;
+  const elapsedSec = curSec - startSec;
+  const remainingSec = Math.max(0, endSec - curSec);
+  const pct = Math.min(100, (elapsedSec / totalSec) * 100);
+
+  const remMin = Math.floor(remainingSec / 60);
+  const remSec = remainingSec % 60;
 
   pName.textContent = active.period.name;
   pDetail.textContent = fmt12(active.period.start) + ' – ' + fmt12(active.period.end);
-  pFill.style.width = pct.toFixed(1) + '%';
+  pFill.style.width = pct.toFixed(2) + '%';
 
-  if (remaining <= 1) {
+  if (remainingSec <= 0) {
     pRem.textContent = 'Ending now';
+  } else if (remMin === 0) {
+    pRem.textContent = remSec + 's remaining';
   } else {
-    pRem.textContent = remaining + ' min remaining';
+    pRem.textContent = remMin + 'm ' + String(remSec).padStart(2,'0') + 's remaining';
   }
 }
 
