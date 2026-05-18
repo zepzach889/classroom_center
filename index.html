@@ -1281,7 +1281,6 @@ function renderBoard() {
 
 function renderCountdowns() {
   const now = new Date();
-  now.setHours(0,0,0,0);
   const el = document.getElementById('countdown-content');
 
   if (!cfg.countdowns || !cfg.countdowns.length) {
@@ -1289,14 +1288,47 @@ function renderCountdowns() {
     return;
   }
 
-  const items = cfg.countdowns.map(cd => {
+  // Calculate exact ms remaining for each, then sort soonest first
+  const withDiff = cfg.countdowns.map(cd => {
     const target = new Date(cd.date + 'T00:00:00');
-    const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
-    const val = diff > 0 ? diff : 0;
-    const unit = val === 1 ? 'day' : 'days';
+    const diffMs = target - now;
+    return { cd, diffMs };
+  }).sort((a, b) => a.diffMs - b.diffMs);
+
+  const items = withDiff.map(({ cd, diffMs }) => {
+    if (diffMs <= 0) {
+      return `<div class="cd-item">
+        <span class="cd-label">${cd.label}</span>
+        <span class="cd-value" style="font-size:18px;color:var(--chrome-dim)">Here!</span>
+      </div>`;
+    }
+
+    const totalSecs = Math.floor(diffMs / 1000);
+    const days  = Math.floor(totalSecs / 86400);
+    const hours = Math.floor((totalSecs % 86400) / 3600);
+    const mins  = Math.floor((totalSecs % 3600) / 60);
+    const secs  = totalSecs % 60;
+
+    let display;
+    if (days > 0) {
+      display = `<span class="cd-value">${days}<span class="cd-unit">d</span></span>`
+              + `<span class="cd-value" style="margin-left:8px">${hours}<span class="cd-unit">h</span></span>`
+              + `<span class="cd-value" style="margin-left:8px">${mins}<span class="cd-unit">m</span></span>`
+              + `<span class="cd-value" style="margin-left:8px">${String(secs).padStart(2,'0')}<span class="cd-unit">s</span></span>`;
+    } else if (hours > 0) {
+      display = `<span class="cd-value">${hours}<span class="cd-unit">h</span></span>`
+              + `<span class="cd-value" style="margin-left:8px">${mins}<span class="cd-unit">m</span></span>`
+              + `<span class="cd-value" style="margin-left:8px">${String(secs).padStart(2,'0')}<span class="cd-unit">s</span></span>`;
+    } else if (mins > 0) {
+      display = `<span class="cd-value">${mins}<span class="cd-unit">m</span></span>`
+              + `<span class="cd-value" style="margin-left:8px">${String(secs).padStart(2,'0')}<span class="cd-unit">s</span></span>`;
+    } else {
+      display = `<span class="cd-value">${String(secs).padStart(2,'0')}<span class="cd-unit">s</span></span>`;
+    }
+
     return `<div class="cd-item">
       <span class="cd-label">${cd.label}</span>
-      <span class="cd-value">${val}<span class="cd-unit">${unit}</span></span>
+      <span style="display:flex;align-items:baseline;gap:0">${display}</span>
     </div>`;
   }).join('');
 
@@ -1834,7 +1866,7 @@ loadHistory();
 
 setInterval(updateClock, 1000);
 setInterval(renderBoard, 60000);
-setInterval(renderCountdowns, 60000);
+setInterval(renderCountdowns, 1000);
 
 // Refresh news every 15 min, weather every 30 min
 setInterval(loadNews, 15 * 60 * 1000);
