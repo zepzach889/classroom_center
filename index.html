@@ -1290,7 +1290,8 @@ function renderCountdowns() {
 
   // Calculate exact ms remaining for each, then sort soonest first
   const withDiff = cfg.countdowns.map(cd => {
-    const target = new Date(cd.date + 'T00:00:00');
+    const timeStr = cd.time || '00:00';
+    const target = new Date(cd.date + 'T' + timeStr + ':00');
     const diffMs = target - now;
     return { cd, diffMs };
   }).sort((a, b) => a.diffMs - b.diffMs);
@@ -1801,9 +1802,12 @@ function renderCountdownEditor() {
   const el = document.getElementById('countdown-editor');
   cfg.countdowns = cfg.countdowns || [];
   el.innerHTML = cfg.countdowns.map((cd, i) =>
-    `<div class="countdown-edit-row">
+    `<div class="countdown-edit-row" style="grid-template-columns:1fr 130px 90px auto">
       <input type="text" value="${cd.label}" placeholder="Event name" onchange="cfg.countdowns[${i}].label=this.value">
       <input type="date" value="${cd.date}" onchange="cfg.countdowns[${i}].date=this.value">
+      <input type="text" value="${cd.time || '00:00'}" placeholder="3:20 PM"
+        onchange="cfg.countdowns[${i}].time=to24h(this.value)"
+        title="Target time (e.g. 3:20 PM). Leave 12:00 AM for end of day.">
       <button class="btn btn-danger" onclick="cfg.countdowns.splice(${i},1);renderCountdownEditor()">✕</button>
     </div>`
   ).join('');
@@ -1811,7 +1815,11 @@ function renderCountdownEditor() {
 
 function addCountdown() {
   cfg.countdowns = cfg.countdowns || [];
-  cfg.countdowns.push({label:'Event', date: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })()});
+  cfg.countdowns.push({
+    label: 'Event',
+    date: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(),
+    time: '15:20', // default to end of school day
+  });
   renderCountdownEditor();
 }
 
@@ -1874,4 +1882,5 @@ setInterval(loadWeather, 30 * 60 * 1000);
 setInterval(loadHistory, 60 * 60 * 1000);
 </script>
 </body>
+</html>
 </html>
