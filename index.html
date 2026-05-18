@@ -587,15 +587,37 @@ input:focus, select:focus, textarea:focus {
 
 .period-edit-row {
   display: grid;
-  grid-template-columns: 70px 70px 1fr auto;
+  grid-template-columns: 18px 80px 80px 1fr auto auto;
   gap: 6px;
   padding: 6px 8px;
   border-bottom: 1px solid var(--pearl-dark);
   align-items: center;
   background: var(--pearl);
+  cursor: default;
 }
 .period-edit-row:last-child { border-bottom: none; }
 .period-edit-row input { padding: 4px 6px; font-size: 10px; }
+.period-edit-row.drag-over { border-top: 2px solid var(--crimson-bright); }
+
+.drag-handle {
+  cursor: grab;
+  color: var(--chrome-dim);
+  font-size: 14px;
+  text-align: center;
+  user-select: none;
+  padding: 2px 0;
+}
+.drag-handle:active { cursor: grabbing; }
+
+.btn-insert {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--chrome-dim);
+  padding: 3px 6px;
+  font-size: 11px;
+  line-height: 1;
+}
+.btn-insert:hover { background: var(--pearl-dark); color: var(--crimson); border-color: var(--crimson-dim); }
 
 .btn {
   display: inline-flex;
@@ -1432,10 +1454,12 @@ async function loadHistory() {
     const events = d.events;
     if (!events || !events.length) throw new Error('No events');
 
-    // Pick 1 event at the midpoint of the list for variety
+    // Pick 3 events spread across the list for variety
     const len = events.length;
     const picks = [
+      events[Math.floor(len * 0.0)],
       events[Math.floor(len * 0.4)],
+      events[Math.floor(len * 0.75)],
     ].map(e => ({ year: e.year, text: e.text }));
 
     // Cache for the day
@@ -1689,16 +1713,85 @@ function padTime(t) {
 function renderScheduleEditor(type) {
   const schedule = type === 'regular' ? cfg.regular : cfg.wednesday;
   const el = document.getElementById(type + '-editor');
+
   el.innerHTML = schedule.map((p, i) =>
-    `<div class="period-edit-row">
+    `<div class="period-edit-row" draggable="true"
+        ondragstart="dragStart(event,'${type}',${i})"
+        ondragover="dragOver(event)"
+        ondragleave="dragLeave(event)"
+        ondrop="dragDrop(event,'${type}',${i})">
+      <div class="drag-handle" title="Drag to reorder">⠿</div>
       <input type="text" value="${to12h(p.start)}" placeholder="8:19 AM"
         onchange="updatePeriod('${type}',${i},'start',to24h(this.value))">
       <input type="text" value="${to12h(p.end)}" placeholder="9:11 AM"
         onchange="updatePeriod('${type}',${i},'end',to24h(this.value))">
       <input type="text" value="${p.name}" onchange="updatePeriod('${type}',${i},'name',this.value)" placeholder="Period name">
+      <button class="btn btn-insert" title="Insert row below" onclick="insertPeriod('${type}',${i})">+</button>
       <button class="btn btn-danger" onclick="removePeriod('${type}',${i})">✕</button>
     </div>`
   ).join('');
+}
+
+let dragSrcType = null;
+let dragSrcIdx = null;
+
+function dragStart(e, type, idx) {
+  dragSrcType = type;
+  dragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function dragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function dragDrop(e, type, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragSrcType !== type || dragSrcIdx === targetIdx) return;
+  const sched = type === 'regular' ? cfg.regular : cfg.wednesday;
+  const moved = sched.splice(dragSrcIdx, 1)[0];
+  const insertAt = dragSrcIdx < targetIdx ? targetIdx : targetIdx;
+  sched.splice(insertAt, 0, moved);
+  renderScheduleEditor(type);
+}
+
+let dragSrcTmplIdx = null;
+let dragSrcTmplPeriodIdx = null;
+
+function dragStartTmpl(e, tmplIdx, periodIdx) {
+  dragSrcTmplIdx = tmplIdx;
+  dragSrcTmplPeriodIdx = periodIdx;
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function dragDropTmpl(e, tmplIdx, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragSrcTmplIdx !== tmplIdx || dragSrcTmplPeriodIdx === targetIdx) return;
+  const periods = cfg.scheduleTemplates[tmplIdx].periods;
+  const moved = periods.splice(dragSrcTmplPeriodIdx, 1)[0];
+  periods.splice(targetIdx, 0, moved);
+  renderTemplatesList();
+}
+
+function insertPeriod(type, afterIdx) {
+  const sched = type === 'regular' ? cfg.regular : cfg.wednesday;
+  const ref = sched[afterIdx];
+  // Default the new row to start where the previous period ended
+  sched.splice(afterIdx + 1, 0, {
+    name: 'Passing period',
+    start: ref.end,
+    end: ref.end,
+    isBreak: true,
+  });
+  renderScheduleEditor(type);
 }
 
 function updatePeriod(type, idx, field, val) {
@@ -1745,12 +1838,19 @@ function renderTemplatesList() {
       </div>
       <div class="template-periods period-editor" id="tmpl-editor-${ti}">
         ${t.periods.map((p, pi) => `
-          <div class="period-edit-row">
+          <div class="period-edit-row" draggable="true"
+              ondragstart="dragStartTmpl(event,${ti},${pi})"
+              ondragover="dragOver(event)"
+              ondragleave="dragLeave(event)"
+              ondrop="dragDropTmpl(event,${ti},${pi})">
+            <div class="drag-handle" title="Drag to reorder">⠿</div>
             <input type="text" value="${to12h(p.start)}" placeholder="8:00 AM"
               onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].start=to24h(this.value)">
             <input type="text" value="${to12h(p.end)}" placeholder="9:00 AM"
               onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].end=to24h(this.value)">
             <input type="text" value="${p.name}" placeholder="Period name" onchange="cfg.scheduleTemplates[${ti}].periods[${pi}].name=this.value">
+            <button class="btn btn-insert" title="Insert row below"
+              onclick="cfg.scheduleTemplates[${ti}].periods.splice(${pi}+1,0,{name:'Passing period',start:cfg.scheduleTemplates[${ti}].periods[${pi}].end,end:cfg.scheduleTemplates[${ti}].periods[${pi}].end,isBreak:true});renderTemplatesList()">+</button>
             <button class="btn btn-danger" onclick="cfg.scheduleTemplates[${ti}].periods.splice(${pi},1);renderTemplatesList()">✕</button>
           </div>`).join('')}
       </div>
@@ -1882,5 +1982,4 @@ setInterval(loadWeather, 30 * 60 * 1000);
 setInterval(loadHistory, 60 * 60 * 1000);
 </script>
 </body>
-</html>
 </html>
