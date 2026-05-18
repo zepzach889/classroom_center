@@ -1006,7 +1006,10 @@ function saveCfg() {
 
 function getSchedule() {
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0];
+  // Use local date components to avoid UTC timezone offset shifting the date
+  const dateStr = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0');
 
   const special = cfg.specialDays && cfg.specialDays.find(s => s.date === dateStr);
   if (special) {
@@ -1252,7 +1255,7 @@ async function loadWeather() {
 
 async function loadHistory() {
   const el = document.getElementById('history-content');
-  const today = new Date().toISOString().split('T')[0]; // e.g. "2026-05-17"
+  const today = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(); // e.g. "2026-05-17"
 
   // Check localStorage for today's cached events
   const cached = localStorage.getItem('ccc_history');
@@ -1637,7 +1640,7 @@ function renderSpecialDaysEditor() {
 
 function addSpecialDay() {
   cfg.specialDays = cfg.specialDays || [];
-  cfg.specialDays.push({date: new Date().toISOString().split('T')[0], label:'Special Day', scheduleType:'regular'});
+  cfg.specialDays.push({date: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(), label:'Special Day', scheduleType:'regular'});
   renderSpecialDaysEditor();
 }
 
@@ -1655,7 +1658,7 @@ function renderCountdownEditor() {
 
 function addCountdown() {
   cfg.countdowns = cfg.countdowns || [];
-  cfg.countdowns.push({label:'Event', date: new Date().toISOString().split('T')[0]});
+  cfg.countdowns.push({label:'Event', date: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })()});
   renderCountdownEditor();
 }
 
