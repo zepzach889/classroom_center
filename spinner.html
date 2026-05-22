@@ -571,27 +571,25 @@ function drawWheel(angle) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Name text — scale font to wheel size and name count
+    // Name text — centered in slice, radiating outward from center
     const mid = start + slice / 2;
-    const textR = r * 0.68;
+    const textR = r * 0.58;
     const tx = cx + Math.cos(mid) * textR;
     const ty = cy + Math.sin(mid) * textR;
 
     ctx.save();
     ctx.translate(tx, ty);
-    ctx.rotate(mid + Math.PI / 2);
+    ctx.rotate(mid);
 
-    // Font size scales with wheel size and number of names
-    const baseFontSize = Math.max(13, Math.round(size / 28));
-    const fontSize = names.length > 20 ? Math.max(11, baseFontSize - 4)
-                   : names.length > 12 ? Math.max(13, baseFontSize - 2)
+    const baseFontSize = Math.max(18, Math.round(size / 18));
+    const fontSize = names.length > 20 ? Math.max(14, baseFontSize - 6)
+                   : names.length > 12 ? Math.max(16, baseFontSize - 3)
                    : baseFontSize;
 
-    // Truncate to fit segment — fewer names = more room
-    const maxChars = names.length > 20 ? 6
-                   : names.length > 12 ? 9
-                   : names.length > 6  ? 12
-                   : 18;
+    const maxChars = names.length > 20 ? 5
+                   : names.length > 12 ? 7
+                   : names.length > 6  ? 10
+                   : 14;
     const display = name.length > maxChars ? name.substring(0, maxChars - 1) + '…' : name;
 
     ctx.fillStyle = fg;
