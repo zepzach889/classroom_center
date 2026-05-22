@@ -459,6 +459,23 @@ body::before {
 }
 .btn-danger:hover { background: var(--crimson-dim); color: var(--pearl); }
 
+#topics-textarea {
+  width: 100%;
+  height: 160px;
+  background: var(--navy-mid);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  padding: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--chrome-bright);
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+}
+#topics-textarea:focus { border-color: var(--crimson-dim); }
+#topics-textarea::placeholder { color: var(--chrome-dim); opacity: 0.5; }
+
 /* Quick mode textarea */
 #quick-textarea {
   width: 100%;
@@ -549,10 +566,12 @@ body::before {
     </div>
 
     <div id="edit-panel">
-      <div class="sidebar-label" style="margin-bottom:8px">Edit topics</div>
-      <div id="topics-editor"></div>
-      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px" onclick="addTopicRow()">+ Add topic</button>
-      <button class="btn btn-primary" style="width:100%" onclick="saveTopics()">Save topics</button>
+      <div class="sidebar-label" style="margin-bottom:4px">Edit topics</div>
+      <p style="font-family:var(--font-mono);font-size:9px;color:var(--chrome-dim);line-height:1.6;margin-bottom:8px">
+        One topic per line. Add :3 to set capacity, e.g. "Roman Empire:4"
+      </p>
+      <textarea id="topics-textarea" placeholder="Roman Empire&#10;Ancient Egypt:4&#10;The Silk Road&#10;Medieval Europe:2"></textarea>
+      <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="saveTopics()">Save topics</button>
     </div>
   </div>
 
@@ -633,7 +652,7 @@ function newList() {
   saveCfg();
   renderSavedSidebar();
   renderBoard();
-  renderTopicsEditor();
+  document.getElementById('topics-textarea').value = '';
 }
 
 function deleteList(id, e) {
@@ -651,7 +670,13 @@ function selectList(id) {
   saveCfg();
   renderSavedSidebar();
   renderBoard();
-  renderTopicsEditor();
+  // Populate textarea with current topics
+  const list = cfg.lists.find(l => l.id === id);
+  if (list) {
+    document.getElementById('topics-textarea').value = list.topics
+      .map(t => t.cap !== cfg.defaultCap ? `${t.name}:${t.cap}` : t.name)
+      .join('\n');
+  }
 }
 
 function renderSavedSidebar() {
@@ -669,46 +694,22 @@ function renderSavedSidebar() {
   document.getElementById('default-cap').value = cfg.defaultCap || 3;
 }
 
-function renderTopicsEditor() {
-  const list = getActiveList();
-  const el = document.getElementById('topics-editor');
-  if (!list) { el.innerHTML = ''; return; }
-  el.innerHTML = list.topics.map((t, i) =>
-    `<div class="topic-edit-row">
-      <input type="text" value="${t.name}" placeholder="Topic name"
-        onchange="getActiveList().topics[${i}].name=this.value">
-      <input type="number" value="${t.cap}" min="1" max="99" title="Capacity"
-        onchange="getActiveList().topics[${i}].cap=parseInt(this.value)||1">
-      <button class="btn-del-topic" onclick="deleteTopic(${i})">✕</button>
-    </div>`
-  ).join('');
-}
-
-function addTopicRow() {
-  const list = getActiveList();
-  if (!list) { alert('Select or create a list first.'); return; }
-  list.topics.push({ name: '', cap: cfg.defaultCap || 3, taken: 0 });
-  renderTopicsEditor();
-}
-
-function deleteTopic(idx) {
-  const list = getActiveList();
-  if (!list) return;
-  list.topics.splice(idx, 1);
-  saveCfg();
-  renderTopicsEditor();
-  renderBoard();
-}
-
 function saveTopics() {
   const list = getActiveList();
   if (!list) return;
-  // Remove blank topics
-  list.topics = list.topics.filter(t => t.name.trim());
-  // Ensure taken doesn't exceed cap after edits
-  list.topics.forEach(t => { t.taken = Math.min(t.taken || 0, t.cap); });
+  const raw = document.getElementById('topics-textarea').value;
+  const defaultCap = cfg.defaultCap || 3;
+  // Parse lines — preserve existing taken counts by name if possible
+  const existing = {};
+  list.topics.forEach(t => { existing[t.name] = t.taken || 0; });
+  list.topics = raw.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const parts = l.split(':');
+    const name = parts[0].trim();
+    const cap = parts[1] ? parseInt(parts[1].trim()) || defaultCap : defaultCap;
+    const taken = Math.min(existing[name] || 0, cap);
+    return { name, cap, taken };
+  });
   saveCfg();
-  renderTopicsEditor();
   renderBoard();
 }
 
