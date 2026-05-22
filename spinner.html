@@ -375,7 +375,50 @@ body::before {
 }
 #save-roster-btn:hover { background: var(--crimson); }
 
-/* Deco corners */
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  html, body {
+    overflow: auto;
+    height: auto;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  #topbar {
+    flex-shrink: 0;
+  }
+
+  #wheel-area {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  #sidebar {
+    border-left: none;
+    border-top: 1px solid var(--crimson-dim);
+    height: auto;
+    overflow: visible;
+  }
+
+  #pool-section {
+    max-height: 200px;
+  }
+
+  #name-list {
+    max-height: 160px;
+  }
+
+  #spin-btn {
+    padding: 12px 36px;
+    font-size: 16px;
+  }
+}
+</style>
 .deco-corner {
   position: fixed;
   width: 20px;
@@ -500,14 +543,22 @@ function getCanvas() { return document.getElementById('wheel-canvas'); }
 
 function sizeCanvas() {
   const area = document.getElementById('wheel-area');
-  const w = area.clientWidth;
-  const h = area.clientHeight - 160; // leave room for button and result
-  const size = Math.min(w - 60, h - 20, 520);
+  const isMobile = window.innerWidth <= 768;
+  let size;
+  if (isMobile) {
+    // On mobile, use full width minus padding, capped reasonably
+    size = Math.min(window.innerWidth - 48, 380);
+  } else {
+    const w = area.clientWidth;
+    const h = area.clientHeight - 160;
+    size = Math.min(w - 60, h - 20, 520);
+  }
   const canvas = getCanvas();
   canvas.width = size;
   canvas.height = size;
-  document.getElementById('wheel-pointer').style.top = (size / 2) + 'px';
-  document.getElementById('wheel-pointer').style.transform = 'translateY(-50%)';
+  const pointer = document.getElementById('wheel-pointer');
+  pointer.style.top = (size / 2) + 'px';
+  pointer.style.transform = 'translateY(-50%)';
   return size;
 }
 
