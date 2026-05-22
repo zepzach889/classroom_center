@@ -586,10 +586,10 @@ function drawWheel(angle) {
                    : names.length > 12 ? Math.max(16, baseFontSize - 3)
                    : baseFontSize;
 
-    const maxChars = names.length > 20 ? 5
-                   : names.length > 12 ? 7
-                   : names.length > 6  ? 10
-                   : 14;
+    const maxChars = names.length > 20 ? 8
+                   : names.length > 12 ? 12
+                   : names.length > 6  ? 16
+                   : 22;
     const display = name.length > maxChars ? name.substring(0, maxChars - 1) + '…' : name;
 
     ctx.fillStyle = fg;
