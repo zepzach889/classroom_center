@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic Picker — Classroom Command Center</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pearl: #F2EEE8;
+  --pearl-dark: #E0D8CE;
+  --pearl-mid: #EBE4DB;
+  --navy: #0E1628;
+  --navy-mid: #1A2540;
+  --navy-light: #243050;
+  --crimson: #9B1B2A;
+  --crimson-bright: #C0233A;
+  --crimson-dim: #6B1020;
+  --chrome: #C8C4BE;
+  --chrome-bright: #E8E4DE;
+  --chrome-dim: #9A968F;
+  --brass: #C8A84B;
+  --text-main: #0E1628;
+  --text-mid: #3A3830;
+  --text-dim: #7A7268;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-body: 'Cormorant Garamond', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--pearl);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: 52px 1fr;
+  height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 6px;
+  border: 1px solid var(--crimson);
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.3;
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  grid-column: span 2;
+  background: var(--navy);
+  border-bottom: 2px solid var(--crimson-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  gap: 16px;
+}
+
+#topbar-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--chrome);
+  white-space: nowrap;
+}
+
+#topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: center;
+}
+
+.mode-tab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 5px 14px;
+  background: transparent;
+  color: var(--chrome-dim);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-tab.active { background: var(--crimson-dim); color: var(--chrome-bright); border-color: var(--crimson); }
+.mode-tab:hover:not(.active) { border-color: var(--crimson-dim); color: var(--chrome); }
+
+#back-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--chrome-dim);
+  text-decoration: none;
+  border: 1px solid var(--crimson-dim);
+  padding: 4px 10px;
+  border-radius: 1px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+#back-link:hover { color: var(--crimson-bright); border-color: var(--crimson-bright); }
+
+/* ── MAIN BOARD ── */
+#board {
+  overflow-y: auto;
+  padding: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--crimson-dim) var(--pearl);
+}
+
+#board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+#board-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+#board-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── TOPIC GRID ── */
+#topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.topic-card {
+  background: var(--pearl-mid);
+  border: 1px solid var(--chrome-dim);
+  border-radius: 2px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s, opacity 0.2s;
+  position: relative;
+}
+
+.topic-card.full {
+  opacity: 0.55;
+  border-color: var(--crimson-dim);
+  background: #EAE0DE;
+}
+
+.topic-card.full::after {
+  content: 'CLOSED';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--crimson);
+  border: 1px solid var(--crimson-dim);
+  padding: 2px 5px;
+  border-radius: 1px;
+}
+
+.topic-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.2;
+  padding-right: 40px;
+}
+
+.topic-card.full .topic-name {
+  color: var(--text-dim);
+}
+
+.topic-slots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slot-dots {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.slot-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--chrome-dim);
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.slot-dot.taken {
+  background: var(--crimson);
+  border-color: var(--crimson);
+}
+
+.topic-card.full .slot-dot.taken {
+  background: var(--crimson-dim);
+  border-color: var(--crimson-dim);
+}
+
+.topic-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.slot-count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  min-width: 44px;
+}
+
+.slot-count strong {
+  color: var(--crimson);
+  font-size: 16px;
+}
+
+.slot-count.full-count strong {
+  color: var(--text-dim);
+}
+
+.btn-slot {
+  width: 28px;
+  height: 28px;
+  border-radius: 1px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  font-family: var(--font-mono);
+}
+
+.btn-add {
+  background: var(--navy);
+  color: var(--chrome-bright);
+  border-color: var(--navy-light);
+}
+.btn-add:hover:not(:disabled) { background: var(--crimson); border-color: var(--crimson-bright); }
+.btn-add:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-remove {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--chrome-dim);
+}
+.btn-remove:hover:not(:disabled) { background: var(--pearl-dark); color: var(--crimson); border-color: var(--crimson-dim); }
+.btn-remove:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  background: var(--navy);
+  border-left: 1px solid var(--crimson-dim);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--navy-light);
+  flex-shrink: 0;
+}
+
+.sidebar-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--chrome-dim);
+  margin-bottom: 8px;
+}
+
+/* Saved lists */
+#list-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--crimson-dim) var(--navy);
+}
+
+.list-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 1px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.list-tab:hover { border-color: var(--navy-light); }
+.list-tab.active { background: var(--crimson-dim); border-color: var(--crimson); }
+
+.list-tab-name {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--chrome-bright);
+  flex: 1;
+}
+
+.list-tab-del {
+  font-size: 11px;
+  color: var(--chrome-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.list-tab-del:hover { color: var(--crimson-bright); }
+
+/* Settings */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.setting-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--chrome-dim);
+  letter-spacing: 0.06em;
+}
+
+.setting-input {
+  width: 60px;
+  background: var(--navy-mid);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--chrome-bright);
+  text-align: center;
+  outline: none;
+}
+.setting-input:focus { border-color: var(--crimson-dim); }
+
+/* Edit panel */
+#edit-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--crimson-dim) var(--navy);
+}
+
+#topics-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.topic-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 40px 24px;
+  gap: 4px;
+  align-items: center;
+}
+
+.topic-edit-row input {
+  background: var(--navy-mid);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  padding: 5px 7px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--chrome-bright);
+  outline: none;
+  width: 100%;
+}
+.topic-edit-row input:focus { border-color: var(--crimson-dim); }
+.topic-edit-row input[type="number"] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: center;
+  padding: 5px 4px;
+}
+
+.btn-del-topic {
+  background: transparent;
+  color: var(--crimson-dim);
+  border: 1px solid var(--crimson-dim);
+  border-radius: 1px;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.btn-del-topic:hover { background: var(--crimson-dim); color: var(--pearl); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 1px;
+  transition: all 0.15s;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--crimson-dim);
+  color: var(--chrome-bright);
+  border-color: var(--crimson);
+}
+.btn-primary:hover { background: var(--crimson); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--chrome-dim);
+  border-color: var(--navy-light);
+}
+.btn-secondary:hover { background: var(--navy-light); color: var(--chrome); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--crimson-dim);
+  border-color: var(--crimson-dim);
+}
+.btn-danger:hover { background: var(--crimson-dim); color: var(--pearl); }
+
+/* Quick mode textarea */
+#quick-textarea {
+  width: 100%;
+  height: 140px;
+  background: var(--navy-mid);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  padding: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--chrome-bright);
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+#quick-textarea:focus { border-color: var(--crimson-dim); }
+#quick-textarea::placeholder { color: var(--chrome-dim); opacity: 0.5; }
+
+.empty-state {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 40px 20px;
+  line-height: 1.8;
+}
+
+/* Deco corners */
+.deco-corner {
+  position: fixed;
+  width: 20px; height: 20px;
+  z-index: 1001;
+  pointer-events: none;
+  opacity: 0.4;
+}
+.deco-corner svg { fill: none; stroke: var(--crimson); stroke-width: 1; }
+.dc-tl { top: 6px; left: 6px; }
+.dc-tr { top: 6px; right: 6px; transform: scaleX(-1); }
+.dc-bl { bottom: 6px; left: 6px; transform: scaleY(-1); }
+.dc-br { bottom: 6px; right: 6px; transform: scale(-1); }
+</style>
+</head>
+<body>
+
+<div class="deco-corner dc-tl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-tr"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-bl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-br"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+
+<div id="topbar">
+  <div id="topbar-title">📋 Topic Picker</div>
+  <div id="topbar-controls">
+    <button class="mode-tab active" id="tab-saved" onclick="setMode('saved')">Saved Lists</button>
+    <button class="mode-tab" id="tab-quick" onclick="setMode('quick')">Quick Session</button>
+  </div>
+  <a href="index.html" id="back-link">← Command Center</a>
+</div>
+
+<!-- MAIN BOARD -->
+<div id="board">
+  <div id="board-header">
+    <div id="board-title">Select a list</div>
+    <div id="board-actions"></div>
+  </div>
+  <div id="topic-grid"></div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+
+  <!-- Saved mode -->
+  <div id="saved-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Saved lists</div>
+      <div id="list-tabs"></div>
+      <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="newList()">+ New list</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Default capacity</div>
+      <div class="setting-row">
+        <span class="setting-label">Students per topic</span>
+        <input type="number" class="setting-input" id="default-cap" min="1" max="99" value="3"
+          onchange="cfg.defaultCap=parseInt(this.value)||3;saveCfg()">
+      </div>
+    </div>
+
+    <div id="edit-panel">
+      <div class="sidebar-label" style="margin-bottom:8px">Edit topics</div>
+      <div id="topics-editor"></div>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px" onclick="addTopicRow()">+ Add topic</button>
+      <button class="btn btn-primary" style="width:100%" onclick="saveTopics()">Save topics</button>
+    </div>
+  </div>
+
+  <!-- Quick mode -->
+  <div id="quick-sidebar" style="display:none;padding:14px 16px;display:none;flex-direction:column;gap:10px;height:100%;overflow:hidden">
+    <div class="sidebar-label">Quick session</div>
+    <p style="font-family:var(--font-mono);font-size:10px;color:var(--chrome-dim);line-height:1.6">
+      One topic per line. Optionally add a capacity after a colon, e.g. "Roman Empire:4"
+    </p>
+    <textarea id="quick-textarea" placeholder="Roman Empire&#10;Ancient Egypt:4&#10;The Silk Road&#10;Medieval Europe:2"></textarea>
+    <div class="setting-row">
+      <span class="setting-label" style="color:var(--chrome-dim)">Default capacity</span>
+      <input type="number" class="setting-input" id="quick-cap" min="1" max="99" value="3">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="loadQuick()">Launch session</button>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+
+let cfg = { defaultCap: 3, lists: [], activeListId: null };
+let mode = 'saved'; // 'saved' | 'quick'
+let quickTopics = []; // [{name, cap, taken}]
+
+function loadCfg() {
+  const saved = localStorage.getItem('ccc_topics');
+  if (saved) cfg = Object.assign(cfg, JSON.parse(saved));
+}
+
+function saveCfg() {
+  localStorage.setItem('ccc_topics', JSON.stringify(cfg));
+}
+
+function getActiveList() {
+  return cfg.lists.find(l => l.id === cfg.activeListId) || null;
+}
+
+// ═══════════════════════════════════════════
+// MODE
+// ═══════════════════════════════════════════
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('tab-saved').classList.toggle('active', m === 'saved');
+  document.getElementById('tab-quick').classList.toggle('active', m === 'quick');
+  document.getElementById('saved-sidebar').style.display = m === 'saved' ? 'flex' : 'none';
+  document.getElementById('saved-sidebar').style.flexDirection = 'column';
+  document.getElementById('saved-sidebar').style.overflow = 'hidden';
+  document.getElementById('saved-sidebar').style.height = '100%';
+  document.getElementById('quick-sidebar').style.display = m === 'quick' ? 'flex' : 'none';
+
+  if (m === 'saved') {
+    renderSavedSidebar();
+    renderBoard();
+  } else {
+    // Clear board for quick mode
+    document.getElementById('board-title').textContent = 'Quick Session';
+    document.getElementById('board-actions').innerHTML = '';
+    document.getElementById('topic-grid').innerHTML =
+      '<div class="empty-state">Enter topics in the panel →<br>then click Launch Session</div>';
+  }
+}
+
+// ═══════════════════════════════════════════
+// SAVED LISTS
+// ═══════════════════════════════════════════
+
+function newList() {
+  const name = prompt('List name (e.g. "Unit 3 Topics"):');
+  if (!name) return;
+  const id = 'list_' + Date.now();
+  cfg.lists.push({ id, name, topics: [] });
+  cfg.activeListId = id;
+  saveCfg();
+  renderSavedSidebar();
+  renderBoard();
+  renderTopicsEditor();
+}
+
+function deleteList(id, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this list?')) return;
+  cfg.lists = cfg.lists.filter(l => l.id !== id);
+  if (cfg.activeListId === id) cfg.activeListId = cfg.lists[0]?.id || null;
+  saveCfg();
+  renderSavedSidebar();
+  renderBoard();
+}
+
+function selectList(id) {
+  cfg.activeListId = id;
+  saveCfg();
+  renderSavedSidebar();
+  renderBoard();
+  renderTopicsEditor();
+}
+
+function renderSavedSidebar() {
+  const tabs = document.getElementById('list-tabs');
+  if (!cfg.lists.length) {
+    tabs.innerHTML = '<div style="font-family:var(--font-mono);font-size:10px;color:var(--chrome-dim);padding:6px 0;font-style:italic">No lists yet</div>';
+    return;
+  }
+  tabs.innerHTML = cfg.lists.map(l =>
+    `<div class="list-tab ${l.id === cfg.activeListId ? 'active' : ''}" onclick="selectList('${l.id}')">
+      <span class="list-tab-name">${l.name}</span>
+      <button class="list-tab-del" onclick="deleteList('${l.id}', event)" title="Delete">✕</button>
+    </div>`
+  ).join('');
+  document.getElementById('default-cap').value = cfg.defaultCap || 3;
+}
+
+function renderTopicsEditor() {
+  const list = getActiveList();
+  const el = document.getElementById('topics-editor');
+  if (!list) { el.innerHTML = ''; return; }
+  el.innerHTML = list.topics.map((t, i) =>
+    `<div class="topic-edit-row">
+      <input type="text" value="${t.name}" placeholder="Topic name"
+        onchange="getActiveList().topics[${i}].name=this.value">
+      <input type="number" value="${t.cap}" min="1" max="99" title="Capacity"
+        onchange="getActiveList().topics[${i}].cap=parseInt(this.value)||1">
+      <button class="btn-del-topic" onclick="deleteTopic(${i})">✕</button>
+    </div>`
+  ).join('');
+}
+
+function addTopicRow() {
+  const list = getActiveList();
+  if (!list) { alert('Select or create a list first.'); return; }
+  list.topics.push({ name: '', cap: cfg.defaultCap || 3, taken: 0 });
+  renderTopicsEditor();
+}
+
+function deleteTopic(idx) {
+  const list = getActiveList();
+  if (!list) return;
+  list.topics.splice(idx, 1);
+  saveCfg();
+  renderTopicsEditor();
+  renderBoard();
+}
+
+function saveTopics() {
+  const list = getActiveList();
+  if (!list) return;
+  // Remove blank topics
+  list.topics = list.topics.filter(t => t.name.trim());
+  // Ensure taken doesn't exceed cap after edits
+  list.topics.forEach(t => { t.taken = Math.min(t.taken || 0, t.cap); });
+  saveCfg();
+  renderTopicsEditor();
+  renderBoard();
+}
+
+// ═══════════════════════════════════════════
+// QUICK SESSION
+// ═══════════════════════════════════════════
+
+function loadQuick() {
+  const raw = document.getElementById('quick-textarea').value;
+  const defaultCap = parseInt(document.getElementById('quick-cap').value) || 3;
+  quickTopics = raw.split('\n')
+    .map(l => l.trim()).filter(Boolean)
+    .map(l => {
+      const parts = l.split(':');
+      const name = parts[0].trim();
+      const cap = parts[1] ? parseInt(parts[1].trim()) || defaultCap : defaultCap;
+      return { name, cap, taken: 0 };
+    });
+  renderQuickBoard();
+}
+
+function renderQuickBoard() {
+  document.getElementById('board-title').textContent = 'Quick Session';
+  const actions = document.getElementById('board-actions');
+  actions.innerHTML = `<button class="btn btn-secondary" onclick="resetQuick()">↺ Reset all</button>`;
+  renderTopicGrid(quickTopics,
+    (i) => { quickTopics[i].taken = Math.min(quickTopics[i].taken + 1, quickTopics[i].cap); renderQuickBoard(); },
+    (i) => { quickTopics[i].taken = Math.max(quickTopics[i].taken - 1, 0); renderQuickBoard(); }
+  );
+}
+
+function resetQuick() {
+  quickTopics.forEach(t => t.taken = 0);
+  renderQuickBoard();
+}
+
+// ═══════════════════════════════════════════
+// BOARD RENDERING
+// ═══════════════════════════════════════════
+
+function renderBoard() {
+  const list = getActiveList();
+  if (!list) {
+    document.getElementById('board-title').textContent = 'Select a list';
+    document.getElementById('board-actions').innerHTML = '';
+    document.getElementById('topic-grid').innerHTML =
+      '<div class="empty-state">Create or select a list →<br>then add topics in the edit panel</div>';
+    return;
+  }
+  document.getElementById('board-title').textContent = list.name;
+  const actions = document.getElementById('board-actions');
+  actions.innerHTML = `<button class="btn btn-secondary" onclick="resetList()">↺ Reset counts</button>`;
+
+  if (!list.topics.length) {
+    document.getElementById('topic-grid').innerHTML =
+      '<div class="empty-state">No topics yet —<br>add them in the edit panel →</div>';
+    return;
+  }
+
+  renderTopicGrid(list.topics,
+    (i) => {
+      list.topics[i].taken = Math.min((list.topics[i].taken || 0) + 1, list.topics[i].cap);
+      saveCfg();
+      renderBoard();
+    },
+    (i) => {
+      list.topics[i].taken = Math.max((list.topics[i].taken || 0) - 1, 0);
+      saveCfg();
+      renderBoard();
+    }
+  );
+}
+
+function renderTopicGrid(topics, onAdd, onRemove) {
+  const grid = document.getElementById('topic-grid');
+  grid.innerHTML = topics.map((t, i) => {
+    const taken = t.taken || 0;
+    const cap = t.cap || 1;
+    const isFull = taken >= cap;
+
+    // Build slot dots
+    const dots = Array.from({ length: cap }, (_, di) =>
+      `<div class="slot-dot ${di < taken ? 'taken' : ''}"></div>`
+    ).join('');
+
+    return `<div class="topic-card ${isFull ? 'full' : ''}">
+      <div class="topic-name">${t.name}</div>
+      <div class="slot-dots">${dots}</div>
+      <div class="topic-controls">
+        <div class="slot-count ${isFull ? 'full-count' : ''}">
+          <strong>${taken}</strong> / ${cap}
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn-slot btn-remove" onclick="(${onRemove.toString()})(${i})"
+            ${taken <= 0 ? 'disabled' : ''}>−</button>
+          <button class="btn-slot btn-add" onclick="(${onAdd.toString()})(${i})"
+            ${isFull ? 'disabled' : ''}>+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function resetList() {
+  const list = getActiveList();
+  if (!list) return;
+  list.topics.forEach(t => t.taken = 0);
+  saveCfg();
+  renderBoard();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+loadCfg();
+setMode('saved');
+</script>
+</body>
+</html>
