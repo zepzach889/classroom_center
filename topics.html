@@ -158,14 +158,31 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: border-color 0.2s, opacity 0.2s;
+  transition: border-color 0.15s, background 0.15s, opacity 0.2s;
   position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.topic-card:hover:not(.full) {
+  border-color: var(--crimson);
+  background: #EDE5DB;
+}
+
+.topic-card:active:not(.full) {
+  background: #E5D8CC;
 }
 
 .topic-card.full {
   opacity: 0.55;
   border-color: var(--crimson-dim);
   background: #EAE0DE;
+  cursor: default;
+}
+
+.topic-card.full:hover {
+  border-color: var(--crimson-dim);
+  opacity: 0.65;
 }
 
 .topic-card.full::after {
@@ -249,38 +266,6 @@ body::before {
 .slot-count.full-count strong {
   color: var(--text-dim);
 }
-
-.btn-slot {
-  width: 28px;
-  height: 28px;
-  border-radius: 1px;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  font-family: var(--font-mono);
-}
-
-.btn-add {
-  background: var(--navy);
-  color: var(--chrome-bright);
-  border-color: var(--navy-light);
-}
-.btn-add:hover:not(:disabled) { background: var(--crimson); border-color: var(--crimson-bright); }
-.btn-add:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.btn-remove {
-  background: transparent;
-  color: var(--text-dim);
-  border-color: var(--chrome-dim);
-}
-.btn-remove:hover:not(:disabled) { background: var(--pearl-dark); color: var(--crimson); border-color: var(--crimson-dim); }
-.btn-remove:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── SIDEBAR ── */
 #sidebar {
@@ -747,12 +732,9 @@ function loadQuick() {
 
 function renderQuickBoard() {
   document.getElementById('board-title').textContent = 'Quick Session';
-  const actions = document.getElementById('board-actions');
-  actions.innerHTML = `<button class="btn btn-secondary" onclick="resetQuick()">↺ Reset all</button>`;
-  renderTopicGrid(quickTopics,
-    (i) => { quickTopics[i].taken = Math.min(quickTopics[i].taken + 1, quickTopics[i].cap); renderQuickBoard(); },
-    (i) => { quickTopics[i].taken = Math.max(quickTopics[i].taken - 1, 0); renderQuickBoard(); }
-  );
+  document.getElementById('board-actions').innerHTML =
+    `<button class="btn btn-secondary" onclick="resetQuick()">↺ Reset all</button>`;
+  renderTopicGrid(quickTopics, 'quick');
 }
 
 function resetQuick() {
@@ -774,8 +756,8 @@ function renderBoard() {
     return;
   }
   document.getElementById('board-title').textContent = list.name;
-  const actions = document.getElementById('board-actions');
-  actions.innerHTML = `<button class="btn btn-secondary" onclick="resetList()">↺ Reset counts</button>`;
+  document.getElementById('board-actions').innerHTML =
+    `<button class="btn btn-secondary" onclick="resetList()">↺ Reset counts</button>`;
 
   if (!list.topics.length) {
     document.getElementById('topic-grid').innerHTML =
@@ -783,48 +765,82 @@ function renderBoard() {
     return;
   }
 
-  renderTopicGrid(list.topics,
-    (i) => {
-      list.topics[i].taken = Math.min((list.topics[i].taken || 0) + 1, list.topics[i].cap);
-      saveCfg();
-      renderBoard();
-    },
-    (i) => {
-      list.topics[i].taken = Math.max((list.topics[i].taken || 0) - 1, 0);
-      saveCfg();
-      renderBoard();
-    }
-  );
+  renderTopicGrid(list.topics, 'saved');
 }
 
-function renderTopicGrid(topics, onAdd, onRemove) {
+function renderTopicGrid(topics, source) {
   const grid = document.getElementById('topic-grid');
   grid.innerHTML = topics.map((t, i) => {
     const taken = t.taken || 0;
     const cap = t.cap || 1;
     const isFull = taken >= cap;
-
-    // Build slot dots
     const dots = Array.from({ length: cap }, (_, di) =>
       `<div class="slot-dot ${di < taken ? 'taken' : ''}"></div>`
     ).join('');
 
-    return `<div class="topic-card ${isFull ? 'full' : ''}">
+    return `<div class="topic-card ${isFull ? 'full' : ''}"
+        data-idx="${i}" data-source="${source}"
+        title="${isFull ? 'Right-click to remove a spot' : 'Click to add · Right-click to remove'}">
       <div class="topic-name">${t.name}</div>
       <div class="slot-dots">${dots}</div>
       <div class="topic-controls">
         <div class="slot-count ${isFull ? 'full-count' : ''}">
           <strong>${taken}</strong> / ${cap}
         </div>
-        <div style="display:flex;gap:4px">
-          <button class="btn-slot btn-remove" onclick="(${onRemove.toString()})(${i})"
-            ${taken <= 0 ? 'disabled' : ''}>−</button>
-          <button class="btn-slot btn-add" onclick="(${onAdd.toString()})(${i})"
-            ${isFull ? 'disabled' : ''}>+</button>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--chrome-dim);letter-spacing:0.06em">
+          ${isFull ? 'CLOSED · right-click to undo' : 'click to add'}
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+// Single delegated event listener — handles all card clicks
+document.getElementById('topic-grid').addEventListener('click', e => {
+  const card = e.target.closest('.topic-card');
+  if (!card) return;
+  const idx = parseInt(card.dataset.idx);
+  const source = card.dataset.source;
+  topicAdd(idx, source);
+});
+
+document.getElementById('topic-grid').addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const card = e.target.closest('.topic-card');
+  if (!card) return;
+  const idx = parseInt(card.dataset.idx);
+  const source = card.dataset.source;
+  topicRemove(idx, source);
+});
+
+function topicAdd(idx, source) {
+  if (source === 'quick') {
+    if (quickTopics[idx].taken >= quickTopics[idx].cap) return;
+    quickTopics[idx].taken++;
+    renderQuickBoard();
+  } else {
+    const list = getActiveList();
+    if (!list) return;
+    if ((list.topics[idx].taken || 0) >= list.topics[idx].cap) return;
+    list.topics[idx].taken = (list.topics[idx].taken || 0) + 1;
+    saveCfg();
+    renderBoard();
+  }
+}
+
+function topicRemove(idx, source) {
+  if (source === 'quick') {
+    if (quickTopics[idx].taken <= 0) return;
+    quickTopics[idx].taken--;
+    renderQuickBoard();
+  } else {
+    const list = getActiveList();
+    if (!list) return;
+    if ((list.topics[idx].taken || 0) <= 0) return;
+    list.topics[idx].taken = (list.topics[idx].taken || 0) - 1;
+    saveCfg();
+    renderBoard();
+  }
 }
 
 function resetList() {
