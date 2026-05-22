@@ -571,9 +571,9 @@ function drawWheel(angle) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Name text
+    // Name text — scale font to wheel size and name count
     const mid = start + slice / 2;
-    const textR = r * 0.62;
+    const textR = r * 0.68;
     const tx = cx + Math.cos(mid) * textR;
     const ty = cy + Math.sin(mid) * textR;
 
@@ -581,12 +581,21 @@ function drawWheel(angle) {
     ctx.translate(tx, ty);
     ctx.rotate(mid + Math.PI / 2);
 
-    const maxChars = names.length > 12 ? 8 : 14;
+    // Font size scales with wheel size and number of names
+    const baseFontSize = Math.max(13, Math.round(size / 28));
+    const fontSize = names.length > 20 ? Math.max(11, baseFontSize - 4)
+                   : names.length > 12 ? Math.max(13, baseFontSize - 2)
+                   : baseFontSize;
+
+    // Truncate to fit segment — fewer names = more room
+    const maxChars = names.length > 20 ? 6
+                   : names.length > 12 ? 9
+                   : names.length > 6  ? 12
+                   : 18;
     const display = name.length > maxChars ? name.substring(0, maxChars - 1) + '…' : name;
-    const fontSize = names.length > 20 ? 10 : names.length > 12 ? 12 : 14;
 
     ctx.fillStyle = fg;
-    ctx.font = `${fontSize}px 'Share Tech Mono'`;
+    ctx.font = `bold ${fontSize}px 'Share Tech Mono'`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(display, 0, 0);
@@ -698,21 +707,11 @@ function spin() {
 }
 
 function showWinner(name, allNames) {
-  // Mark as picked
   if (!picked[currentRoster]) picked[currentRoster] = new Set();
-
-  const allInRoster = rosters[currentRoster] || [];
-  const wasAllPicked = allNames.length === allInRoster.length &&
-    allInRoster.every(n => picked[currentRoster].has(n));
-
-  // If we just reset (got full list back), clear picks first
-  if (wasAllPicked || allNames.length === allInRoster.length) {
-    // This was a full-reset spin, clear others
-  }
 
   picked[currentRoster].add(name);
 
-  // Check if that was the last one — auto reset
+  const allInRoster = rosters[currentRoster] || [];
   const remaining = allInRoster.filter(n => !picked[currentRoster].has(n));
   const isLast = remaining.length === 0;
 
@@ -726,12 +725,18 @@ function showWinner(name, allNames) {
   el.classList.add('visible');
 
   if (isLast) {
-    document.getElementById('result-sub').textContent = 'Everyone picked! Pool will reset next spin.';
+    document.getElementById('result-sub').textContent = 'Everyone picked! Pool resets next spin.';
     picked[currentRoster] = new Set();
     saveState();
   } else {
     document.getElementById('result-sub').textContent = remaining.length + ' remaining in pool';
   }
+
+  // Pause briefly then redraw wheel WITHOUT the winner — kids see it disappear
+  setTimeout(() => {
+    currentAngle = 0;
+    drawWheel(currentAngle);
+  }, 1800);
 }
 
 // ═══════════════════════════════════════════
