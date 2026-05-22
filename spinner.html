@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Name Spinner — Classroom Command Center</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pearl: #F2EEE8;
+  --pearl-dark: #E0D8CE;
+  --pearl-mid: #EBE4DB;
+  --navy: #0E1628;
+  --navy-mid: #1A2540;
+  --navy-light: #243050;
+  --crimson: #9B1B2A;
+  --crimson-bright: #C0233A;
+  --crimson-dim: #6B1020;
+  --chrome: #C8C4BE;
+  --chrome-bright: #E8E4DE;
+  --chrome-dim: #9A968F;
+  --brass: #C8A84B;
+  --brass-dim: #8B6914;
+  --text-main: #0E1628;
+  --text-mid: #3A3830;
+  --text-dim: #7A7268;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-body: 'Cormorant Garamond', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--pearl);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: 48px 1fr;
+  height: 100vh;
+  gap: 0;
+}
+
+/* ── DECORATIVE BORDER ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 6px;
+  border: 1px solid var(--crimson);
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.3;
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  grid-column: span 2;
+  background: var(--navy);
+  border-bottom: 2px solid var(--crimson-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+#topbar-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+#back-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--chrome-dim);
+  text-decoration: none;
+  border: 1px solid var(--crimson-dim);
+  padding: 4px 10px;
+  border-radius: 1px;
+  transition: all 0.15s;
+}
+#back-link:hover { color: var(--crimson-bright); border-color: var(--crimson-bright); }
+
+/* ── WHEEL AREA ── */
+#wheel-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 20px;
+  position: relative;
+}
+
+#wheel-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#wheel-canvas {
+  display: block;
+  filter: drop-shadow(0 4px 24px rgba(14,22,40,0.35));
+}
+
+/* Pointer / ticker */
+#wheel-pointer {
+  position: absolute;
+  right: -18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 16px solid transparent;
+  border-bottom: 16px solid transparent;
+  border-right: 32px solid var(--crimson-bright);
+  filter: drop-shadow(0 0 6px var(--crimson));
+}
+
+/* ── SPIN BUTTON ── */
+#spin-btn {
+  padding: 14px 48px;
+  background: var(--navy);
+  color: var(--chrome-bright);
+  border: 1px solid var(--crimson-dim);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+#spin-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--crimson);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s;
+  z-index: 0;
+}
+
+#spin-btn:hover::before { transform: scaleX(1); }
+#spin-btn span { position: relative; z-index: 1; }
+#spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+#spin-btn:disabled::before { transform: scaleX(0); }
+
+/* ── RESULT DISPLAY ── */
+#result-wrap {
+  text-align: center;
+  min-height: 60px;
+}
+
+#result-name {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--crimson-bright);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+#result-name.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#result-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  background: var(--navy);
+  border-left: 1px solid var(--crimson-dim);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--navy-light);
+}
+
+.sidebar-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--chrome-dim);
+  margin-bottom: 8px;
+}
+
+/* Roster selector */
+#roster-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.roster-tab {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--chrome-dim);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.roster-tab:hover { border-color: var(--crimson-dim); color: var(--chrome); }
+.roster-tab.active { background: var(--crimson-dim); color: var(--chrome-bright); border-color: var(--crimson); }
+
+/* Name pool */
+#pool-section {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+}
+
+#pool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+#pool-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--chrome-dim);
+}
+
+#reset-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  background: transparent;
+  color: var(--chrome-dim);
+  border: 1px solid var(--navy-light);
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+#reset-btn:hover { border-color: var(--crimson-dim); color: var(--crimson-bright); }
+
+#name-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--crimson-dim) var(--navy);
+}
+
+.name-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 1px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--chrome-bright);
+  transition: opacity 0.3s;
+  cursor: default;
+}
+
+.name-item.picked {
+  opacity: 0.28;
+  text-decoration: line-through;
+  text-decoration-color: var(--crimson-dim);
+}
+
+.name-item.winner {
+  background: var(--crimson-dim);
+  color: #fff;
+  opacity: 1;
+  text-decoration: none;
+}
+
+.name-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--chrome-dim);
+  flex-shrink: 0;
+}
+.name-item.picked .name-dot { background: var(--crimson-dim); }
+.name-item.winner .name-dot { background: var(--crimson-bright); box-shadow: 0 0 4px var(--crimson); }
+
+/* Edit roster section */
+#edit-section {
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--navy-light);
+}
+
+#edit-toggle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--chrome-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 6px;
+  transition: color 0.15s;
+}
+#edit-toggle:hover { color: var(--crimson-bright); }
+
+#edit-area {
+  display: none;
+}
+#edit-area.open { display: block; }
+
+#roster-textarea {
+  width: 100%;
+  height: 120px;
+  background: var(--navy-mid);
+  border: 1px solid var(--navy-light);
+  border-radius: 2px;
+  padding: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--chrome-bright);
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+}
+#roster-textarea:focus { border-color: var(--crimson-dim); }
+#roster-textarea::placeholder { color: var(--chrome-dim); opacity: 0.5; }
+
+#save-roster-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 6px;
+  background: var(--crimson-dim);
+  color: var(--chrome-bright);
+  border: 1px solid var(--crimson);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 1px;
+  transition: background 0.15s;
+}
+#save-roster-btn:hover { background: var(--crimson); }
+
+/* Deco corners */
+.deco-corner {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  z-index: 1001;
+  pointer-events: none;
+  opacity: 0.4;
+}
+.deco-corner svg { fill: none; stroke: var(--crimson); stroke-width: 1; }
+.dc-tl { top: 6px; left: 6px; }
+.dc-tr { top: 6px; right: 6px; transform: scaleX(-1); }
+.dc-bl { bottom: 6px; left: 6px; transform: scaleY(-1); }
+.dc-br { bottom: 6px; right: 6px; transform: scale(-1); }
+</style>
+</head>
+<body>
+
+<div class="deco-corner dc-tl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-tr"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-bl"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+<div class="deco-corner dc-br"><svg viewBox="0 0 20 20"><polyline points="20,2 2,2 2,20"/></svg></div>
+
+<div id="topbar">
+  <div id="topbar-title">🧭 Name Spinner</div>
+  <a href="index.html" id="back-link">← Command Center</a>
+</div>
+
+<div id="wheel-area">
+  <div id="wheel-wrap">
+    <canvas id="wheel-canvas"></canvas>
+    <div id="wheel-pointer"></div>
+  </div>
+  <div id="result-wrap">
+    <div id="result-name"></div>
+    <div id="result-sub"></div>
+  </div>
+  <button id="spin-btn" onclick="spin()"><span>Spin</span></button>
+</div>
+
+<div id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-label">Class roster</div>
+    <div id="roster-tabs"></div>
+  </div>
+
+  <div id="pool-section">
+    <div id="pool-header">
+      <div id="pool-count"></div>
+      <button id="reset-btn" onclick="resetPool()">↺ Reset pool</button>
+    </div>
+    <div id="name-list"></div>
+  </div>
+
+  <div id="edit-section">
+    <button id="edit-toggle" onclick="toggleEdit()">✎ Edit this roster</button>
+    <div id="edit-area">
+      <textarea id="roster-textarea" placeholder="One name per line&#10;e.g.&#10;Alice&#10;Bob&#10;Charlie"></textarea>
+      <button id="save-roster-btn" onclick="saveRoster()">Save roster</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+
+const ROSTER_KEYS = [
+  { id: 'quick',  label: 'Quick' },
+  { id: 'p2',     label: 'P2' },
+  { id: 'p3',     label: 'P3' },
+  { id: 'p4',     label: 'P4' },
+  { id: 'p5',     label: 'P5' },
+  { id: 'p7',     label: 'P7' },
+  { id: 'p8',     label: 'P8' },
+  { id: 'p9',     label: 'P9' },
+];
+
+let currentRoster = 'p2';
+let rosters = {};      // { id: [name, name, ...] }
+let picked = {};       // { id: Set of picked names }
+let spinning = false;
+let currentAngle = 0;
+
+function loadState() {
+  const saved = localStorage.getItem('ccc_spinner');
+  if (saved) {
+    const d = JSON.parse(saved);
+    rosters = d.rosters || {};
+    const savedPicked = d.picked || {};
+    picked = {};
+    for (const k in savedPicked) {
+      picked[k] = new Set(savedPicked[k]);
+    }
+  }
+  ROSTER_KEYS.forEach(r => {
+    if (!rosters[r.id]) rosters[r.id] = [];
+    if (!picked[r.id]) picked[r.id] = new Set();
+  });
+}
+
+function saveState() {
+  const pickedSerializable = {};
+  for (const k in picked) pickedSerializable[k] = [...picked[k]];
+  localStorage.setItem('ccc_spinner', JSON.stringify({ rosters, picked: pickedSerializable }));
+}
+
+// ═══════════════════════════════════════════
+// WHEEL DRAWING
+// ═══════════════════════════════════════════
+
+const COLORS = [
+  ['#0E1628', '#C8C4BE'],  // navy / chrome
+  ['#6B1020', '#F2EEE8'],  // crimson-dim / pearl
+  ['#1A2540', '#C8A84B'],  // navy-mid / brass
+  ['#9B1B2A', '#F2EEE8'],  // crimson / pearl
+  ['#243050', '#C8C4BE'],  // navy-light / chrome
+  ['#4a0e18', '#EBE4DB'],  // deep crimson / pearl-mid
+];
+
+function getCanvas() { return document.getElementById('wheel-canvas'); }
+
+function sizeCanvas() {
+  const area = document.getElementById('wheel-area');
+  const w = area.clientWidth;
+  const h = area.clientHeight - 160; // leave room for button and result
+  const size = Math.min(w - 60, h - 20, 520);
+  const canvas = getCanvas();
+  canvas.width = size;
+  canvas.height = size;
+  document.getElementById('wheel-pointer').style.top = (size / 2) + 'px';
+  document.getElementById('wheel-pointer').style.transform = 'translateY(-50%)';
+  return size;
+}
+
+function getActiveNames() {
+  const all = rosters[currentRoster] || [];
+  const p = picked[currentRoster] || new Set();
+  const remaining = all.filter(n => !p.has(n));
+  return remaining.length > 0 ? remaining : all; // auto-reset if all picked
+}
+
+function drawWheel(angle) {
+  const canvas = getCanvas();
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = cx - 8;
+  const names = getActiveNames();
+
+  ctx.clearRect(0, 0, size, size);
+
+  if (!names.length) {
+    ctx.fillStyle = '#0E1628';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#C8C4BE';
+    ctx.font = `16px 'Share Tech Mono'`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No names', cx, cy);
+    return;
+  }
+
+  const slice = (Math.PI * 2) / names.length;
+
+  // Draw segments
+  names.forEach((name, i) => {
+    const start = angle + i * slice - Math.PI / 2;
+    const end = start + slice;
+    const [bg, fg] = COLORS[i % COLORS.length];
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = bg;
+    ctx.fill();
+
+    // Segment border
+    ctx.strokeStyle = '#C8A84B';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Name text
+    const mid = start + slice / 2;
+    const textR = r * 0.62;
+    const tx = cx + Math.cos(mid) * textR;
+    const ty = cy + Math.sin(mid) * textR;
+
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(mid + Math.PI / 2);
+
+    const maxChars = names.length > 12 ? 8 : 14;
+    const display = name.length > maxChars ? name.substring(0, maxChars - 1) + '…' : name;
+    const fontSize = names.length > 20 ? 10 : names.length > 12 ? 12 : 14;
+
+    ctx.fillStyle = fg;
+    ctx.font = `${fontSize}px 'Share Tech Mono'`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(display, 0, 0);
+    ctx.restore();
+  });
+
+  // Outer brass ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = '#C8A84B';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Inner decorative ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2);
+  ctx.fillStyle = '#C8A84B';
+  ctx.fill();
+  ctx.strokeStyle = '#8B6914';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Center pin
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.07, 0, Math.PI * 2);
+  ctx.fillStyle = '#0E1628';
+  ctx.fill();
+  ctx.strokeStyle = '#C8A84B';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Spoke lines from center
+  const spokeCount = Math.min(names.length, 16);
+  ctx.save();
+  ctx.globalAlpha = 0.15;
+  for (let i = 0; i < spokeCount; i++) {
+    const a = angle + (i / spokeCount) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r * 0.18, cy + Math.sin(a) * r * 0.18);
+    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    ctx.strokeStyle = '#C8A84B';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════
+// SPIN LOGIC
+// ═══════════════════════════════════════════
+
+function spin() {
+  const names = getActiveNames();
+  if (!names.length || spinning) return;
+
+  spinning = true;
+  document.getElementById('spin-btn').disabled = true;
+  document.getElementById('result-name').classList.remove('visible');
+  document.getElementById('result-sub').textContent = '';
+
+  // Pick winner before spinning so we can land exactly on them
+  const winnerIdx = Math.floor(Math.random() * names.length);
+  const winner = names[winnerIdx];
+
+  const slice = (Math.PI * 2) / names.length;
+
+  // Calculate target angle so winner segment lands under the pointer (right side = 0 rad)
+  // Pointer is at 3 o'clock (0 rad). Segments start at -PI/2.
+  // Winner midpoint needs to land at 0 rad (3 o'clock).
+  const winnerMid = -Math.PI / 2 + winnerIdx * slice + slice / 2;
+  const targetOffset = -winnerMid;
+
+  // Add several full rotations for drama
+  const fullSpins = 6 + Math.floor(Math.random() * 4);
+  const targetAngle = targetOffset - fullSpins * Math.PI * 2;
+
+  const startAngle = currentAngle;
+  const delta = targetAngle - (startAngle % (Math.PI * 2));
+  const finalAngle = startAngle + delta - fullSpins * Math.PI * 2;
+
+  const duration = 4000 + Math.random() * 1500;
+  const startTime = performance.now();
+
+  // Easing: fast start, dramatic deceleration
+  function easeOut(t) {
+    return 1 - Math.pow(1 - t, 4);
+  }
+
+  function tick(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = easeOut(t);
+
+    currentAngle = startAngle + (finalAngle - startAngle) * eased;
+    drawWheel(currentAngle);
+
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      currentAngle = finalAngle;
+      drawWheel(currentAngle);
+      spinning = false;
+      document.getElementById('spin-btn').disabled = false;
+      showWinner(winner, names);
+    }
+  }
+
+  requestAnimationFrame(tick);
+}
+
+function showWinner(name, allNames) {
+  // Mark as picked
+  if (!picked[currentRoster]) picked[currentRoster] = new Set();
+
+  const allInRoster = rosters[currentRoster] || [];
+  const wasAllPicked = allNames.length === allInRoster.length &&
+    allInRoster.every(n => picked[currentRoster].has(n));
+
+  // If we just reset (got full list back), clear picks first
+  if (wasAllPicked || allNames.length === allInRoster.length) {
+    // This was a full-reset spin, clear others
+  }
+
+  picked[currentRoster].add(name);
+
+  // Check if that was the last one — auto reset
+  const remaining = allInRoster.filter(n => !picked[currentRoster].has(n));
+  const isLast = remaining.length === 0;
+
+  saveState();
+  renderNameList();
+  updateCount();
+
+  // Show result
+  const el = document.getElementById('result-name');
+  el.textContent = name;
+  el.classList.add('visible');
+
+  if (isLast) {
+    document.getElementById('result-sub').textContent = 'Everyone picked! Pool will reset next spin.';
+    picked[currentRoster] = new Set();
+    saveState();
+  } else {
+    document.getElementById('result-sub').textContent = remaining.length + ' remaining in pool';
+  }
+}
+
+// ═══════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════
+
+function renderTabs() {
+  const wrap = document.getElementById('roster-tabs');
+  wrap.innerHTML = ROSTER_KEYS.map(r =>
+    `<button class="roster-tab ${r.id === currentRoster ? 'active' : ''}"
+      onclick="switchRoster('${r.id}')">${r.label}</button>`
+  ).join('');
+}
+
+function switchRoster(id) {
+  currentRoster = id;
+  renderTabs();
+  renderNameList();
+  updateCount();
+  drawWheel(currentAngle);
+  document.getElementById('result-name').classList.remove('visible');
+  document.getElementById('result-sub').textContent = '';
+
+  // Update textarea
+  const ta = document.getElementById('roster-textarea');
+  ta.value = (rosters[id] || []).join('\n');
+
+  // Close edit area
+  document.getElementById('edit-area').classList.remove('open');
+}
+
+function renderNameList() {
+  const all = rosters[currentRoster] || [];
+  const p = picked[currentRoster] || new Set();
+  const el = document.getElementById('name-list');
+
+  if (!all.length) {
+    el.innerHTML = `<div style="font-family:var(--font-mono);font-size:10px;color:var(--chrome-dim);padding:8px 0;font-style:italic">No names yet — edit roster below</div>`;
+    return;
+  }
+
+  el.innerHTML = all.map(name => {
+    const isPicked = p.has(name);
+    return `<div class="name-item ${isPicked ? 'picked' : ''}">
+      <div class="name-dot"></div>
+      <span>${name}</span>
+    </div>`;
+  }).join('');
+}
+
+function updateCount() {
+  const all = rosters[currentRoster] || [];
+  const p = picked[currentRoster] || new Set();
+  const remaining = all.filter(n => !p.has(n)).length;
+  document.getElementById('pool-count').textContent =
+    remaining + ' of ' + all.length + ' remaining';
+}
+
+function resetPool() {
+  picked[currentRoster] = new Set();
+  saveState();
+  renderNameList();
+  updateCount();
+  drawWheel(currentAngle);
+  document.getElementById('result-name').classList.remove('visible');
+  document.getElementById('result-sub').textContent = '';
+}
+
+function toggleEdit() {
+  const area = document.getElementById('edit-area');
+  const open = area.classList.toggle('open');
+  document.getElementById('edit-toggle').textContent =
+    open ? '✕ Close editor' : '✎ Edit this roster';
+  if (open) {
+    document.getElementById('roster-textarea').value =
+      (rosters[currentRoster] || []).join('\n');
+  }
+}
+
+function saveRoster() {
+  const raw = document.getElementById('roster-textarea').value;
+  const names = raw.split('\n').map(n => n.trim()).filter(Boolean);
+  rosters[currentRoster] = names;
+  picked[currentRoster] = new Set();
+  saveState();
+  renderNameList();
+  updateCount();
+  drawWheel(currentAngle);
+  document.getElementById('edit-area').classList.remove('open');
+  document.getElementById('edit-toggle').textContent = '✎ Edit this roster';
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+loadState();
+sizeCanvas();
+renderTabs();
+renderNameList();
+updateCount();
+drawWheel(currentAngle);
+
+window.addEventListener('resize', () => {
+  sizeCanvas();
+  drawWheel(currentAngle);
+});
+</script>
+</body>
+</html>
