@@ -268,6 +268,29 @@ body::before {
 }
 
 /* ── SIDEBAR ── */
+body.sidebar-hidden {
+  grid-template-columns: 1fr 0px;
+}
+
+body.sidebar-hidden #sidebar {
+  display: none;
+}
+
+#sidebar-toggle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--chrome-dim);
+  background: transparent;
+  border: 1px solid var(--navy-light);
+  padding: 4px 10px;
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+#sidebar-toggle:hover { border-color: var(--crimson-dim); color: var(--chrome); }
+
 #sidebar {
   background: var(--navy);
   border-left: 1px solid var(--crimson-dim);
@@ -534,6 +557,7 @@ body::before {
     <button class="mode-tab" id="tab-quick" onclick="setMode('quick')">Quick Session</button>
   </div>
   <a href="index.html" id="back-link">← Command Center</a>
+  <button id="sidebar-toggle" onclick="toggleSidebar()">Hide panel ▸</button>
 </div>
 
 <!-- MAIN BOARD -->
@@ -850,6 +874,15 @@ function resetList() {
   list.topics.forEach(t => t.taken = 0);
   saveCfg();
   renderBoard();
+}
+
+// ═══════════════════════════════════════════
+// SIDEBAR TOGGLE
+// ═══════════════════════════════════════════
+
+function toggleSidebar() {
+  const hidden = document.body.classList.toggle('sidebar-hidden');
+  document.getElementById('sidebar-toggle').textContent = hidden ? '◂ Show panel' : 'Hide panel ▸';
 }
 
 // ═══════════════════════════════════════════
