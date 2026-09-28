@@ -10,8 +10,8 @@
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html', soon: false },
     { id: 'tracker', label: 'Table points', href: 'tracker.html', soon: false },
-    { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: true },
-    { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: true },
+    { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: false },
+    { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: false },
     { id: 'settings', label: 'Classes & settings', href: 'settings.html', soon: false }
   ];
 
@@ -70,15 +70,33 @@
         P('Period 8', '12:44', '13:09'), P('Period 9', '13:13', '13:39'), P('Homeroom', '13:43', '13:49') ] }
     ],
     weekdays: { 1: 'regular', 2: 'regular', 3: 'wednesday', 4: 'regular', 5: 'regular' },
-    special: []
+    special: [],
+    passingMinutes: 4
   };
   const toMin = t => { const [h, m] = String(t || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
   S.toMin = toMin;
+  S.fromMin = m => { m = Math.max(0, Math.min(1439, Math.round(m))); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  S.isPassing = p => !!p && (p.passing || /^passing/i.test(String(p.name || '').trim()));
+  S.sortPeriods = list => list.sort((a, b) => toMin(a.start) - toMin(b.start) || toMin(a.end) - toMin(b.end));
+  // Adds a passing period in every gap between periods, sized to the real gap.
+  S.fillPassing = periods => {
+    S.sortPeriods(periods);
+    const add = [];
+    for (let i = 0; i < periods.length - 1; i++) {
+      const a = periods[i], b = periods[i + 1];
+      const gap = toMin(b.start) - toMin(a.end);
+      if (gap > 0 && gap <= 15 && !S.isPassing(a) && !S.isPassing(b)) add.push({ name: 'Passing', start: a.end, end: b.start, isBreak: true, passing: true, classId: '' });
+    }
+    periods.push(...add);
+    S.sortPeriods(periods);
+    return add.length;
+  };
   S.fmt12 = t => { let [h, m] = String(t).split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + String(m).padStart(2, '0') + ' ' + ap; };
   S.dateKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   S.getSchedule = () => {
     const s = S.get('schedule', null) || clone(DEFAULT_SCHEDULE);
     s.schedules = s.schedules || []; s.weekdays = s.weekdays || {}; s.special = s.special || [];
+    s.passingMinutes = s.passingMinutes || 4;
     return s;
   };
   S.saveSchedule = s => S.set('schedule', s);
@@ -163,6 +181,15 @@
   };
 
   /* ---------- dialog + toast (in-page, so they work everywhere) ---------- */
+  // items: [{ value, label, group? }] — items sharing a group label become an <optgroup>
+  function selectHtml(items){
+    let html = '', open = null;
+    items.forEach(x => {
+      if ((x.group || null) !== open) { if (open) html += '</optgroup>'; open = x.group || null; if (open) html += `<optgroup label="${S.esc(open)}">`; }
+      html += `<option value="${S.esc(x.value)}">${S.esc(x.label)}</option>`;
+    });
+    return html + (open ? '</optgroup>' : '');
+  }
   S.dialog = o => new Promise(resolve => {
     const hasInput = o.input !== undefined;
     const back = document.createElement('div');
@@ -170,16 +197,17 @@
     back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" aria-labelledby="sd-title">
       <h2 id="sd-title">${S.esc(o.title)}</h2>${o.body ? `<p>${S.esc(o.body)}</p>` : ''}
       ${hasInput ? `<input class="field" id="sd-input" value="${S.esc(o.input)}" aria-label="${S.esc(o.title)}">` : ''}
+      ${o.select ? `<select class="field" id="sd-select" aria-label="${S.esc(o.title)}" style="width:100%">${selectHtml(o.select)}</select>` : ''}
       <div class="suite-dialog-actions">${o.alert ? '' : `<button class="btn" data-r="no">${S.esc(o.cancel || 'Cancel')}</button>`}
       <button class="btn ${o.danger ? 'danger-fill' : 'primary'}" data-r="yes">${S.esc(o.ok || 'OK')}</button></div></div>`;
     const prevFocus = document.activeElement;
     document.body.appendChild(back);
-    const inp = back.querySelector('#sd-input');
-    (inp || back.querySelector('[data-r="yes"]')).focus();
+    const inp = back.querySelector('#sd-input'), sel = back.querySelector('#sd-select');
+    (inp || sel || back.querySelector('[data-r="yes"]')).focus();
     if (inp) inp.select();
     const done = v => { back.remove(); document.removeEventListener('keydown', onKey); if (prevFocus && prevFocus.focus) prevFocus.focus(); resolve(v); };
-    const yes = () => done(hasInput ? (inp.value.trim() || null) : true);
-    const no = () => done(hasInput ? null : false);
+    const yes = () => done(sel ? sel.value : hasInput ? (inp.value.trim() || null) : true);
+    const no = () => done(hasInput || sel ? null : false);
     const onKey = e => { if (e.key === 'Escape') no(); else if (e.key === 'Enter' && inp && document.activeElement === inp) { e.preventDefault(); yes(); } };
     document.addEventListener('keydown', onKey);
     back.addEventListener('click', e => { if (e.target === back) return no(); const r = e.target.closest('[data-r]'); if (r) (r.dataset.r === 'yes' ? yes() : no()); });

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topic picker · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/core.js"></script>
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--rule);margin-bottom:14px}
+.tabs button{font:inherit;color:var(--ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-current="true"]{color:var(--ink);font-weight:700;border-bottom:3px double var(--land)}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.listname{font-family:var(--serif);font-size:26px;font-weight:700}
+.summary{color:var(--ink-2);font-size:15px;margin-top:2px}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.topic{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.topic.full{background:var(--wash)}
+.topic h2{font-size:20px}
+.slots{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--sea)}
+.dot.on{background:var(--sea)}
+.topic.full .dot{border-color:var(--ink-2)}.topic.full .dot.on{background:var(--ink-2)}
+.slots .n{margin-left:6px;font-size:14px;color:var(--ink-2)}
+.slots .n b{color:var(--ink)}
+.who{list-style:none;margin:0;padding:0}
+.who li{display:flex;align-items:center;gap:4px;padding:2px 0;font-size:15px}
+.who li .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.who li .anon{color:var(--ink-2);font-style:italic}
+.who .x{font-size:17px;line-height:1;padding:1px 7px}
+.topic .add{margin-top:auto}
+.fulltag{margin-top:auto;font-size:14px;color:var(--ink-2)}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-top:30px}
+.panel>h2{font-size:22px;padding-bottom:6px;border-bottom:3px double var(--land);margin-bottom:10px}
+.need{display:flex;flex-wrap:wrap;gap:6px}
+.need span{background:var(--sheet);border:1px solid var(--rule);border-radius:999px;padding:2px 10px;font-size:15px}
+.edit label{font-weight:700;display:block;margin:10px 0 4px}
+.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:28px;max-width:640px}
+.empty h2{margin-bottom:8px}
+#exit-proj{display:none}
+body.proj #suite-nav,body.proj .tabs,body.proj .topbar .bar,body.proj .panels,body.proj .add,body.proj .who .x{display:none!important}
+body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.5;z-index:5}
+body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
+body.proj .wrap{max-width:none;padding:28px 36px}
+body.proj .listname{font-size:40px}
+body.proj .summary{font-size:22px}
+body.proj .board{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+body.proj .topic h2{font-size:28px}
+body.proj .who li,body.proj .fulltag{font-size:20px}
+body.proj .dot{width:20px;height:20px}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  let TP, proj = false;
+
+  function load(){ TP = Object.assign({ lists: [], active: null, claims: {}, defaultCap: 3, cur: null }, Suite.get('topics', {})); }
+  function save(){ Suite.set('topics', TP); }
+  load();
+
+  const classes = () => Suite.classes();
+  const curClass = () => { const l = classes(); return l.find(c => c.id === TP.cur) || l[0] || null; };
+  const curList = () => TP.lists.find(l => l.id === TP.active) || TP.lists[0] || null;
+  function claimsFor(list, c){
+    const byList = TP.claims[list.id] = TP.claims[list.id] || {};
+    return byList[c.id] = byList[c.id] || [];
+  }
+  const topicsText = list => list.topics.map(t => t.cap === TP.defaultCap ? t.name : t.name + ': ' + t.cap).join('\n');
+  function parseTopics(text, old){
+    const byName = {}; (old || []).forEach(t => { byName[t.name.toLowerCase()] = t.id; });
+    return text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const m = l.match(/^(.*?)(?:\s*:\s*(\d+))?$/);
+      const name = m[1].trim() || l, cap = Math.max(1, Math.min(40, parseInt(m[2], 10) || TP.defaultCap));
+      return { id: byName[name.toLowerCase()] || Suite.uid(), name, cap };
+    });
+  }
+
+  function render(){
+    document.body.classList.toggle('proj', proj);
+    const cl = classes(), c = curClass(), list = curList();
+    if (c) TP.cur = c.id;
+    if (list) TP.active = list.id;
+
+    if (!c) {
+      $('#app').innerHTML = `<div class="empty"><h2>Add your classes first</h2><p>The topic picker keeps a separate sign-up for each class and uses your rosters to track who picked what.</p>
+        <a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+      return;
+    }
+    const tabs = `<nav class="tabs" aria-label="Class periods">${cl.map(k => `<button data-a="pickc" data-id="${esc(k.id)}"${k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>`;
+    if (!list) {
+      $('#app').innerHTML = tabs + `<div class="empty"><h2>Make a topic list</h2>
+        <p>List the project topics students can choose from, and how many students can take each one. The same list works for every class, and each class keeps its own sign-ups.</p>
+        <button class="btn primary" data-a="newlist">New topic list</button></div>`;
+      return;
+    }
+
+    const claims = claimsFor(list, c).filter(x => list.topics.some(t => t.id === x.topicId));
+    const taken = new Set(claims.map(x => x.studentId).filter(Boolean));
+    const need = c.students.filter(s => !taken.has(s.id));
+    const openSpots = list.topics.reduce((a, t) => a + Math.max(0, t.cap - claims.filter(x => x.topicId === t.id).length), 0);
+
+    const cards = list.topics.map(t => {
+      const mine = claims.filter(x => x.topicId === t.id), full = mine.length >= t.cap;
+      return `<article class="topic${full ? ' full' : ''}">
+        <h2>${esc(t.name)}</h2>
+        <div class="slots" aria-label="${mine.length} of ${t.cap} spots taken">${Array.from({ length: t.cap }, (_, i) => `<span class="dot${i < mine.length ? ' on' : ''}"></span>`).join('')}
+          <span class="n"><b>${mine.length}</b> of ${t.cap}</span></div>
+        ${mine.length ? `<ul class="who">${mine.map(x => `<li><span class="nm${x.studentId ? '' : ' anon'}">${x.studentId ? esc(x.name) : 'Spot taken'}</span>
+          <button class="btn quiet x" data-a="unclaim" data-id="${esc(x.id)}" aria-label="Remove ${esc(x.name || 'this spot')} from ${esc(t.name)}">×</button></li>`).join('')}</ul>` : ''}
+        ${full ? '<div class="fulltag">Full</div>' : `<button class="btn add" data-a="claim" data-id="${esc(t.id)}">Add a student</button>`}
+      </article>`;
+    }).join('');
+
+    $('#app').innerHTML = tabs + `
+      <div class="topbar">
+        <div><div class="listname">${esc(list.name)}${proj ? ', ' + esc(c.name) : ''}</div>
+          <div class="summary">${openSpots} open spot${openSpots === 1 ? '' : 's'}${c.students.length ? `, ${need.length} student${need.length === 1 ? '' : 's'} still choosing` : ''}</div></div>
+        <div class="bar">
+          ${TP.lists.length > 1 ? `<label class="visually-hidden" for="whichlist">Topic list</label><select id="whichlist" data-c="list">${TP.lists.map(l => `<option value="${esc(l.id)}"${l.id === list.id ? ' selected' : ''}>${esc(l.name)}</option>`).join('')}</select>` : ''}
+          <button class="btn" data-a="newlist">New list</button>
+          <button class="btn" data-a="proj">Projector view</button>
+        </div>
+      </div>
+      ${list.topics.length ? `<div class="board">${cards}</div>` : '<p class="muted">This list has no topics yet. Add them under "Edit this list" below.</p>'}
+      <div class="panels">
+        <section class="panel" aria-labelledby="h-need"><h2 id="h-need">Still choosing</h2>
+          ${!c.students.length ? `<p class="muted">Add a roster in <a href="settings.html#class=${esc(c.id)}">Classes & settings</a> to see who hasn't picked yet.</p>`
+            : need.length ? `<div class="need">${need.map(s => `<span>${esc(s.name)}</span>`).join('')}</div>` : '<p>Everyone in ' + esc(c.name) + ' has a topic.</p>'}
+        </section>
+        <section class="panel edit" aria-labelledby="h-edit"><h2 id="h-edit">Edit this list</h2>
+          <label for="lname">List name</label>
+          <input id="lname" class="field" style="width:100%" data-c="lname" value="${esc(list.name)}">
+          <label for="ltopics">Topics</label>
+          <p class="hint" style="margin-top:0">One per line. Add a number after a colon to change how many students can take it, like "Ancient Egypt: 4". Otherwise each topic takes
+            <input class="field num" type="number" min="1" max="40" data-c="cap" value="${TP.defaultCap}" aria-label="Default spots per topic"> students.</p>
+          <textarea id="ltopics" rows="9" placeholder="Ancient Egypt&#10;Mesopotamia: 4&#10;The Indus Valley">${esc(topicsText(list))}</textarea>
+          <div class="bar" style="margin-top:8px"><button class="btn primary" data-a="savetopics">Save topics</button></div>
+          <div class="bar" style="margin-top:18px">
+            <button class="btn" data-a="clearclass">Clear ${esc(c.name)}'s picks</button>
+            <button class="btn danger" data-a="dellist">Delete this list</button>
+          </div>
+        </section>
+      </div>`;
+  }
+
+  document.addEventListener('click', async e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a, id = el.dataset.id, c = curClass(), list = curList();
+    if (a === 'pickc') { TP.cur = id; save(); render(); }
+    else if (a === 'proj') { proj = !proj; render(); }
+    else if (a === 'newlist') {
+      const name = await Suite.dialog({ title: 'Name the topic list', input: 'Unit project topics', ok: 'Create list' });
+      if (!name) return;
+      const l = { id: Suite.uid(), name, topics: [] };
+      TP.lists.push(l); TP.active = l.id; save(); render();
+      const box = $('#ltopics'); if (box) box.focus();
+    }
+    else if (!c || !list) return;
+    else if (a === 'claim') {
+      const t = list.topics.find(x => x.id === id);
+      const claims = claimsFor(list, c);
+      const taken = new Set(claims.filter(x => list.topics.some(tt => tt.id === x.topicId)).map(x => x.studentId).filter(Boolean));
+      const open = c.students.filter(s => !taken.has(s.id));
+      let studentId = '';
+      if (c.students.length) {
+        const opts = c.tables.flatMap(tb => open.filter(s => s.tableId === tb.id).map(s => ({ value: s.id, label: s.name, group: tb.name })))
+          .concat(open.filter(s => !c.tables.some(tb => tb.id === s.tableId)).map(s => ({ value: s.id, label: s.name, group: 'Unassigned' })))
+          .concat([{ value: '__anon', label: 'Count a spot without a name', group: 'Other' }]);
+        const pick = await Suite.dialog({ title: 'Who is taking ' + t.name + '?', body: open.length ? '' : 'Everyone in this class already has a topic.', select: opts, ok: 'Add' });
+        if (!pick) return;
+        studentId = pick === '__anon' ? '' : pick;
+      }
+      const s = c.students.find(x => x.id === studentId);
+      const now = claimsFor(list, c);
+      if (now.filter(x => x.topicId === t.id).length >= t.cap) { Suite.toast(t.name + ' is already full'); render(); return; }
+      now.push({ id: Suite.uid(), topicId: t.id, studentId, name: s ? s.name : '' });
+      save(); render();
+    }
+    else if (a === 'unclaim') {
+      const arr = claimsFor(list, c), i = arr.findIndex(x => x.id === id);
+      if (i > -1) arr.splice(i, 1);
+      save(); render();
+    }
+    else if (a === 'savetopics') {
+      list.topics = parseTopics($('#ltopics').value, list.topics);
+      const byList = TP.claims[list.id] || {};
+      Object.keys(byList).forEach(k => { byList[k] = byList[k].filter(x => list.topics.some(t => t.id === x.topicId)); });
+      save(); render(); Suite.toast('Topics saved');
+    }
+    else if (a === 'clearclass') {
+      if (!await Suite.dialog({ title: 'Clear ' + c.name + "'s picks?", body: 'Every topic in "' + list.name + '" opens back up for this class. Other classes are not affected.', ok: 'Clear picks', danger: true })) return;
+      claimsFor(list, c).length = 0; save(); render();
+    }
+    else if (a === 'dellist') {
+      if (!await Suite.dialog({ title: 'Delete "' + list.name + '"?', body: 'The list and every class\'s picks for it will be deleted.', ok: 'Delete list', danger: true })) return;
+      TP.lists = TP.lists.filter(l => l.id !== list.id); delete TP.claims[list.id]; TP.active = null; save(); render();
+    }
+  });
+
+  document.addEventListener('change', e => {
+    const el = e.target, k = el.dataset.c, list = curList();
+    if (k === 'list') { TP.active = el.value; save(); render(); }
+    else if (k === 'lname' && list) { list.name = el.value.trim() || list.name; save(); render(); }
+    else if (k === 'cap') { TP.defaultCap = Math.max(1, Math.min(40, parseInt(el.value, 10) || 3)); save(); }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog')) { proj = false; render(); } });
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { load(); render(); } });
+
+  Suite.mountNav('topics');
+  render();
+})();
+</script>
+</body>
+</html>

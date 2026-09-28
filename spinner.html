@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Name spinner · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/core.js"></script>
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--rule);margin-bottom:14px}
+.tabs button{font:inherit;color:var(--ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-current="true"]{color:var(--ink);font-weight:700;border-bottom:3px double var(--land)}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.seg button{font:inherit;font-size:15px;border:0;background:var(--sheet);color:var(--ink);padding:7px 14px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--sea);color:var(--on-sea);font-weight:700}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
+.wheelcol{padding-top:10px}
+body.nopanel .stage{grid-template-columns:1fr}
+body.nopanel .panel{display:none}
+.wheelcol{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.wheelbox{position:relative;width:100%;display:flex;justify-content:center}
+canvas{display:block;max-width:100%}
+.pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:30px solid var(--ink);filter:drop-shadow(0 2px 0 var(--sheet))}
+.result{min-height:84px;text-align:center}
+.result .who{font-family:var(--serif);font-size:clamp(40px,6vw,68px);font-weight:800;line-height:1.05}
+.result .sub{color:var(--ink-2);font-size:18px;margin-top:4px}
+.spin{font:inherit;font-size:22px;font-weight:700;background:var(--sea);color:var(--on-sea);border:0;border-radius:8px;padding:12px 56px;cursor:pointer}
+.spin:disabled{opacity:.5;cursor:default}
+.below{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.panel h2{font-size:20px;padding-bottom:6px;border-bottom:3px double var(--land);margin-bottom:8px}
+.count{font-size:15px;color:var(--ink-2);margin-bottom:8px}
+.plist{list-style:none;margin:0;padding:0;max-height:52vh;overflow:auto}
+.plist li{display:flex;align-items:center;gap:8px;padding:5px 2px;border-top:1px solid var(--rule);font-size:16px}
+.plist li:first-child{border-top:0}
+.plist li .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.plist li.picked .nm{text-decoration:line-through;color:var(--ink-2)}
+.plist li.away{opacity:.45}
+.plist label{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--ink-2)}
+.opt{display:flex;align-items:center;gap:6px;font-size:14px;margin-top:10px}
+.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:28px;max-width:640px}
+.empty h2{margin-bottom:8px}
+@media (max-width:860px){.stage{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NEUTRAL = '#8A9491';
+  let SP, rot = 0, spinning = false, result = null, spunList = null;
+
+  function load(){ SP = Object.assign({ cur: null, mode: 'students', picked: {}, absent: {}, custom: '', removeAfter: true, hidePanel: false, last: null }, Suite.get('spinner', {})); }
+  function save(){ Suite.set('spinner', SP); }
+  load();
+
+  const classes = () => Suite.classes();
+  const curClass = () => { const l = classes(); return l.find(c => c.id === SP.cur) || l[0] || null; };
+  const poolKey = c => SP.mode === 'custom' ? 'custom' : c.id + ':' + SP.mode;
+  function absentIds(c){
+    const a = SP.absent[c.id];
+    if (!a || a.date !== Suite.dateKey(new Date())) return [];   // absences reset each day
+    return a.ids;
+  }
+  function items(c){
+    if (SP.mode === 'custom') return SP.custom.split('\n').map(s => s.trim()).filter(Boolean).map((s, i) => ({ id: 'c' + i + ':' + s, label: s, color: Suite.PALETTE[i % Suite.PALETTE.length] }));
+    if (!c) return [];
+    if (SP.mode === 'tables') return Suite.activeTables(c).map(t => ({ id: t.id, label: t.name, color: t.color }));
+    const away = new Set(absentIds(c));
+    const order = c.tables.map(t => t.id);
+    return c.students.filter(s => !away.has(s.id))
+      .slice().sort((a, b) => (order.indexOf(a.tableId) + 99) % 99 - (order.indexOf(b.tableId) + 99) % 99 || a.name.localeCompare(b.name))
+      .map(s => { const t = c.tables.find(x => x.id === s.tableId); return { id: s.id, label: s.name, sub: t ? t.name : '', color: t ? t.color : NEUTRAL }; });
+  }
+  function available(c){
+    const all = items(c), done = new Set(SP.picked[poolKey(c)] || []);
+    const left = all.filter(x => !done.has(x.id));
+    return left.length ? left : all;
+  }
+
+  /* ---------- wheel ---------- */
+  const hexRgb = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(x => x + x).join(''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
+  const mix = (h, amt) => { const c = hexRgb(h).map(v => Math.round(v + (255 - v) * amt)); return 'rgb(' + c.join(',') + ')'; };
+  const lum = rgb => { const [r, g, b] = rgb.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+  const fillOf = (x, i) => i % 2 && SP.mode !== 'tables' ? mix(x.color, .28) : x.color;
+  const textOn = f => { const rgb = f.startsWith('#') ? hexRgb(f) : f.match(/\d+/g).map(Number); return lum(rgb) > .33 ? '#1D2B2A' : '#FFFFFF'; };
+
+  function draw(list){
+    const cv = $('#wheel'); if (!cv) return;
+    const box = cv.parentElement;
+    const css = Math.max(220, Math.min(box.clientWidth, window.innerHeight - 400, SP.hidePanel ? 760 : 600));
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = css * dpr; cv.height = css * dpr; cv.style.width = css + 'px'; cv.style.height = css + 'px';
+    const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const r = css / 2 - 6, cx = css / 2, cy = css / 2;
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#1D2B2A';
+    ctx.clearRect(0, 0, css, css);
+    if (!list.length) {
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = '#C8D0CA'; ctx.fill();
+      return;
+    }
+    const slice = Math.PI * 2 / list.length;
+    const fs = Math.max(13, Math.min(30, css / (list.length > 24 ? 26 : list.length > 12 ? 20 : 15)));
+    list.forEach((x, i) => {
+      const a = rot + i * slice, f = fillOf(x, i);
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a, a + slice); ctx.closePath();
+      ctx.fillStyle = f; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = list.length > 30 ? 1 : 2; ctx.stroke();
+      const mid = ((a + slice / 2) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const left = mid > Math.PI / 2 && mid < Math.PI * 1.5;   // flip names on the left half so none read upside down
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(left ? mid + Math.PI : mid);
+      ctx.fillStyle = textOn(f); ctx.font = `700 ${fs}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+      ctx.textAlign = left ? 'left' : 'right'; ctx.textBaseline = 'middle';
+      const max = r * .68; let label = x.label;
+      while (ctx.measureText(label).width > max && label.length > 2) label = label.slice(0, -2) + '…';
+      ctx.fillText(label, left ? -(r - 16) : r - 16, 0); ctx.restore();
+    });
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.lineWidth = 4; ctx.strokeStyle = ink; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, Math.max(14, r * .09), 0, Math.PI * 2); ctx.fillStyle = ink; ctx.fill();
+  }
+
+  function spin(){
+    const c = curClass(); const list = available(c);
+    if (spinning || !list.length) return;
+    spinning = true; result = null; renderResult(); $('#spinbtn').disabled = true;
+    const idx = Math.floor(Math.random() * list.length), slice = Math.PI * 2 / list.length;
+    let target = -Math.PI / 2 - (idx + .5) * slice + (Math.random() - .5) * slice * .7;
+    while (target < rot + Math.PI * 2 * (reduce ? 1 : 6)) target += Math.PI * 2;
+    const from = rot, dur = reduce ? 500 : 4200 + Math.random() * 800, t0 = performance.now();
+    const step = now => {
+      const t = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - t, 4);
+      rot = from + (target - from) * e; draw(list);
+      if (t < 1) return requestAnimationFrame(step);
+      rot = target % (Math.PI * 2); spinning = false;
+      const win = list[idx];
+      result = win;
+      if (SP.removeAfter) {
+        const k = poolKey(c), done = SP.picked[k] = (SP.picked[k] || []).filter(id => items(c).some(x => x.id === id));
+        if (done.length >= items(c).length) done.length = 0;   // everyone was picked: start a fresh round
+        done.push(win.id);
+        SP.last = { key: k, id: win.id };
+        save();
+      }
+      spunList = list;          // keep the winner under the pointer for a moment
+      render(true);
+      setTimeout(() => { spunList = null; if (!spinning) draw(available(curClass())); }, 1500);
+    };
+    requestAnimationFrame(step);
+  }
+
+  function renderResult(){
+    const el = $('#result'); if (!el) return;
+    el.innerHTML = result ? `<div class="who">${esc(result.label)}</div>${result.sub ? `<div class="sub">${esc(result.sub)}</div>` : ''}` : '';
+  }
+
+  /* ---------- page ---------- */
+  function render(keepWheel){
+    document.body.classList.toggle('nopanel', !!SP.hidePanel);
+    const list = classes(), c = curClass();
+    if (!c && SP.mode !== 'custom') {
+      $('#app').innerHTML = `<div class="empty"><h2>Add your classes first</h2><p>The spinner uses the rosters from Classes & settings. You can also spin a custom list without any classes.</p>
+        <div class="bar"><a class="btn primary" href="settings.html">Go to Classes & settings</a><button class="btn" data-a="mode" data-m="custom">Use a custom list</button></div></div>`;
+      return;
+    }
+    if (c) SP.cur = c.id;
+    const all = items(c), done = new Set(SP.picked[poolKey(c)] || []);
+    const left = all.filter(x => !done.has(x.id)).length;
+    const away = c ? new Set(absentIds(c)) : new Set();
+
+    let panel = '';
+    if (SP.mode === 'custom') {
+      panel = `<h2>Custom list</h2><p class="hint">One item per line: names, topics, anything.</p>
+        <textarea id="custom" rows="12">${esc(SP.custom)}</textarea>`;
+    } else if (SP.mode === 'tables') {
+      panel = `<h2>Tables</h2><div class="count">${left} of ${all.length} left this round</div>
+        <ul class="plist">${all.map(x => `<li class="${done.has(x.id) ? 'picked' : ''}"><span class="swatch" style="background:${esc(x.color)}"></span><span class="nm">${esc(x.label)}</span></li>`).join('')}</ul>`;
+    } else {
+      const order = c.tables.map(t => t.id);
+      const everyone = c.students.slice().sort((a, b) => (order.indexOf(a.tableId) + 99) % 99 - (order.indexOf(b.tableId) + 99) % 99 || a.name.localeCompare(b.name));
+      panel = `<h2>Students</h2><div class="count">${left} of ${all.length} left this round${away.size ? `, ${away.size} absent` : ''}</div>
+        ${everyone.length ? `<ul class="plist">${everyone.map(s => { const t = c.tables.find(x => x.id === s.tableId);
+          return `<li class="${away.has(s.id) ? 'away' : done.has(s.id) ? 'picked' : ''}"><span class="swatch" style="background:${esc(t ? t.color : NEUTRAL)}"></span>
+            <span class="nm">${esc(s.name)}</span><label><input type="checkbox" data-c="here" data-id="${esc(s.id)}"${away.has(s.id) ? '' : ' checked'}> Here</label></li>`; }).join('')}</ul>`
+          : `<p class="muted">No students in this class yet. <a href="settings.html#class=${esc(c.id)}">Add them in settings.</a></p>`}
+        <p class="hint" style="margin-top:8px">Unchecking "Here" leaves a student off the wheel for today only.</p>`;
+    }
+    panel += `<label class="opt"><input type="checkbox" data-c="remove"${SP.removeAfter ? ' checked' : ''}> Take picks off the wheel until everyone has had a turn</label>`;
+
+    $('#app').innerHTML = `
+      ${SP.mode !== 'custom' || list.length ? `<nav class="tabs" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${c && k.id === c.id && SP.mode !== 'custom' ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
+      <div class="topbar">
+        <div class="seg" role="group" aria-label="What to spin">
+          ${[['students', 'Students'], ['tables', 'Tables'], ['custom', 'Custom list']].map(([m, l]) => `<button data-a="mode" data-m="${m}" aria-pressed="${SP.mode === m}">${l}</button>`).join('')}
+        </div>
+        <button class="btn" data-a="panel">${SP.hidePanel ? 'Show list' : 'Hide list'}</button>
+      </div>
+      <div class="stage">
+        <div class="wheelcol">
+          <div class="wheelbox"><canvas id="wheel" role="img" aria-label="Spinner wheel"></canvas><div class="pointer" aria-hidden="true"></div></div>
+          <div class="result" id="result" aria-live="polite"></div>
+          <button class="spin" id="spinbtn" data-a="spin"${available(c).length ? '' : ' disabled'}>Spin</button>
+          <div class="below">
+            <button class="btn quiet" data-a="putback"${SP.last && SP.last.key === poolKey(c) ? '' : ' disabled'}>Put last pick back</button>
+            <button class="btn quiet" data-a="reset">Start a new round</button>
+          </div>
+        </div>
+        <aside class="panel">${panel}</aside>
+      </div>`;
+    renderResult();
+    if (!spinning) draw(keepWheel && spunList ? spunList : available(c));
+  }
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-a]'); if (!el || spinning) return;
+    const a = el.dataset.a, c = curClass();
+    if (a === 'pick') { SP.cur = el.dataset.id; if (SP.mode === 'custom') SP.mode = 'students'; result = null; save(); render(); }
+    else if (a === 'mode') { SP.mode = el.dataset.m; result = null; rot = 0; save(); render(); }
+    else if (a === 'panel') { SP.hidePanel = !SP.hidePanel; save(); render(); }
+    else if (a === 'spin') spin();
+    else if (a === 'putback' && SP.last) {
+      const arr = SP.picked[SP.last.key] || [], i = arr.lastIndexOf(SP.last.id);
+      if (i > -1) arr.splice(i, 1);
+      SP.last = null; result = null; save(); render(); Suite.toast('Put back on the wheel');
+    }
+    else if (a === 'reset') { if (c || SP.mode === 'custom') { SP.picked[poolKey(c)] = []; SP.last = null; result = null; save(); render(); Suite.toast('New round started'); } }
+  });
+  document.addEventListener('change', e => {
+    const el = e.target, c = curClass();
+    if (el.id === 'custom') { SP.custom = el.value; SP.picked.custom = []; save(); render(); }
+    else if (el.dataset.c === 'remove') { SP.removeAfter = el.checked; save(); }
+    else if (el.dataset.c === 'here' && c) {
+      const today = Suite.dateKey(new Date());
+      const a = SP.absent[c.id] && SP.absent[c.id].date === today ? SP.absent[c.id] : (SP.absent[c.id] = { date: today, ids: [] });
+      const id = el.dataset.id;
+      a.ids = el.checked ? a.ids.filter(x => x !== id) : a.ids.concat(id);
+      save(); render();
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName) && !document.querySelector('.suite-dialog')) { e.preventDefault(); spin(); }
+  });
+  window.addEventListener('resize', () => { if (!spinning) draw(spunList || available(curClass())); });
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*') && !spinning) { load(); render(); } });
+
+  Suite.mountNav('spinner');
+  render();
+})();
+</script>
+</body>
+</html>

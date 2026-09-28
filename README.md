@@ -7,8 +7,8 @@ Classroom tools for daily use: a dashboard (clock and bell schedule), table poin
 ```
 index.html        Dashboard: clock and bell schedule
 tracker.html      Table points
-spinner.html      Name spinner (coming soon)
-topics.html       Topic picker (coming soon)
+spinner.html      Name spinner
+topics.html       Topic picker
 settings.html     Classes, tables, rosters, backups
 shared/style.css  Shared look
 shared/core.js    Shared data and helpers

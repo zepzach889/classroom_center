@@ -33,6 +33,7 @@
 .today li{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:7px 8px;border-left:3px solid transparent;font-size:16px;font-variant-numeric:tabular-nums}
 .today li .t{color:var(--ink-2)}
 .today li.brk .n{font-style:italic;color:var(--ink-2)}
+.today li.pass{font-size:14px;padding:2px 8px;color:var(--ink-2)}
 .today li.past{opacity:.45}
 .today li.now{background:var(--wash);border-left-color:var(--land);font-weight:700}
 .today li.now .t{color:var(--ink)}
@@ -74,6 +75,8 @@
     return `<ul class="stand">${rows.map(([t, p]) => `<li><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}<b>${p}</b></li>`).join('')}</ul>`;
   }
 
+  const nextReal = (P, i) => P.slice(i + 1).find(p => !Suite.isPassing(p)) || null;
+
   function renderDay(now){
     const day = Suite.scheduleFor(now);
     const st = Suite.periodStatus(day.periods, now);
@@ -81,20 +84,28 @@
     $('#day-label').textContent = day.label;
     $('#sched').innerHTML = P.length ? P.map((p, i) => {
       const cls = i === st.cur ? 'now' : secOf(p.end) <= st.sec ? 'past' : '';
-      return `<li class="${cls}${p.isBreak ? ' brk' : ''}"${i === st.cur ? ' aria-current="true"' : ''}><span class="t">${Suite.fmt12(p.start)}</span><span class="n">${esc(p.name)}</span></li>`;
+      return `<li class="${cls}${Suite.isPassing(p) ? ' pass' : p.isBreak ? ' brk' : ''}"${i === st.cur ? ' aria-current="true"' : ''}><span class="t">${Suite.fmt12(p.start)}</span><span class="n">${esc(p.name)}</span></li>`;
     }).join('') : `<li class="none">No bells today.</li>`;
 
     let html = '', focus = null;
     if (!P.length) html = `<h1>${esc(day.label)}</h1>`;
+    else if (st.cur >= 0 && Suite.isPassing(P[st.cur])) {
+      const p = P[st.cur], nx = nextReal(P, st.cur);
+      focus = nx;
+      html = `<h1>Passing time</h1>
+        <div class="range">${nx ? esc(nx.name) + ' starts at ' + Suite.fmt12(nx.start) : 'Until ' + Suite.fmt12(p.end)}</div>
+        <div class="progress" role="progressbar" aria-label="Passing time used" aria-valuemin="0" aria-valuemax="100"><span id="bar"></span></div>
+        <div class="left"><span id="left"></span> left</div>`;
+    }
     else if (st.cur >= 0) {
-      const p = P[st.cur], nx = P[st.cur + 1];
+      const p = P[st.cur], nx = nextReal(P, st.cur);
       focus = p;
       html = `<h1>${esc(p.name)}</h1><div class="range">${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)}</div>
         <div class="progress" role="progressbar" aria-label="Time through this period" aria-valuemin="0" aria-valuemax="100"><span id="bar"></span></div>
         <div class="left"><span id="left"></span> left</div>
         ${nx ? `<div class="nextup">Next: ${esc(nx.name)} at ${Suite.fmt12(nx.start)}</div>` : ''}`;
     } else if (st.next >= 0) {
-      const nx = P[st.next];
+      const nx = Suite.isPassing(P[st.next]) ? nextReal(P, st.next) || P[st.next] : P[st.next];
       focus = nx;
       html = `<h1>${st.next === 0 ? 'Before school' : 'Passing time'}</h1>
         <div class="range">${esc(nx.name)} starts at ${Suite.fmt12(nx.start)}</div>
