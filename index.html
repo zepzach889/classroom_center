@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/core.js"></script>
+<style>
+.dash{max-width:1180px;margin:0 auto;padding:28px 20px 60px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:40px;align-items:start}
+.clock{font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums;font-size:clamp(72px,11vw,150px);line-height:1;letter-spacing:-.02em}
+.clock .sec{font-size:.38em;color:var(--ink-2);font-weight:400;margin-left:.12em}
+.clock .ap{font-size:.28em;color:var(--ink-2);font-weight:400;margin-left:.2em}
+.date{font-family:var(--serif);font-size:24px;color:var(--ink-2);margin:8px 0 30px}
+.status h1{font-size:clamp(34px,4.5vw,52px);margin-bottom:6px}
+.status .range{font-size:19px;color:var(--ink-2)}
+.progress{height:14px;background:var(--wash);border:1px solid var(--rule);border-radius:7px;overflow:hidden;margin:16px 0 8px;max-width:640px}
+.progress span{display:block;height:100%;background:var(--land)}
+.left{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.nextup{font-size:18px;color:var(--ink-2);margin-top:6px}
+.classbox{margin-top:34px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;max-width:640px}
+.classbox h2{font-size:24px;margin-bottom:10px}
+.stand{list-style:none;margin:0 0 14px;padding:0}
+.stand li{display:flex;align-items:center;padding:5px 0;border-top:1px solid var(--rule);font-size:17px}
+.stand li:first-child{border-top:0}
+.stand li b{margin-left:auto;font-family:var(--serif);font-size:22px}
+.today{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+.today h2{font-size:22px;padding-bottom:6px;border-bottom:3px double var(--land);margin-bottom:6px}
+.today ol{list-style:none;margin:0 0 12px;padding:0}
+.today li{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:7px 8px;border-left:3px solid transparent;font-size:16px;font-variant-numeric:tabular-nums}
+.today li .t{color:var(--ink-2)}
+.today li.brk .n{font-style:italic;color:var(--ink-2)}
+.today li.past{opacity:.45}
+.today li.now{background:var(--wash);border-left-color:var(--land);font-weight:700}
+.today li.now .t{color:var(--ink)}
+.today .none{color:var(--ink-2);padding:10px 0}
+@media (max-width:860px){.dash{grid-template-columns:1fr;gap:28px}}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<main class="dash">
+  <section>
+    <div class="clock" aria-live="off"><span id="hm"></span><span class="sec" id="sec"></span><span class="ap" id="ap"></span></div>
+    <div class="date" id="date"></div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div id="classbox"></div>
+  </section>
+  <aside class="today" aria-labelledby="day-label">
+    <h2 id="day-label"></h2>
+    <ol id="sched"></ol>
+    <a class="small" href="settings.html#schedule">Edit the bell schedule</a>
+  </aside>
+</main>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  let sig = '';
+
+  const secOf = t => Suite.toMin(t) * 60;
+  const mmss = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0') : m + ':' + String(r).padStart(2, '0'); };
+
+  function standings(cls){
+    const T = Suite.get('tracker', null);
+    const act = Suite.activeTables(cls);
+    if (!T || !act.length) return '';
+    const pts = tid => (T.log || []).reduce((a, e) => a + (e.c === cls.id && e.t === tid && e.q === T.quarter && e.w === T.week ? e.d : 0), 0);
+    const rows = act.map(t => [t, pts(t.id)]).sort((a, b) => b[1] - a[1]);
+    return `<ul class="stand">${rows.map(([t, p]) => `<li><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}<b>${p}</b></li>`).join('')}</ul>`;
+  }
+
+  function renderDay(now){
+    const day = Suite.scheduleFor(now);
+    const st = Suite.periodStatus(day.periods, now);
+    const P = day.periods;
+    $('#day-label').textContent = day.label;
+    $('#sched').innerHTML = P.length ? P.map((p, i) => {
+      const cls = i === st.cur ? 'now' : secOf(p.end) <= st.sec ? 'past' : '';
+      return `<li class="${cls}${p.isBreak ? ' brk' : ''}"${i === st.cur ? ' aria-current="true"' : ''}><span class="t">${Suite.fmt12(p.start)}</span><span class="n">${esc(p.name)}</span></li>`;
+    }).join('') : `<li class="none">No bells today.</li>`;
+
+    let html = '', focus = null;
+    if (!P.length) html = `<h1>${esc(day.label)}</h1>`;
+    else if (st.cur >= 0) {
+      const p = P[st.cur], nx = P[st.cur + 1];
+      focus = p;
+      html = `<h1>${esc(p.name)}</h1><div class="range">${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)}</div>
+        <div class="progress" role="progressbar" aria-label="Time through this period" aria-valuemin="0" aria-valuemax="100"><span id="bar"></span></div>
+        <div class="left"><span id="left"></span> left</div>
+        ${nx ? `<div class="nextup">Next: ${esc(nx.name)} at ${Suite.fmt12(nx.start)}</div>` : ''}`;
+    } else if (st.next >= 0) {
+      const nx = P[st.next];
+      focus = nx;
+      html = `<h1>${st.next === 0 ? 'Before school' : 'Passing time'}</h1>
+        <div class="range">${esc(nx.name)} starts at ${Suite.fmt12(nx.start)}</div>
+        <div class="left" style="margin-top:14px">Starts in <span id="left"></span></div>`;
+    } else html = `<h1>School's out</h1><div class="range">See you tomorrow.</div>`;
+    $('#status').innerHTML = html;
+
+    const cls = Suite.classForPeriod(focus, Suite.classes());
+    $('#classbox').innerHTML = cls ? `<div class="classbox">
+        <h2>${esc(cls.name)} tables this week</h2>
+        ${standings(cls) || '<p class="muted">No points yet this week.</p>'}
+        <div class="bar"><a class="btn primary" href="tracker.html#class=${esc(cls.id)}">Open table points</a></div></div>` : '';
+    return { P, st };
+  }
+
+  let state = null;
+  function tick(){
+    const now = new Date();
+    let h = now.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    $('#hm').textContent = h + ':' + String(now.getMinutes()).padStart(2, '0');
+    $('#sec').textContent = ':' + String(now.getSeconds()).padStart(2, '0');
+    $('#ap').textContent = ap;
+    $('#date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    const day = Suite.scheduleFor(now), st = Suite.periodStatus(day.periods, now);
+    const s = Suite.dateKey(now) + '|' + st.cur + '|' + st.next + '|' + day.periods.length;
+    if (s !== sig || !state) { sig = s; state = renderDay(now); }
+    const { P } = state, sec = st.sec;
+    const left = $('#left'), bar = $('#bar');
+    if (st.cur >= 0) {
+      const a = secOf(P[st.cur].start), b = secOf(P[st.cur].end);
+      if (left) left.textContent = mmss(b - sec);
+      if (bar) bar.style.width = Math.min(100, (sec - a) / (b - a) * 100).toFixed(1) + '%';
+    } else if (st.next >= 0 && left) left.textContent = mmss(secOf(P[st.next].start) - sec);
+  }
+
+  window.addEventListener('suite:change', () => { state = null; tick(); });
+  Suite.mountNav('dashboard');
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

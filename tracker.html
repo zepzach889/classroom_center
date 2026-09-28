@@ -92,6 +92,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; }
   function save(){ Suite.set('tracker', T); }
   load();
+  { const m = location.hash.match(/class=([\w-]+)/); if (m) T.cur = m[1]; }
 
   const classes = () => Suite.classes();
   const curClass = list => list.find(c => c.id === T.cur) || list[0] || null;

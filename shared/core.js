@@ -8,7 +8,7 @@
   const DEFAULT_TABLES = [['sequoyah', 'Sequoyah', 8], ['delmarva', 'Delmarva', 6], ['franklin', 'Franklin', 6], ['jefferson', 'Jefferson', 6], ['metropotamia', 'Metropotamia', 6]];
   // Flip "soon" to false as each page is added to the site.
   const NAV = [
-    { id: 'dashboard', label: 'Dashboard', href: 'index.html', soon: true },
+    { id: 'dashboard', label: 'Dashboard', href: 'index.html', soon: false },
     { id: 'tracker', label: 'Table points', href: 'tracker.html', soon: false },
     { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: true },
     { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: true },
@@ -52,6 +52,58 @@
   });
   S.nextColor = tables => { const used = new Set(tables.map(t => t.color)); return PALETTE.find(c => !used.has(c)) || PALETTE[tables.length % PALETTE.length]; };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
+
+
+  /* ---------- bell schedule ---------- */
+  const P = (name, start, end, isBreak) => ({ name, start, end, isBreak: !!isBreak, classId: '' });
+  const DEFAULT_SCHEDULE = {
+    schedules: [
+      { id: 'regular', name: 'Regular day', periods: [
+        P('Homeroom', '08:19', '08:25'), P('Period 2', '08:29', '09:11'), P('Period 3', '09:15', '09:57'),
+        P('Break', '09:58', '10:08', true), P('Period 4', '10:11', '10:53'), P('Period 5', '10:57', '11:39'),
+        P('Lunch', '11:39', '12:11', true), P('Period 6', '12:15', '12:57'), P('Period 7', '13:01', '13:43'),
+        P('Period 8', '13:47', '14:29'), P('Period 9', '14:33', '15:15'), P('Homeroom', '15:15', '15:19') ] },
+      { id: 'wednesday', name: 'Wednesday', periods: [
+        P('Homeroom', '08:19', '09:04'), P('Period 2', '09:08', '09:33'), P('Period 3', '09:37', '10:02'),
+        P('Break', '10:02', '10:12', true), P('Period 4', '10:16', '10:41'), P('Period 5', '10:45', '11:10'),
+        P('Lunch', '11:10', '11:42', true), P('Period 6', '11:46', '12:11'), P('Period 7', '12:15', '12:40'),
+        P('Period 8', '12:44', '13:09'), P('Period 9', '13:13', '13:39'), P('Homeroom', '13:43', '13:49') ] }
+    ],
+    weekdays: { 1: 'regular', 2: 'regular', 3: 'wednesday', 4: 'regular', 5: 'regular' },
+    special: []
+  };
+  const toMin = t => { const [h, m] = String(t || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+  S.toMin = toMin;
+  S.fmt12 = t => { let [h, m] = String(t).split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + String(m).padStart(2, '0') + ' ' + ap; };
+  S.dateKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  S.getSchedule = () => {
+    const s = S.get('schedule', null) || clone(DEFAULT_SCHEDULE);
+    s.schedules = s.schedules || []; s.weekdays = s.weekdays || {}; s.special = s.special || [];
+    return s;
+  };
+  S.saveSchedule = s => S.set('schedule', s);
+  S.scheduleFor = date => {
+    const s = S.getSchedule();
+    const sp = s.special.find(x => x.date === S.dateKey(date));
+    const wd = date.getDay();
+    const id = sp ? sp.scheduleId : (wd === 0 || wd === 6 ? 'none' : (s.weekdays[wd] || 'none'));
+    if (id === 'none') return { periods: [], label: sp ? (sp.label || 'No school') : (wd === 0 || wd === 6 ? 'Weekend' : 'No school'), special: !!sp };
+    const sc = s.schedules.find(x => x.id === id) || s.schedules[0];
+    if (!sc) return { periods: [], label: 'No schedule set up', special: false };
+    return { periods: sc.periods.slice().sort((a, b) => toMin(a.start) - toMin(b.start)), label: (sp && sp.label) || sc.name, special: !!sp };
+  };
+  S.periodStatus = (periods, now) => {
+    const sec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    let cur = -1, next = -1;
+    periods.forEach((p, i) => { const a = toMin(p.start) * 60, b = toMin(p.end) * 60; if (cur < 0 && sec >= a && sec < b) cur = i; if (next < 0 && a > sec) next = i; });
+    return { cur, next, sec };
+  };
+  S.classForPeriod = (p, classes) => {
+    if (!p || p.isBreak || p.classId === 'none') return null;
+    if (p.classId) return classes.find(c => c.id === p.classId) || null;
+    const n = String(p.name).trim().toLowerCase();
+    return classes.find(c => c.name.trim().toLowerCase() === n) || null;
+  };
 
   /* ---------- backup ---------- */
   function allKeys(keepTheme) {
@@ -152,7 +204,7 @@
       const b = S.backupStatus();
       const theme = S.get('theme', 'auto');
       el.innerHTML = `<div class="nav-inner">
-        <a class="wordmark" href="${NAV[0].soon ? 'settings.html' : NAV[0].href}">Classroom Suite</a>
+        <a class="wordmark" href="index.html">Classroom Suite</a>
         <nav aria-label="Tools"><ul>${NAV.map(n => `<li>${n.soon
           ? `<span class="soon" title="Coming soon">${S.esc(n.label)}</span>`
           : `<a href="${n.href}"${n.id === current ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`}</li>`).join('')}</ul></nav>

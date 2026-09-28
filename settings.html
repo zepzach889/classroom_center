@@ -50,6 +50,17 @@ main{min-width:0;max-width:820px}
 .empty h2{margin-bottom:8px}
 .status{font-size:15px;margin-bottom:10px}
 .status .warn{color:var(--plum);font-weight:700}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:8px}
+.days label{display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--ink-2)}
+#schedule-area h3{margin:22px 0 8px}
+.stabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.stabs button{font:inherit;font-size:15px;background:var(--sheet);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:5px 12px;cursor:pointer}
+.stabs button[aria-current="true"]{border-color:var(--land);box-shadow:inset 0 -3px 0 var(--land);font-weight:700}
+.stabs button:last-child{border-style:dashed;color:var(--ink-2)}
+.grid-table.sched input[type=time]{width:128px}
+.grid-table.sched select{max-width:160px}
+.row-actions{white-space:nowrap}
+.special{margin-bottom:8px}
 .danger-zone{margin-top:22px;padding-top:14px;border-top:1px solid var(--rule)}
 @media (max-width:760px){
   .layout{grid-template-columns:1fr;gap:18px}
@@ -69,10 +80,16 @@ main{min-width:0;max-width:820px}
     <h2>Classes</h2>
     <ul id="rail-list"></ul>
     <button class="btn" data-a="addc">Add a class</button>
-    <a class="jump" href="#backup">Backup and data</a>
+    <a class="jump" href="#schedule">Bell schedule</a>
+    <a class="jump" href="#backup" style="margin-top:6px">Backup and data</a>
   </aside>
   <main>
     <div id="class-area"></div>
+    <section class="block" id="schedule" aria-labelledby="h-sched">
+      <h2 id="h-sched">Bell schedule</h2>
+      <p class="hint">The dashboard uses this to show the current period. A period whose name matches a class (like "Period 2") links to that class automatically.</p>
+      <div id="schedule-area"></div>
+    </section>
     <section class="block" id="backup" aria-labelledby="h-backup">
       <h2 id="h-backup">Backup and data</h2>
       <p class="hint">Everything here is saved only in this browser on this computer. A backup is a file you keep yourself. Saving it to your school Google Drive lets you restore it on another computer.</p>
@@ -181,6 +198,7 @@ main{min-width:0;max-width:820px}
       history.replaceState(null, '', '#class=' + c.id);
     }
     renderBackup();
+    renderSchedule();
   }
 
   function renderBackup(){
@@ -192,12 +210,102 @@ main{min-width:0;max-width:820px}
       : '<span class="warn">You haven\'t made a backup yet.</span>';
   }
 
+
+  /* ---------- bell schedule editor ---------- */
+  let editSched = null;
+  function renderSchedule(){
+    const S = Suite.getSchedule(), list = Suite.classes();
+    const cur = S.schedules.find(x => x.id === editSched) || S.schedules[0];
+    editSched = cur ? cur.id : null;
+    const days = [[1,'Monday'],[2,'Tuesday'],[3,'Wednesday'],[4,'Thursday'],[5,'Friday']];
+    const schedOpts = v => S.schedules.map(x => `<option value="${esc(x.id)}"${x.id === v ? ' selected' : ''}>${esc(x.name)}</option>`).join('') + `<option value="none"${v === 'none' ? ' selected' : ''}>No school</option>`;
+    const classOpts = v => `<option value=""${!v ? ' selected' : ''}>Match by name</option><option value="none"${v === 'none' ? ' selected' : ''}>No class</option>`
+      + list.map(k => `<option value="${esc(k.id)}"${k.id === v ? ' selected' : ''}>${esc(k.name)}</option>`).join('');
+    $('#schedule-area').innerHTML = `
+      <h3>Which schedule runs each day</h3>
+      <div class="days">${days.map(([n, l]) => `<label>${l}<select data-s="weekday" data-i="${n}">${schedOpts(S.weekdays[n] || 'none')}</select></label>`).join('')}</div>
+      <h3>Edit a schedule</h3>
+      <div class="stabs">${S.schedules.map(x => `<button data-a="spick" data-id="${esc(x.id)}"${x.id === editSched ? ' aria-current="true"' : ''}>${esc(x.name)}</button>`).join('')}<button data-a="snew">New schedule</button></div>
+      ${cur ? `<div class="bar" style="margin-bottom:8px"><label class="small" for="sname">Name</label><input id="sname" class="field" data-s="sname" value="${esc(cur.name)}">
+        <button class="btn quiet danger" data-a="sdel"${S.schedules.length < 2 ? ' disabled' : ''}>Delete schedule</button></div>
+      <div class="scroll"><table class="grid-table sched">
+        <thead><tr><th>Start</th><th>End</th><th>Name</th><th>Class</th><th>Break</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>${cur.periods.map((p, i) => `<tr>
+          <td><input type="time" class="field" data-s="start" data-i="${i}" value="${esc(p.start)}" aria-label="Start"></td>
+          <td><input type="time" class="field" data-s="end" data-i="${i}" value="${esc(p.end)}" aria-label="End"></td>
+          <td><input class="field" data-s="pname" data-i="${i}" value="${esc(p.name)}" aria-label="Period name"></td>
+          <td><select data-s="pclass" data-i="${i}" aria-label="Class"${p.isBreak ? ' disabled' : ''}>${classOpts(p.classId || '')}</select></td>
+          <td><input type="checkbox" data-s="pbreak" data-i="${i}"${p.isBreak ? ' checked' : ''} aria-label="Break"></td>
+          <td class="row-actions"><button class="btn quiet" data-a="pins" data-i="${i}" aria-label="Insert a row below" title="Insert a row below">+</button>
+            <button class="btn quiet danger" data-a="prm" data-i="${i}" aria-label="Remove row" title="Remove row">×</button></td></tr>`).join('')}</tbody>
+      </table></div>
+      <button class="btn" data-a="padd">Add a period</button>` : ''}
+      <h3>Special days</h3>
+      <p class="hint">Run a different schedule, or no school, on a specific date.</p>
+      ${S.special.map((d, i) => `<div class="bar special">
+        <input type="date" class="field" data-s="ddate" data-i="${i}" value="${esc(d.date)}" aria-label="Date">
+        <input class="field" data-s="dlabel" data-i="${i}" value="${esc(d.label || '')}" placeholder="Label, e.g. Early release" aria-label="Label">
+        <select data-s="dsched" data-i="${i}" aria-label="Schedule">${schedOpts(d.scheduleId)}</select>
+        <button class="btn quiet danger" data-a="drm" data-i="${i}" aria-label="Remove special day">×</button></div>`).join('') || '<p class="muted small">None yet.</p>'}
+      <button class="btn" data-a="dadd">Add a special day</button>`;
+  }
+  function withSched(fn){
+    const S = Suite.getSchedule();
+    const cur = S.schedules.find(x => x.id === editSched) || S.schedules[0];
+    if (fn(S, cur) === false) return;
+    Suite.saveSchedule(S); renderSchedule();
+  }
+  async function scheduleClick(a, el){
+    const i = +el.dataset.i;
+    if (a === 'spick') { editSched = el.dataset.id; renderSchedule(); }
+    else if (a === 'snew') {
+      const name = await Suite.dialog({ title: 'New schedule name', body: 'It starts as a copy of the schedule you are viewing.', input: 'Early release', ok: 'Create schedule' });
+      if (!name) return;
+      withSched((S, cur) => { const n = { id: Suite.uid(), name, periods: JSON.parse(JSON.stringify(cur ? cur.periods : [])) }; S.schedules.push(n); editSched = n.id; });
+    }
+    else if (a === 'sdel') {
+      const S = Suite.getSchedule(), cur = S.schedules.find(x => x.id === editSched);
+      if (!cur || !await Suite.dialog({ title: 'Delete ' + cur.name + '?', body: 'Days that used it will switch to ' + (S.schedules.find(x => x !== cur) || {}).name + '.', ok: 'Delete schedule', danger: true })) return;
+      withSched(S => {
+        S.schedules = S.schedules.filter(x => x.id !== cur.id);
+        const fallback = S.schedules[0].id;
+        Object.keys(S.weekdays).forEach(k => { if (S.weekdays[k] === cur.id) S.weekdays[k] = fallback; });
+        S.special.forEach(d => { if (d.scheduleId === cur.id) d.scheduleId = fallback; });
+        editSched = fallback;
+      });
+    }
+    else if (a === 'pins') withSched((S, cur) => { const ref = cur.periods[i]; cur.periods.splice(i + 1, 0, { name: 'New period', start: ref.end, end: ref.end, isBreak: false, classId: '' }); });
+    else if (a === 'prm') withSched((S, cur) => { cur.periods.splice(i, 1); });
+    else if (a === 'padd') withSched((S, cur) => { const last = cur.periods[cur.periods.length - 1]; cur.periods.push({ name: 'New period', start: last ? last.end : '08:00', end: last ? last.end : '09:00', isBreak: false, classId: '' }); });
+    else if (a === 'dadd') withSched(S => { S.special.push({ date: Suite.dateKey(new Date()), label: '', scheduleId: S.schedules[0] ? S.schedules[0].id : 'none' }); });
+    else if (a === 'drm') withSched(S => { S.special.splice(i, 1); });
+  }
+  function scheduleChange(el){
+    const k = el.dataset.s, i = +el.dataset.i;
+    withSched((S, cur) => {
+      if (k === 'weekday') S.weekdays[i] = el.value;
+      else if (k === 'sname') cur.name = el.value.trim() || cur.name;
+      else if (['start', 'end', 'pname', 'pclass', 'pbreak'].includes(k)) {
+        const p = cur.periods[i]; if (!p) return false;
+        if (k === 'start') p.start = el.value || p.start;
+        else if (k === 'end') p.end = el.value || p.end;
+        else if (k === 'pname') p.name = el.value.trim() || p.name;
+        else if (k === 'pclass') p.classId = el.value;
+        else if (k === 'pbreak') p.isBreak = el.checked;
+      }
+      else if (k === 'ddate') S.special[i].date = el.value;
+      else if (k === 'dlabel') S.special[i].label = el.value.trim();
+      else if (k === 'dsched') S.special[i].scheduleId = el.value;
+    });
+  }
+
   function save(list){ Suite.saveClasses(list); render(); }
   function withClass(fn){ const list = Suite.classes(); const c = current(list); if (c) { fn(c, list); save(list); } }
 
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, id = el.dataset.id;
+    if (['spick','snew','sdel','pins','prm','padd','dadd','drm'].includes(a)) return scheduleClick(a, el);
     const list = Suite.classes(), c = current(list);
 
     if (a === 'pick') { sel = id; render(); }
@@ -258,6 +366,7 @@ main{min-width:0;max-width:820px}
 
   document.addEventListener('change', async e => {
     const el = e.target, c = el.dataset.c, id = el.dataset.id;
+    if (el.dataset.s) return scheduleChange(el);
     if (el.id === 'import-file') {
       const file = el.files[0]; el.value = '';
       if (!file) return;
