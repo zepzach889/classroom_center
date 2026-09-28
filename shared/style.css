@@ -1,0 +1,69 @@
+/* Classroom Suite — shared styles
+   Palette taken from old topographic atlases: sea blue, contour ochre, plum route ink. */
+:root{
+  --paper:#EDF0EC; --sheet:#F8F9F6; --ink:#1D2B2A; --ink-2:#4F5E5B; --rule:#C8D0CA;
+  --sea:#2E6378; --on-sea:#FFFFFF; --land:#B7924A; --plum:#7A2E4F; --wash:#E2E8E3;
+  --serif:"Alegreya",Georgia,"Times New Roman",serif;
+  --sans:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131A1A; --sheet:#1B2423; --ink:#E4EBE7; --ink-2:#A4B2AD; --rule:#34423F;
+    --sea:#74AEC2; --on-sea:#0E1616; --land:#D3B26C; --plum:#D680A2; --wash:#222D2C; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131A1A; --sheet:#1B2423; --ink:#E4EBE7; --ink-2:#A4B2AD; --rule:#34423F;
+  --sea:#74AEC2; --on-sea:#0E1616; --land:#D3B26C; --plum:#D680A2; --wash:#222D2C; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:16px}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--sans)}
+h1,h2,h3{font-family:var(--serif);font-weight:700;line-height:1.2;margin:0}
+h1{font-size:34px}h2{font-size:26px}h3{font-size:19px}
+p{margin:0 0 12px;max-width:68ch}
+a{color:var(--sea)}
+:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
+.visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.muted{color:var(--ink-2)}.small{font-size:14px}
+.hint{color:var(--ink-2);font-size:14px;margin:4px 0 12px}
+
+/* nav */
+#suite-nav{background:var(--sheet);border-bottom:1px solid var(--rule)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:10px 20px 0;display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.wordmark{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--ink);text-decoration:none;padding-bottom:10px}
+.nav-inner nav{flex:1;min-width:0}
+.nav-inner ul{list-style:none;margin:0;padding:0;display:flex;gap:4px;overflow-x:auto}
+.nav-inner li a,.nav-inner li .soon{display:block;padding:8px 12px 9px;white-space:nowrap;text-decoration:none;color:var(--ink-2);border-bottom:3px solid transparent}
+.nav-inner li a:hover{color:var(--ink)}
+.nav-inner li a[aria-current="page"]{color:var(--ink);border-bottom:3px double var(--land)}
+.nav-inner li .soon{opacity:.5;cursor:default}
+.theme-btn{margin-bottom:8px}
+.backup-banner{background:var(--wash);border-top:1px solid var(--rule);padding:8px 20px;text-align:center;font-size:14px}
+
+/* controls */
+.btn{font:inherit;font-size:15px;color:var(--ink);background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn:hover{border-color:var(--ink-2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--sea);color:var(--on-sea);border-color:var(--sea)}
+.btn.quiet{background:transparent;border-color:transparent}
+.btn.quiet:hover{border-color:var(--rule)}
+.btn.danger{color:var(--plum)}
+.btn.danger-fill{background:var(--plum);border-color:var(--plum);color:var(--sheet)}
+.field,select,textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:6px 9px}
+textarea{width:100%;resize:vertical}
+.field.num{width:72px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.swatch{display:inline-block;width:14px;height:14px;border:1px solid var(--ink);vertical-align:-1px;margin-right:8px}
+.scroll{overflow-x:auto}
+
+/* dialog + toast */
+.suite-dialog-back{position:fixed;inset:0;background:rgba(10,18,18,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+.suite-dialog{background:var(--sheet);color:var(--ink);border:1px solid var(--rule);border-radius:10px;padding:20px;width:100%;max-width:420px}
+.suite-dialog h2{font-size:21px;margin-bottom:8px}
+.suite-dialog p{color:var(--ink-2);font-size:15px}
+.suite-dialog .field{width:100%;margin-top:4px}
+.suite-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.suite-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:6px;font-size:15px;z-index:110}
+@media (prefers-reduced-motion:no-preference){.suite-toast{animation:toast .2s ease-out}@keyframes toast{from{opacity:0;transform:translate(-50%,6px)}}}
