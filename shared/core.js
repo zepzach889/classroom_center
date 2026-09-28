@@ -17,7 +17,8 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const S = { PALETTE, NAV };
+  const VERSION = '2026-09-28b';   // bump with every build; pages check they match
+  const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   S.esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -248,7 +249,7 @@
           ? `<span class="soon" title="Coming soon">${S.esc(n.label)}</span>`
           : `<a href="${n.href}"${n.id === current ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`}</li>`).join('')}</ul></nav>
         <button class="btn quiet theme-btn" data-suite="theme">Theme: ${theme[0].toUpperCase() + theme.slice(1)}</button>
-      </div>${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
+      </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw();
     window.addEventListener('suite:change', draw);
