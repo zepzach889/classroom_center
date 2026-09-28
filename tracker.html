@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-28b">
-<script src="shared/core.js?v=2026-09-28b"></script>
-<script>window.PAGE_VERSION = '2026-09-28b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-28c">
+<script src="shared/core.js?v=2026-09-28c"></script>
+<script>window.PAGE_VERSION = '2026-09-28c';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--rule);margin-bottom:14px}
@@ -20,6 +20,8 @@
 .when{font-family:var(--serif);font-size:22px;font-weight:700}
 .double-on{background:var(--land);border-color:var(--land);color:#1D2B2A;font-weight:700}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.cards.room-grid{grid-template-columns:repeat(var(--cols),minmax(0,1fr))}
+@media (max-width:760px){.cards.room-grid{grid-template-columns:1fr}.cards.room-grid .card{grid-row:auto!important;grid-column:auto!important}}
 .card{background:var(--sheet);border:1px solid var(--rule);border-top:8px solid var(--tc);border-radius:8px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px}
 .card.lead{box-shadow:0 0 0 2px var(--land)}
 .card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -67,6 +69,7 @@ body.proj .card{padding:18px 20px;border-top-width:14px}
 body.proj .card h2{font-size:34px}
 body.proj .score{font-size:84px}
 body.proj .sub,body.proj .cap{font-size:20px}
+body.proj .cap.nocap{display:none}
 body.proj .tag{font-size:18px;padding:2px 12px}
 </style>
 </head>
@@ -130,6 +133,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const goals = T.goals[c.id] || {};
     const caps = T.captains[c.id] || {};
 
+    const lay = Suite.roomLayout(c.tables);
     const cards = act.map(t => {
       const members = c.students.filter(s => s.tableId === t.id);
       const g = goals[gkey(t.id)] || {};
@@ -141,10 +145,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
         g.met ? '<span class="tag">Goal met</span>' : ''
       ].join('');
       const capName = caps[t.id] || '';
-      return `<article class="card${isLead ? ' lead' : ''}" style="--tc:${esc(t.color)}">
+      return `<article class="card${isLead ? ' lead' : ''}" style="--tc:${esc(t.color)};grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col}">
         <div class="card-top"><h2>${esc(t.name)}</h2><div class="score" aria-label="${pts(c.id, t.id, T.week)} points this week">${pts(c.id, t.id, T.week)}</div></div>
         <div class="sub">This quarter: ${pts(c.id, t.id)}</div>
-        <div class="cap"><span>Captain${proj && capName ? ': ' + esc(capName) : ''}</span>
+        <div class="cap${capName ? '' : ' nocap'}"><span>Captain${proj && capName ? ': ' + esc(capName) : ''}</span>
           <select data-c="cap" data-id="${esc(t.id)}" aria-label="${esc(t.name)} captain">
             <option value="">None</option>
             ${members.map(s => `<option${s.name === capName ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}
@@ -185,7 +189,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
         </div>
       </div>
       <div class="proj-title">${esc(c.name)}<span>Quarter ${T.quarter}, week ${T.week}${T.double ? ' · Double points!' : ''}</span></div>
-      ${act.length ? `<div class="cards">${cards}</div>`
+      ${act.length ? `<div class="cards room-grid" style="--cols:${lay.cols}">${cards}</div>`
         : `<div class="empty"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
 
       <div class="panels">

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-28b">
-<script src="shared/core.js?v=2026-09-28b"></script>
-<script>window.PAGE_VERSION = '2026-09-28b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-28c">
+<script src="shared/core.js?v=2026-09-28c"></script>
+<script>window.PAGE_VERSION = '2026-09-28c';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .rail h2{font-size:19px;margin-bottom:8px}
@@ -44,7 +44,9 @@ main{min-width:0;max-width:820px}
 .group ul{list-style:none;margin:0;padding:0}
 .group li{display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid var(--rule)}
 .group li:first-child{border-top:0}
-.group li .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.group li .nm{flex:1;min-width:0;font:inherit;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:4px;padding:2px 5px;margin-left:-6px}
+.group li .nm:hover{border-color:var(--rule)}
+.group li .nm:focus{background:var(--paper);border-color:var(--sea)}
 .group li select{font-size:13px;padding:2px 4px;max-width:112px}
 .group li .x{font-size:18px;line-height:1;padding:2px 7px}
 .group .none{color:var(--ink-2);font-size:14px}
@@ -69,6 +71,10 @@ main{min-width:0;max-width:820px}
 .passrow td{background:var(--wash)}
 .passrow td:first-child{border-left:3px solid var(--land)}
 .special{margin-bottom:8px}
+.roomh{margin:18px 0 2px}
+.room{display:grid;gap:8px;margin:8px 0 14px;max-width:560px}
+.spot{background:var(--sheet);border:1px solid var(--rule);border-top:5px solid var(--tc);border-radius:6px;padding:8px 10px;font-size:14px;font-weight:700;text-align:center}
+.spot.off{opacity:.45;font-weight:400}
 .danger-zone{margin-top:22px;padding-top:14px;border-top:1px solid var(--rule)}
 @media (max-width:760px){
   .layout{grid-template-columns:1fr;gap:18px}
@@ -146,13 +152,14 @@ main{min-width:0;max-width:820px}
         <span class="muted small">or restore a backup below</span></div></div>`;
     } else {
       const idx = list.indexOf(c);
+      const lay = Suite.roomLayout(c.tables);
       const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId));
       const group = (t, members) => {
         const over = t && members.length > t.seats;
         return `<div class="group${t && !t.open ? ' off' : ''}">
           <h3>${t ? `<span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}` : 'Unassigned'}
           ${t ? `<span class="fill${over ? ' over' : ''}">${members.length} of ${t.seats}${t.open ? '' : ', not in use'}</span>` : ''}</h3>
-          ${members.length ? `<ul>${members.map(s => `<li><span class="nm">${esc(s.name)}</span>
+          ${members.length ? `<ul>${members.map(s => `<li><input class="nm" data-c="stname" data-id="${esc(s.id)}" value="${esc(s.name)}" aria-label="Student name" title="Click to edit the name">
             <select data-c="smove" data-id="${esc(s.id)}" aria-label="Move ${esc(s.name)}">${tableOptions(c, t ? t.id : '')}</select>
             <button class="btn quiet x" data-a="rms" data-id="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">×</button></li>`).join('')}</ul>`
             : '<div class="none">Empty</div>'}</div>`;
@@ -173,15 +180,20 @@ main{min-width:0;max-width:820px}
         <h2 id="h-tables">Tables</h2>
         <p class="hint">Turn off "In use" for a table you're leaving empty in this class. It disappears from the tools but keeps its points.</p>
         <div class="scroll"><table class="grid-table">
-          <thead><tr><th>Color</th><th>Name</th><th>Seats</th><th>In use</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
+          <thead><tr><th>Color</th><th>Name</th><th>Seats</th><th>Row</th><th>Spot</th><th>In use</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
           <tbody>${c.tables.map(t => `<tr>
             <td><input type="color" data-c="tcolor" data-id="${esc(t.id)}" value="${esc(t.color)}" aria-label="${esc(t.name)} color"></td>
             <td><input class="field" data-c="tname" data-id="${esc(t.id)}" value="${esc(t.name)}" aria-label="Table name"></td>
             <td><input class="field num" type="number" min="1" max="30" data-c="tseats" data-id="${esc(t.id)}" value="${t.seats}" aria-label="${esc(t.name)} seats"></td>
+            <td><select data-c="trow" data-id="${esc(t.id)}" aria-label="${esc(t.name)} row">${[1,2,3,4].map(n => `<option${lay.at[t.id].row === n ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
+            <td><select data-c="tcol" data-id="${esc(t.id)}" aria-label="${esc(t.name)} spot from the left">${[1,2,3,4,5,6].map(n => `<option${lay.at[t.id].col === n ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
             <td><input type="checkbox" data-c="topen" data-id="${esc(t.id)}"${t.open ? ' checked' : ''} aria-label="${esc(t.name)} in use"></td>
             <td><button class="btn quiet danger" data-a="rmt" data-id="${esc(t.id)}">Remove</button></td></tr>`).join('')
-            || '<tr><td colspan="5" class="muted">No tables yet.</td></tr>'}</tbody>
+            || '<tr><td colspan="7" class="muted">No tables yet.</td></tr>'}</tbody>
         </table></div>
+        <h3 class="roomh">How the tables sit in the room</h3>
+        <p class="hint">Row 1 is the row you want at the top of the screen. The table points page lays its cards out the same way.</p>
+        <div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${c.tables.map(t => `<div class="spot${t.open ? '' : ' off'}" style="grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col};--tc:${esc(t.color)}">${esc(t.name)}</div>`).join('')}</div>
         <div class="bar">
           <button class="btn" data-a="addt">Add a table</button>
           ${list.length > 1 ? '<button class="btn quiet" data-a="copyt">Use these tables in every class</button>' : ''}
@@ -428,6 +440,19 @@ main{min-width:0;max-width:820px}
     }
   });
 
+  // A renamed student should keep their captain role and topic sign-ups.
+  function carryRename(r){
+    const tr = Suite.get('tracker', null);
+    if (tr && tr.captains && tr.captains[r.classId]) {
+      let hit = false; Object.keys(tr.captains[r.classId]).forEach(tid => { if (tr.captains[r.classId][tid] === r.old) { tr.captains[r.classId][tid] = r.name; hit = true; } });
+      if (hit) Suite.set('tracker', tr);
+    }
+    const tp = Suite.get('topics', null);
+    if (tp && tp.claims) {
+      let hit = false; Object.values(tp.claims).forEach(byClass => (byClass[r.classId] || []).forEach(x => { if (x.studentId === r.studentId) { x.name = r.name; hit = true; } }));
+      if (hit) Suite.set('topics', tp);
+    }
+  }
   document.addEventListener('change', async e => {
     const el = e.target, c = el.dataset.c, id = el.dataset.id;
     if (el.dataset.s) return scheduleChange(el);
@@ -443,6 +468,7 @@ main{min-width:0;max-width:820px}
       return;
     }
     if (!c) return;
+    let renamed = null;
     withClass(k => {
       const t = k.tables.find(x => x.id === id);
       if (c === 'cname') k.name = el.value.trim() || k.name;
@@ -451,7 +477,23 @@ main{min-width:0;max-width:820px}
       else if (c === 'topen' && t) t.open = el.checked;
       else if (c === 'tcolor' && t) t.color = el.value;
       else if (c === 'smove') { const s = k.students.find(x => x.id === id); if (s) s.tableId = el.value; }
+      else if ((c === 'trow' || c === 'tcol') && t) {
+        const lay = Suite.roomLayout(k.tables);
+        k.tables.forEach(x => { if (!x.row || !x.col) { x.row = lay.at[x.id].row; x.col = lay.at[x.id].col; } });   // pin current spots
+        const row = c === 'trow' ? +el.value : t.row, col = c === 'tcol' ? +el.value : t.col;
+        const other = k.tables.find(x => x !== t && x.row === row && x.col === col);
+        if (other) { other.row = t.row; other.col = t.col; }   // trade places instead of stacking two tables
+        t.row = row; t.col = col;
+      }
+      else if (c === 'stname') {
+        const s = k.students.find(x => x.id === id); const name = el.value.trim();
+        if (!s) return;
+        if (!name) { el.value = s.name; return; }
+        const old = s.name; s.name = name;
+        renamed = { classId: k.id, studentId: s.id, old, name };
+      }
     });
+    if (renamed) carryRename(renamed);
   });
 
   document.addEventListener('keydown', e => {

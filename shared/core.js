@@ -5,7 +5,8 @@
   'use strict';
   const PREFIX = 'suite:';
   const PALETTE = ['#2E6378', '#B7924A', '#6B7F3A', '#7A2E4F', '#4F5D8A', '#A0643A', '#3F7F74', '#8A5A83'];
-  const DEFAULT_TABLES = [['sequoyah', 'Sequoyah', 8], ['delmarva', 'Delmarva', 6], ['franklin', 'Franklin', 6], ['jefferson', 'Jefferson', 6], ['metropotamia', 'Metropotamia', 6]];
+  // [id, name, seats, row, spot] — spot = position from the left, matching the room
+  const DEFAULT_TABLES = [['sequoyah', 'Sequoyah', 8, 1, 1], ['delmarva', 'Delmarva', 6, 1, 2], ['franklin', 'Franklin', 6, 1, 3], ['jefferson', 'Jefferson', 6, 2, 2], ['metropotamia', 'Metropotamia', 6, 2, 3]];
   // Flip "soon" to false as each page is added to the site.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html', soon: false },
@@ -17,7 +18,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-09-28b';   // bump with every build; pages check they match
+  const VERSION = '2026-09-28c';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -43,7 +44,20 @@
   });
 
   /* ---------- classes & tables ---------- */
-  S.defaultTables = () => DEFAULT_TABLES.map(([id, name, seats], i) => ({ id, name, seats, open: true, color: PALETTE[i % PALETTE.length] }));
+  S.defaultTables = () => DEFAULT_TABLES.map(([id, name, seats, row, col], i) => ({ id, name, seats, open: true, color: PALETTE[i % PALETTE.length], row, col }));
+  // Where each table sits in the room. Tables without a spot get the default for their name,
+  // or the next free spot. Returns { cols, rows, at: { tableId: { row, col } } }.
+  S.roomLayout = tables => {
+    const known = {}; DEFAULT_TABLES.forEach(d => { known[d[1].toLowerCase()] = { row: d[3], col: d[4] }; });
+    const at = {}, used = new Set(), key = (r, c) => r + ',' + c;
+    const want = t => (t.row && t.col) ? { row: +t.row, col: +t.col } : known[String(t.name).trim().toLowerCase()] || null;
+    const later = [];
+    tables.forEach(t => { const w = want(t); if (w && !used.has(key(w.row, w.col))) { at[t.id] = w; used.add(key(w.row, w.col)); } else later.push(t); });
+    let cols = Math.max(3, ...Object.values(at).map(p => p.col), 1);
+    later.forEach(t => { for (let r = 1; ; r++) { let placed = false; for (let c = 1; c <= cols; c++) { if (!used.has(key(r, c))) { at[t.id] = { row: r, col: c }; used.add(key(r, c)); placed = true; break; } } if (placed) break; } });
+    const rows = Math.max(1, ...Object.values(at).map(p => p.row));
+    return { cols, rows, at };
+  };
   S.classes = () => S.get('classes', []);
   S.saveClasses = list => S.set('classes', list);
   S.newClass = (name, template) => ({
