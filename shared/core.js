@@ -76,6 +76,17 @@
   const toMin = t => { const [h, m] = String(t || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
   S.toMin = toMin;
   S.fromMin = m => { m = Math.max(0, Math.min(1439, Math.round(m))); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  // Reads times the way people type them: "9:57", "957", "9:57 am", "13:01".
+  // With no AM/PM, 1:00-6:59 are treated as afternoon, since school runs during the day.
+  S.parseTime = str => {
+    const m = String(str || '').trim().toLowerCase().replace(/\s*:\s*/g, ':').replace(/\s+/g, ' ').match(/^(\d{1,2}):?(\d{2})?\s*([ap])?\.?\s*m?\.?$/);
+    if (!m) return null;
+    let h = parseInt(m[1], 10); const min = m[2] ? parseInt(m[2], 10) : 0;
+    if (min > 59 || h > 23) return null;
+    if (m[3]) { if (h < 1 || h > 12) return null; if (m[3] === 'p' && h < 12) h += 12; if (m[3] === 'a' && h === 12) h = 0; }
+    else if (h >= 1 && h <= 6) h += 12;
+    return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+  };
   S.isPassing = p => !!p && (p.passing || /^passing/i.test(String(p.name || '').trim()));
   S.sortPeriods = list => list.sort((a, b) => toMin(a.start) - toMin(b.start) || toMin(a.end) - toMin(b.end));
   // Adds a passing period in every gap between periods, sized to the real gap.
