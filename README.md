@@ -6,7 +6,7 @@ Classroom tools for daily use: a dashboard (clock and bell schedule), table poin
 
 ```
 index.html        Dashboard (coming soon)
-tracker.html      Table points (coming soon)
+tracker.html      Table points
 spinner.html      Name spinner (coming soon)
 topics.html       Topic picker (coming soon)
 settings.html     Classes, tables, rosters, backups

@@ -9,7 +9,7 @@
   // Flip "soon" to false as each page is added to the site.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html', soon: true },
-    { id: 'tracker', label: 'Table points', href: 'tracker.html', soon: true },
+    { id: 'tracker', label: 'Table points', href: 'tracker.html', soon: false },
     { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: true },
     { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: true },
     { id: 'settings', label: 'Classes & settings', href: 'settings.html', soon: false }

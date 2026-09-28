@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table points · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/core.js"></script>
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.classes{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--rule);margin-bottom:14px}
+.classes button{font:inherit;color:var(--ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.classes button:hover{color:var(--ink)}
+.classes button[aria-current="true"]{color:var(--ink);font-weight:700;border-bottom:3px double var(--land)}
+.statusbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.when{font-family:var(--serif);font-size:22px;font-weight:700}
+.double-on{background:var(--land);border-color:var(--land);color:#1D2B2A;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-top:8px solid var(--tc);border-radius:8px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px}
+.card.lead{box-shadow:0 0 0 2px var(--land)}
+.card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h2{font-size:22px}
+.score{font-family:var(--serif);font-size:44px;font-weight:800;line-height:1}
+.sub{font-size:14px;color:var(--ink-2)}
+.tags{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
+.tag{font-size:13px;border:1px solid var(--rule);border-radius:999px;padding:1px 8px;background:var(--paper)}
+.tag.win{border-color:var(--land);font-weight:700}
+.cap{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink-2)}
+.cap select{font-size:14px;padding:3px 6px;flex:1;min-width:0}
+.awards{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.awards button{font:inherit;font-size:15px;font-weight:700;border-radius:6px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);padding:9px 4px;cursor:pointer}
+.awards button:hover{border-color:var(--ink-2)}
+.awards .plus{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.awards .minus{color:var(--plum)}
+.awards .wide{grid-column:span 2}
+.awards button:active{transform:scale(.97)}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;margin-top:32px}
+.panel>h2{font-size:22px;padding-bottom:6px;border-bottom:3px double var(--land);margin-bottom:10px}
+table.plain{width:100%;border-collapse:collapse;font-size:15px}
+table.plain th{text-align:left;font-weight:400;color:var(--ink-2);font-size:14px;padding:4px 8px}
+table.plain td{padding:6px 8px;border-top:1px solid var(--rule);vertical-align:top}
+table.plain td.n{text-align:right;font-variant-numeric:tabular-nums}
+.goalrow{display:grid;grid-template-columns:120px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--rule)}
+.goalrow:first-of-type{border-top:0}
+.goalrow select{min-width:0;width:100%}
+.log{font-size:14px;max-height:240px;overflow:auto}
+.log div{padding:3px 0;border-top:1px solid var(--rule)}
+details.more{margin-top:28px;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px 14px}
+details.more summary{cursor:pointer;font-weight:700}
+.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:28px;max-width:640px}
+.empty h2{margin-bottom:8px}
+#exit-proj{display:none}
+/* projector view */
+body.proj #suite-nav,body.proj .classes,body.proj .statusbar,body.proj .panels,body.proj details.more,body.proj .awards,body.proj .cap select{display:none!important}
+body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.5;z-index:5}
+body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
+body.proj .wrap{max-width:none;padding:28px 36px}
+body.proj .proj-title{display:block}
+.proj-title{display:none;font-family:var(--serif);font-size:40px;font-weight:700;margin-bottom:20px}
+.proj-title span{font-family:var(--sans);font-size:22px;font-weight:400;color:var(--ink-2);margin-left:14px}
+body.proj .cards{gap:22px}
+body.proj .card{padding:18px 20px;border-top-width:14px}
+body.proj .card h2{font-size:34px}
+body.proj .score{font-size:84px}
+body.proj .sub,body.proj .cap{font-size:20px}
+body.proj .tag{font-size:18px;padding:2px 12px}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
+<div class="wrap" id="app"></div>
+
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  const MENU = [
+    'Everyone shares at least once each class',
+    'No talking during instructions all week',
+    'Everyone starts the warm-up within 1 minute of the bell',
+    'Table area clean before the bell, all 5 days',
+    'Everyone prepared with materials at the start of class',
+    'Zero reminders needed to transition between activities'
+  ].join('\n');
+  const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null };
+  let T, proj = false;
+
+  function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; }
+  function save(){ Suite.set('tracker', T); }
+  load();
+
+  const classes = () => Suite.classes();
+  const curClass = list => list.find(c => c.id === T.cur) || list[0] || null;
+  const pts = (cid, tid, w) => T.log.reduce((a, e) => a + (e.c === cid && e.t === tid && e.q === T.quarter && (w === undefined || e.w === w) ? e.d : 0), 0);
+  const gkey = (tid, w) => tid + '|' + T.quarter + '|' + (w == null ? T.week : w);
+  const leaders = rows => { if (!rows.length) return []; const top = Math.max(...rows.map(r => r[1])); return top > 0 ? rows.filter(r => r[1] === top).map(r => r[0]) : []; };
+  const weekLeaders = (c, w) => leaders(Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w)]));
+  function improved(c, w){
+    if (w < 2) return null;
+    if (!T.log.some(e => e.c === c.id && e.q === T.quarter && e.w === w)) return null;
+    const rows = Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w) - pts(c.id, t.id, w - 1)]);
+    if (!rows.length) return null;
+    const best = Math.max(...rows.map(r => r[1]));
+    return rows.filter(r => r[1] === best).map(r => r[0]);
+  }
+  const tname = (c, id) => (c.tables.find(t => t.id === id) || { name: 'Removed table' }).name;
+  const names = (c, ids) => ids && ids.length ? ids.map(i => esc(tname(c, i))).join(', ') : '<span class="muted">None yet</span>';
+
+  function render(){
+    document.body.classList.toggle('proj', proj);
+    const list = classes();
+    const c = curClass(list);
+    if (!c) {
+      $('#app').innerHTML = `<div class="empty"><h2>Add your classes first</h2>
+        <p>The tracker uses the classes, tables, and rosters you set up once in Classes & settings.</p>
+        <a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+      return;
+    }
+    T.cur = c.id;
+    const act = Suite.activeTables(c);
+    const lead = weekLeaders(c, T.week);
+    const imp = improved(c, T.week);
+    const streaks = T.streaks[c.id] || {};
+    const goals = T.goals[c.id] || {};
+    const caps = T.captains[c.id] || {};
+
+    const cards = act.map(t => {
+      const members = c.students.filter(s => s.tableId === t.id);
+      const g = goals[gkey(t.id)] || {};
+      const isLead = lead.includes(t.id);
+      const tags = [
+        isLead ? '<span class="tag win">Leading this week</span>' : '',
+        imp && imp.includes(t.id) ? '<span class="tag">Most improved</span>' : '',
+        (streaks[t.id] || 0) >= 2 ? `<span class="tag">${streaks[t.id]}-week streak</span>` : '',
+        g.met ? '<span class="tag">Goal met</span>' : ''
+      ].join('');
+      const capName = caps[t.id] || '';
+      return `<article class="card${isLead ? ' lead' : ''}" style="--tc:${esc(t.color)}">
+        <div class="card-top"><h2>${esc(t.name)}</h2><div class="score" aria-label="${pts(c.id, t.id, T.week)} points this week">${pts(c.id, t.id, T.week)}</div></div>
+        <div class="sub">This quarter: ${pts(c.id, t.id)}</div>
+        <div class="cap"><span>Captain${proj && capName ? ': ' + esc(capName) : ''}</span>
+          <select data-c="cap" data-id="${esc(t.id)}" aria-label="${esc(t.name)} captain">
+            <option value="">None</option>
+            ${members.map(s => `<option${s.name === capName ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}
+            ${capName && !members.some(s => s.name === capName) ? `<option selected>${esc(capName)}</option>` : ''}
+          </select></div>
+        <div class="tags">${tags}</div>
+        <div class="awards">
+          <button class="plus" data-a="aw" data-id="${esc(t.id)}" data-d="1">+1</button>
+          <button class="minus" data-a="aw" data-id="${esc(t.id)}" data-d="-1">−1</button>
+          <button data-a="aw" data-id="${esc(t.id)}" data-d="2" data-note="Clean area">Clean +2</button>
+          <button data-a="aw" data-id="${esc(t.id)}" data-d="1" data-note="Mostly clean">Mostly clean +1</button>
+          <button class="wide" data-a="aw" data-id="${esc(t.id)}" data-d="3" data-note="Challenge">3-point challenge</button>
+        </div>
+      </article>`;
+    }).join('');
+
+    // prizes
+    const prev = T.week - 1;
+    const prevLead = prev >= 1 ? weekLeaders(c, prev) : [];
+    const prevImp = prev >= 2 ? improvedFinal(c, prev) : null;
+    const streakNow = lead.filter(id => (streaks[id] || 0) + 1 >= 2);
+    const streakPrev = act.filter(t => (streaks[t.id] || 0) >= 2).map(t => t.id);
+    const qLead = leaders(act.map(t => [t.id, pts(c.id, t.id)]));
+
+    const opts = T.menu.split('\n').map(s => s.trim()).filter(Boolean);
+    const weeks = Array.from({ length: T.week }, (_, i) => i + 1);
+    const recent = T.log.filter(e => e.c === c.id).slice(-30).reverse();
+
+    $('#app').innerHTML = `
+      <nav class="classes" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>
+      <div class="statusbar">
+        <div class="when">Quarter ${T.quarter}, week ${T.week}</div>
+        <div class="bar">
+          <button class="btn${T.double ? ' double-on' : ''}" data-a="double" aria-pressed="${T.double}">${T.double ? 'Double points on' : 'Double points'}</button>
+          <button class="btn" data-a="undo">Undo last</button>
+          <button class="btn" data-a="endweek">End week</button>
+          <button class="btn" data-a="proj">Projector view</button>
+        </div>
+      </div>
+      <div class="proj-title">${esc(c.name)}<span>Quarter ${T.quarter}, week ${T.week}${T.double ? ' · Double points!' : ''}</span></div>
+      ${act.length ? `<div class="cards">${cards}</div>`
+        : `<div class="empty"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
+
+      <div class="panels">
+        <section class="panel" aria-labelledby="h-prizes"><h2 id="h-prizes">Prizes</h2>
+          <div class="scroll"><table class="plain">
+            <thead><tr><th>Award</th><th>This week so far</th><th>${prev >= 1 ? 'Week ' + prev + ' final' : 'Last week'}</th></tr></thead>
+            <tbody>
+              <tr><td>Top table</td><td>${names(c, lead)}</td><td>${prev >= 1 ? names(c, prevLead) : '<span class="muted">—</span>'}</td></tr>
+              <tr><td>Most improved</td><td>${T.week === 1 ? '<span class="muted">Starts week 2</span>' : imp ? names(c, imp) : '<span class="muted">Waiting for points</span>'}</td>
+                  <td>${prevImp ? names(c, prevImp) : '<span class="muted">—</span>'}</td></tr>
+              <tr><td>Streak bonus</td><td>${streakNow.length ? names(c, streakNow) + ' <span class="muted">if they hold on</span>' : '<span class="muted">None yet</span>'}</td>
+                  <td>${prev >= 1 ? names(c, streakPrev) : '<span class="muted">—</span>'}</td></tr>
+              <tr><td>Quarter leader</td><td colspan="2">${names(c, qLead)}</td></tr>
+            </tbody></table></div>
+          <p class="hint" style="margin-top:8px">Ties share the prize. Short week? Don't end it, and its points roll into the next week.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="h-goals"><h2 id="h-goals">Weekly goals</h2>
+          <p class="hint">Pick each table's goal on Monday. Checking "Met" adds 2 points.</p>
+          ${act.map(t => { const g = goals[gkey(t.id)] || {}; return `<div class="goalrow">
+            <span><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}</span>
+            <select data-c="goal" data-id="${esc(t.id)}" aria-label="${esc(t.name)} goal"><option value="">Choose a goal</option>
+              ${opts.map(o => `<option${o === g.text ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>
+            <label class="small"><input type="checkbox" data-c="met" data-id="${esc(t.id)}"${g.met ? ' checked' : ''}> Met</label></div>`; }).join('') || '<p class="muted">No tables in use.</p>'}
+        </section>
+
+        <section class="panel" aria-labelledby="h-weeks"><h2 id="h-weeks">This quarter by week</h2>
+          <div class="scroll"><table class="plain">
+            <thead><tr><th>Table</th>${weeks.map(w => `<th class="n">Wk ${w}</th>`).join('')}<th class="n">Total</th></tr></thead>
+            <tbody>${act.map(t => `<tr><td><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}</td>
+              ${weeks.map(w => `<td class="n">${pts(c.id, t.id, w)}</td>`).join('')}<td class="n"><b>${pts(c.id, t.id)}</b></td></tr>`).join('')}</tbody>
+          </table></div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-log"><h2 id="h-log">Recent points</h2>
+          <div class="log">${recent.map(e => `<div>Q${e.q} week ${e.w}: ${esc(tname(c, e.t))} ${e.d > 0 ? '+' : ''}${e.d}${e.note ? ' <span class="muted">(' + esc(e.note) + ')</span>' : ''}</div>`).join('') || '<span class="muted">No points yet this quarter.</span>'}</div>
+        </section>
+      </div>
+
+      <details class="more"><summary>Tracker settings</summary>
+        <div style="margin-top:12px;max-width:640px">
+          <label for="menu"><b>Weekly goal menu</b></label>
+          <p class="hint">One goal per line. Used by every class.</p>
+          <textarea id="menu" rows="7">${esc(T.menu)}</textarea>
+          <div class="bar" style="margin-top:14px">
+            <button class="btn" data-a="newq">Start a new quarter</button>
+            <button class="btn danger" data-a="resetpts">Reset all points</button>
+          </div>
+          <p class="hint" style="margin-top:8px">A new quarter starts every class at week 1 with zero points and clears streaks; earlier quarters stay in your backup. "Reset all points" erases points, goals, and streaks for every class.</p>
+        </div>
+      </details>`;
+  }
+
+  // "Final" most improved for a completed week (doesn't need current-week points check)
+  function improvedFinal(c, w){
+    const rows = Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w) - pts(c.id, t.id, w - 1)]);
+    if (!rows.length) return null;
+    const best = Math.max(...rows.map(r => r[1]));
+    return rows.filter(r => r[1] === best).map(r => r[0]);
+  }
+
+  document.addEventListener('click', async e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a, id = el.dataset.id;
+    const c = curClass(classes());
+    if (a === 'pick') { T.cur = id; save(); render(); }
+    else if (a === 'proj') { proj = !proj; render(); }
+    else if (!c) return;
+    else if (a === 'aw') {
+      let d = +el.dataset.d; let note = el.dataset.note || '';
+      if (T.double && d > 0) { d *= 2; note = note ? note + ', double' : 'Double'; }
+      T.log.push({ id: Suite.uid(), c: c.id, t: id, d, w: T.week, q: T.quarter, note });
+      save(); render();
+    }
+    else if (a === 'double') { T.double = !T.double; save(); render(); }
+    else if (a === 'undo') {
+      for (let i = T.log.length - 1; i >= 0; i--) {
+        const x = T.log[i];
+        if (x.c === c.id && x.q === T.quarter) {
+          T.log.splice(i, 1);
+          if (x.g && T.goals[c.id] && T.goals[c.id][x.g]) T.goals[c.id][x.g].met = false;
+          save(); render(); Suite.toast('Removed ' + (x.d > 0 ? '+' : '') + x.d + ' from ' + tname(c, x.t));
+          return;
+        }
+      }
+      Suite.toast('Nothing to undo');
+    }
+    else if (a === 'endweek') {
+      if (!await Suite.dialog({ title: 'End week ' + T.week + '?', body: 'This locks in this week\'s winners for every class and starts week ' + (T.week + 1) + '. For a short week, skip this so its points roll into next week.', ok: 'End week' })) return;
+      classes().forEach(k => {
+        const w = weekLeaders(k, T.week), s = T.streaks[k.id] = T.streaks[k.id] || {};
+        k.tables.forEach(t => { s[t.id] = w.includes(t.id) ? (s[t.id] || 0) + 1 : 0; });
+      });
+      T.week++; T.double = false; save(); render(); Suite.toast('Week ' + T.week + ' started');
+    }
+    else if (a === 'newq') {
+      if (!await Suite.dialog({ title: 'Start quarter ' + (T.quarter + 1) + '?', body: 'Every class goes back to week 1 with zero points, and streaks reset. Download a backup first if you want a record of this quarter.', ok: 'Start new quarter', danger: true })) return;
+      T.quarter++; T.week = 1; T.streaks = {}; T.double = false; save(); render();
+    }
+    else if (a === 'resetpts') {
+      if (!await Suite.dialog({ title: 'Reset all points?', body: 'Points, weekly goals, and streaks are erased for every class. Classes, tables, captains, and the goal menu stay.', ok: 'Reset points', danger: true })) return;
+      T.log = []; T.goals = {}; T.streaks = {}; T.week = 1; T.quarter = 1; T.double = false; save(); render();
+    }
+  });
+
+  document.addEventListener('change', e => {
+    const el = e.target, k = el.dataset.c, id = el.dataset.id;
+    const c = curClass(classes());
+    if (el.id === 'menu') { T.menu = el.value; save(); render(); return; }
+    if (!c || !k) return;
+    if (k === 'cap') { (T.captains[c.id] = T.captains[c.id] || {})[id] = el.value; }
+    else if (k === 'goal') { const g = T.goals[c.id] = T.goals[c.id] || {}; const key = gkey(id); g[key] = Object.assign({}, g[key], { text: el.value }); }
+    else if (k === 'met') {
+      const g = T.goals[c.id] = T.goals[c.id] || {}; const key = gkey(id); const was = !!(g[key] && g[key].met);
+      if (el.checked && !was) T.log.push({ id: Suite.uid(), c: c.id, t: id, d: 2, w: T.week, q: T.quarter, note: 'Weekly goal', g: key });
+      if (!el.checked && was) { const i = T.log.map(x => x.g).lastIndexOf(key); if (i > -1) T.log.splice(i, 1); }
+      g[key] = Object.assign({}, g[key], { met: el.checked });
+    }
+    save(); render();
+  });
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog')) { proj = false; render(); } });
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { load(); render(); } });
+
+  Suite.mountNav('tracker');
+  render();
+})();
+</script>
+</body>
+</html>
