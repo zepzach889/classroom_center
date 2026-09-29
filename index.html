@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-29a">
-<script src="shared/core.js?v=2026-09-29a"></script>
-<script>window.PAGE_VERSION = '2026-09-29a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-29b">
+<script src="shared/core.js?v=2026-09-29b"></script>
+<script>window.PAGE_VERSION = '2026-09-29b';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:28px 20px 60px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:40px;align-items:start}
 .clock{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:clamp(76px,11vw,156px);line-height:1}
@@ -38,6 +38,14 @@
 .today li.past{opacity:.45}
 .today li.now{background:var(--wash);border-left-color:var(--land);font-weight:700}
 .today li.now .t{color:var(--ink)}
+.coming-h{font-size:22px;padding-bottom:6px;border-bottom:3px solid var(--land);margin:22px 0 6px}
+.coming{list-style:none;margin:0;padding:0}
+.coming li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--rule)}
+.coming li:first-child{border-top:0}
+.coming .what{font-size:17px;font-weight:500}
+.coming .when{text-align:right;white-space:nowrap;display:flex;align-items:baseline;gap:5px}
+.coming .when b{font-family:var(--serif);font-weight:400;font-size:28px}
+.coming .when span{font-size:13px;color:var(--ink-2)}
 .today .none{color:var(--ink-2);padding:10px 0}
 @media (max-width:860px){.dash{grid-template-columns:1fr;gap:28px}}
 </style>
@@ -55,6 +63,7 @@
     <h2 id="day-label"></h2>
     <ol id="sched"></ol>
     <a class="small" href="settings.html#schedule">Edit the bell schedule</a>
+    <div id="coming"></div>
   </aside>
 </main>
 <script>
@@ -77,6 +86,17 @@
   }
 
   const nextReal = (P, i) => P.slice(i + 1).find(p => !Suite.isPassing(p)) || null;
+
+  function renderComing(){
+    const today = Suite.dateKey(new Date());
+    const list = Suite.countdowns().filter(cd => cd.date && cd.date >= today && cd.label)
+      .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4);
+    $('#coming').innerHTML = list.length ? `<h2 class="coming-h">Coming up</h2><ul class="coming">${list.map(cd => {
+      const n = Suite.daysUntil(cd.date, cd.school);
+      const when = cd.date === today ? '<b>Today</b>' : n === 1 && !cd.school ? '<b>Tomorrow</b>'
+        : `<b>${n}</b><span>${cd.school ? 'school ' : ''}day${n === 1 ? '' : 's'}</span>`;
+      return `<li><span class="what">${esc(cd.label)}</span><span class="when">${when}</span></li>`; }).join('')}</ul>` : '';
+  }
 
   function renderDay(now){
     const day = Suite.scheduleFor(now);
@@ -119,6 +139,7 @@
         <h2>${esc(cls.name)} tables this week</h2>
         ${standings(cls) || '<p class="muted">No points yet this week.</p>'}
         <div class="bar"><a class="btn primary" href="tracker.html#class=${esc(cls.id)}">Open table points</a></div></div>` : '';
+    renderComing();
     return { P, st };
   }
 

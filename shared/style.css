@@ -80,3 +80,28 @@ textarea{width:100%;resize:vertical}
 .suite-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .suite-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--bar);color:#FFFFFF;padding:10px 20px;border-radius:999px;font-size:15px;z-index:110}
 @media (prefers-reduced-motion:no-preference){.suite-toast{animation:toast .2s ease-out}@keyframes toast{from{opacity:0;transform:translate(-50%,6px)}}}
+
+/* timer */
+.timer-pill{background:transparent!important;color:#FFFFFF!important;border-color:var(--bar-ink)!important;font-size:13px!important;letter-spacing:.06em;text-transform:uppercase;padding:4px 14px!important;min-height:0!important;font-variant-numeric:tabular-nums}
+.timer-pill:hover{border-color:#FFFFFF!important}
+.timer-pill.on{background:var(--land)!important;border-color:var(--land)!important;color:var(--on-land)!important}
+#suite-timer{position:fixed;inset:0;z-index:90;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#suite-timer[hidden]{display:none}
+.st-panel{width:100%;max-width:1100px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
+.st-top{width:100%;display:flex;justify-content:space-between;align-items:center}
+.st-title{font-family:var(--serif);font-size:30px}
+.st-time{font-family:var(--serif);font-size:clamp(120px,26vw,360px);line-height:.95;font-variant-numeric:tabular-nums;color:var(--ink)}
+.st-status{font-family:var(--serif);font-size:40px;min-height:48px;color:var(--land)}
+.st-bar{width:min(820px,100%);height:18px;border:2px solid var(--edge);border-radius:999px;background:var(--wash);overflow:hidden}
+.st-bar span{display:block;height:100%;background:var(--sea);transition:width .25s linear}
+.st-controls,.st-presets{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.st-controls .btn{font-size:18px;min-height:50px;padding:8px 24px}
+.st-go{min-width:140px}
+.st-custom{display:inline-flex;gap:6px}
+.st-custom .field{width:150px}
+.st-foot{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;align-items:center;font-size:15px}
+#suite-timer.is-low .st-time{color:var(--land)}
+#suite-timer.is-low .st-bar span{background:var(--land)}
+#suite-timer.is-done{background:var(--wash)}
+#suite-timer.is-done .st-time{color:var(--land)}
+@media (prefers-reduced-motion:no-preference){#suite-timer.is-done .st-time{animation:st-blink 1s steps(2,start) infinite}@keyframes st-blink{to{visibility:hidden}}}

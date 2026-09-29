@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-29a">
-<script src="shared/core.js?v=2026-09-29a"></script>
-<script>window.PAGE_VERSION = '2026-09-29a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-29b">
+<script src="shared/core.js?v=2026-09-29b"></script>
+<script>window.PAGE_VERSION = '2026-09-29b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -28,6 +28,13 @@
 .band h2{font-size:25px;color:var(--tx)}
 .band .speed i{background:var(--tx);opacity:.7}
 .lead-tag{background:#FFFFFF;color:#1C2B3A;border:2px solid #1C2B3A;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap}
+.keynum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);color:#1C2B3A;font:700 14px var(--sans);margin-right:10px;vertical-align:4px}
+.card.picked{outline:4px solid var(--land);outline-offset:4px}
+@media (prefers-reduced-motion:no-preference){.card.bump .score{animation:bump .6s ease-out}@keyframes bump{30%{transform:scale(1.18);color:var(--land)}}}
+.keys{margin:-6px 0 14px}
+.keys kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;padding:0 6px;background:var(--sheet)}
+body.proj .keys{display:none}
+body.proj .keynum{width:34px;height:34px;font-size:18px}
 .card-body{padding:10px 20px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
 .card-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .facts{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
@@ -100,7 +107,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     'Zero reminders needed to transition between activities'
   ].join('\n');
   const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null };
-  let T, proj = false;
+  let T, proj = false, picked = null, bump = null;
 
   function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; }
   function save(){ Suite.set('tracker', T); }
@@ -143,6 +150,8 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const caps = T.captains[c.id] || {};
 
     const lay = Suite.roomLayout(c.tables);
+    const order = keyOrder(c);
+    if (picked && !order.includes(picked)) picked = null;
     const cards = act.map(t => {
       const members = c.students.filter(s => s.tableId === t.id);
       const g = goals[gkey(t.id)] || {};
@@ -154,8 +163,9 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       ].join('');
       const capName = caps[t.id] || '';
       const wk = pts(c.id, t.id, T.week);
-      return `<article class="card${isLead ? ' lead' : ''}" style="--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)};grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col}">
-        <div class="band"><h2>${esc(t.name)}</h2>${isLead ? '<span class="lead-tag">Leading</span>' : '<span class="speed" aria-hidden="true"><i></i><i></i><i></i></span>'}</div>
+      const num = order.indexOf(t.id) + 1;
+      return `<article class="card${isLead ? ' lead' : ''}${picked === t.id ? ' picked' : ''}${bump === t.id ? ' bump' : ''}" data-card="${esc(t.id)}" style="--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)};grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col}">
+        <div class="band"><h2>${num <= 9 ? `<span class="keynum" title="Press ${num} to pick this table">${num}</span>` : ''}${esc(t.name)}</h2>${isLead ? '<span class="lead-tag">Leading</span>' : '<span class="speed" aria-hidden="true"><i></i><i></i><i></i></span>'}</div>
         <div class="card-body">
           <div class="card-top">
             <div class="facts">
@@ -204,6 +214,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           <button class="btn" data-a="proj">Projector view</button>
         </div>
       </div>
+      <div class="keys hint">Keyboard: press a table's number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean +2, <kbd>M</kbd> mostly clean +1, <kbd>P</kbd> 3-point challenge. <kbd>U</kbd> undo, <kbd>D</kbd> double points, <kbd>Esc</kbd> deselect.${picked ? ` <b>Picked: ${esc(tname(c, picked))}</b>` : ''}</div>
       <div class="proj-title">${esc(c.name)}<span>Quarter ${T.quarter}, week ${T.week}${T.double ? ' · Double points!' : ''}</span></div>
       ${act.length ? `<div class="cards room-grid" style="--cols:${lay.cols}">${cards}</div>`
         : `<div class="empty"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
@@ -267,6 +278,51 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     return rows.filter(r => r[1] === best).map(r => r[0]);
   }
 
+  // Tables numbered the way they sit in the room: across the top row, then the next row.
+  function keyOrder(c){
+    const lay = Suite.roomLayout(c.tables);
+    return Suite.activeTables(c).slice().sort((a, b) => lay.at[a.id].row - lay.at[b.id].row || lay.at[a.id].col - lay.at[b.id].col).map(t => t.id);
+  }
+  function award(c, tid, d, note){
+    note = note || '';
+    if (T.double && d > 0) { d *= 2; note = note ? note + ', double' : 'Double'; }
+    T.log.push({ id: Suite.uid(), c: c.id, t: tid, d, w: T.week, q: T.quarter, note });
+    save(); bump = tid; render(); setTimeout(() => { if (bump === tid) { bump = null; const el = document.querySelector('[data-card="' + tid + '"]'); if (el) el.classList.remove('bump'); } }, 650);
+  }
+  function undoLast(c){
+    for (let i = T.log.length - 1; i >= 0; i--) {
+      const x = T.log[i];
+      if (x.c === c.id && x.q === T.quarter) {
+        T.log.splice(i, 1);
+        if (x.g && T.goals[c.id] && T.goals[c.id][x.g]) T.goals[c.id][x.g].met = false;
+        save(); render(); Suite.toast('Removed ' + (x.d > 0 ? '+' : '') + x.d + ' from ' + tname(c, x.t));
+        return;
+      }
+    }
+    Suite.toast('Nothing to undo');
+  }
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('.suite-dialog') || document.body.classList.contains('timer-open')) return;
+    if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) return;
+    const c = curClass(classes()); if (!c) return;
+    const k = e.key;
+    if (/^[1-9]$/.test(k)) {
+      const order = keyOrder(c), id = order[+k - 1];
+      if (!id) return;
+      picked = picked === id ? null : id; render(); e.preventDefault(); return;
+    }
+    if (k === 'Escape' && picked) { picked = null; render(); e.stopImmediatePropagation(); return; }
+    const acts = { '+': [1, ''], '=': [1, ''], '-': [-1, ''], '_': [-1, ''], 'c': [2, 'Clean area'], 'm': [1, 'Mostly clean'], 'p': [3, 'Challenge'] };
+    const lk = k.length === 1 ? k.toLowerCase() : k;
+    if (acts[lk]) {
+      e.preventDefault();
+      if (!picked) { Suite.toast('Press a table number first (1 to ' + keyOrder(c).length + ')'); return; }
+      award(c, picked, acts[lk][0], acts[lk][1]); return;
+    }
+    if (lk === 'u') { e.preventDefault(); undoLast(c); }
+    else if (lk === 'd') { e.preventDefault(); T.double = !T.double; save(); render(); Suite.toast(T.double ? 'Double points on' : 'Double points off'); }
+  }, true);
+
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, id = el.dataset.id;
@@ -274,25 +330,9 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (a === 'pick') { T.cur = id; save(); render(); }
     else if (a === 'proj') { proj = !proj; render(); }
     else if (!c) return;
-    else if (a === 'aw') {
-      let d = +el.dataset.d; let note = el.dataset.note || '';
-      if (T.double && d > 0) { d *= 2; note = note ? note + ', double' : 'Double'; }
-      T.log.push({ id: Suite.uid(), c: c.id, t: id, d, w: T.week, q: T.quarter, note });
-      save(); render();
-    }
+    else if (a === 'aw') { award(c, id, +el.dataset.d, el.dataset.note || ''); }
     else if (a === 'double') { T.double = !T.double; save(); render(); }
-    else if (a === 'undo') {
-      for (let i = T.log.length - 1; i >= 0; i--) {
-        const x = T.log[i];
-        if (x.c === c.id && x.q === T.quarter) {
-          T.log.splice(i, 1);
-          if (x.g && T.goals[c.id] && T.goals[c.id][x.g]) T.goals[c.id][x.g].met = false;
-          save(); render(); Suite.toast('Removed ' + (x.d > 0 ? '+' : '') + x.d + ' from ' + tname(c, x.t));
-          return;
-        }
-      }
-      Suite.toast('Nothing to undo');
-    }
+    else if (a === 'undo') { undoLast(c); }
     else if (a === 'endweek') {
       if (!await Suite.dialog({ title: 'End week ' + T.week + '?', body: 'This locks in this week\'s winners for every class and starts week ' + (T.week + 1) + '. For a short week, skip this so its points roll into next week.', ok: 'End week' })) return;
       classes().forEach(k => {

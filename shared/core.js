@@ -19,7 +19,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-09-29a';   // bump with every build; pages check they match
+  const VERSION = '2026-09-29b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -168,7 +168,7 @@
   S.allData = () => {
     const data = {};
     allKeys(false).forEach(k => { try { data[k.slice(PREFIX.length)] = JSON.parse(localStorage.getItem(k)); } catch (e) {} });
-    delete data.meta; delete data.theme;
+    delete data.meta; delete data.theme; delete data.timer;
     return data;
   };
   S.exportBackup = () => {
@@ -261,6 +261,157 @@
     } catch (e) {}
   })();
 
+
+  /* ---------- timer: floats over every page and keeps running between pages ---------- */
+  const TIMER_DEF = { state: 'idle', end: 0, left: 300000, total: 300000, last: 300000, sound: true };
+  const tget = () => Object.assign({}, TIMER_DEF, S.get('timer', {}));
+  const tsave = v => { rawSet('timer', v); emit({ key: 'timer' }); };   // not "data", so it doesn't trigger backup reminders
+  const tleft = t => t.state === 'running' ? Math.max(0, t.end - Date.now()) : t.state === 'done' ? 0 : t.left;
+  S.fmtDuration = ms => {
+    const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0') : m + ':' + String(r).padStart(2, '0');
+  };
+  // "5" = 5 minutes, "1:30", "90s", "2m", "1:00:00"
+  S.parseDuration = str => {
+    const v = String(str || '').trim().toLowerCase().replace(/\s+/g, '');
+    let m;
+    if ((m = v.match(/^(\d+):(\d{1,2}):(\d{2})$/))) return ((+m[1] * 60 + +m[2]) * 60 + +m[3]) * 1000;
+    if ((m = v.match(/^(\d+):(\d{2})$/))) return (+m[1] * 60 + +m[2]) * 1000;
+    if ((m = v.match(/^(\d+(?:\.\d+)?)s(ec(onds?)?)?$/))) return Math.round(+m[1] * 1000);
+    if ((m = v.match(/^(\d+(?:\.\d+)?)(m|min|mins|minutes?)?$/))) return Math.round(+m[1] * 60000);
+    return null;
+  };
+  let audio = null;
+  const wakeAudio = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) {} };
+  document.addEventListener('pointerdown', wakeAudio, true);
+  function chime(){
+    try {
+      wakeAudio(); if (!audio) return;
+      const t0 = audio.currentTime + .05;
+      [[0, 880], [.38, 1108.7], [.76, 1318.5], [1.5, 1318.5]].forEach(([d, f]) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(.35, t0 + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + 1.3);
+        o.connect(g); g.connect(audio.destination); o.start(t0 + d); o.stop(t0 + d + 1.4);
+      });
+    } catch (e) {}
+  }
+  const PRESETS = [1, 2, 3, 5, 10, 15];
+  let tEl = null, tOpen = false;
+  function timerMarkup(){
+    const w = document.createElement('div');
+    w.id = 'suite-timer'; w.hidden = true;
+    w.innerHTML = `<div class="st-panel" role="dialog" aria-modal="true" aria-label="Timer">
+      <div class="st-top"><span class="st-title">Timer</span><button class="btn" data-t="hide">Hide timer</button></div>
+      <div class="st-time" id="st-time">5:00</div>
+      <div class="st-status" id="st-status" aria-live="polite"></div>
+      <div class="st-bar" aria-hidden="true"><span id="st-bar"></span></div>
+      <div class="st-controls">
+        <button class="btn primary st-go" data-t="go" id="st-go">Start</button>
+        <button class="btn" data-t="reset">Reset</button>
+        <button class="btn" data-t="add" data-ms="30000">+30 sec</button>
+        <button class="btn" data-t="add" data-ms="60000">+1 min</button>
+      </div>
+      <div class="st-presets">
+        ${PRESETS.map(n => `<button class="btn" data-t="preset" data-ms="${n * 60000}">${n} min</button>`).join('')}
+        <span class="st-custom"><label class="visually-hidden" for="st-in">Custom time</label>
+          <input class="field" id="st-in" placeholder="e.g. 7 or 1:30" autocomplete="off">
+          <button class="btn" data-t="custom">Start</button></span>
+      </div>
+      <div class="st-foot"><label><input type="checkbox" id="st-sound"> Chime when time's up</label>
+        <span class="muted small">Space starts or pauses. R resets. Esc hides.</span></div>
+    </div>`;
+    document.body.appendChild(w);
+    return w;
+  }
+  function timerDraw(){
+    const t = tget(), left = tleft(t);
+    const pill = document.getElementById('st-pill');
+    if (pill) {
+      pill.textContent = t.state === 'idle' ? 'Timer' : t.state === 'done' ? "Time's up" : 'Timer ' + S.fmtDuration(left);
+      pill.classList.toggle('on', t.state !== 'idle');
+      pill.classList.toggle('done', t.state === 'done');
+    }
+    if (!tEl || !tOpen) return;
+    tEl.classList.toggle('is-done', t.state === 'done');
+    tEl.classList.toggle('is-low', t.state === 'running' && left <= 10000);
+    document.getElementById('st-time').textContent = S.fmtDuration(left);
+    document.getElementById('st-status').textContent = t.state === 'done' ? "Time's up!" : t.state === 'paused' ? 'Paused' : '';
+    document.getElementById('st-bar').style.width = (t.total ? Math.max(0, Math.min(100, left / t.total * 100)) : 0).toFixed(2) + '%';
+    const go = document.getElementById('st-go');
+    go.textContent = t.state === 'running' ? 'Pause' : t.state === 'paused' ? 'Resume' : 'Start';
+    const snd = document.getElementById('st-sound'); if (snd.checked !== t.sound) snd.checked = t.sound;
+  }
+  S.openTimer = () => { if (!tEl) tEl = timerMarkup(); tEl.hidden = false; tOpen = true; document.body.classList.add('timer-open'); timerDraw(); const g = document.getElementById('st-go'); if (g) g.focus(); };
+  S.hideTimer = () => { if (tEl) tEl.hidden = true; tOpen = false; document.body.classList.remove('timer-open'); timerDraw(); };
+  function tStart(ms){ wakeAudio(); const t = tget(); t.total = ms; t.last = ms; t.left = ms; t.end = Date.now() + ms; t.state = 'running'; tsave(t); timerDraw(); }
+  function tToggle(){
+    const t = tget();
+    if (t.state === 'running') { t.left = Math.max(0, t.end - Date.now()); t.state = 'paused'; tsave(t); }
+    else if (t.state === 'paused') { wakeAudio(); t.end = Date.now() + t.left; t.state = 'running'; tsave(t); }
+    else tStart(t.state === 'done' ? t.last : t.left || t.last);
+    timerDraw();
+  }
+  function tReset(){ const t = tget(); t.state = 'idle'; t.left = t.total = t.last; tsave(t); timerDraw(); }
+  function tAdd(ms){
+    const t = tget();
+    if (t.state === 'running') { t.end += ms; t.total += ms; }
+    else if (t.state === 'paused') { t.left += ms; t.total += ms; }
+    else if (t.state === 'done') { return tStart(ms); }
+    else { t.left += ms; t.total = t.last = t.left; }
+    tsave(t); timerDraw();
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-suite="timer"]')) { S.openTimer(); return; }
+    const b = e.target.closest('[data-t]'); if (!b || !tEl || !tEl.contains(b)) return;
+    const k = b.dataset.t;
+    if (k === 'hide') S.hideTimer();
+    else if (k === 'go') tToggle();
+    else if (k === 'reset') tReset();
+    else if (k === 'add') tAdd(+b.dataset.ms);
+    else if (k === 'preset') tStart(+b.dataset.ms);
+    else if (k === 'custom') {
+      const inp = document.getElementById('st-in'), ms = S.parseDuration(inp.value);
+      if (!ms || ms > 24 * 3600000) { S.toast('Try a time like 7, 1:30, or 90s'); inp.focus(); return; }
+      inp.value = ''; tStart(ms); document.getElementById('st-go').focus();
+    }
+  });
+  document.addEventListener('change', e => { if (e.target && e.target.id === 'st-sound') { const t = tget(); t.sound = e.target.checked; tsave(t); } });
+  // While the timer is open, its keys win over the page's own shortcuts.
+  document.addEventListener('keydown', e => {
+    if (!tOpen || document.querySelector('.suite-dialog')) return;
+    const typing = e.target && e.target.id === 'st-in';
+    if (typing) { if (e.key === 'Enter') { e.preventDefault(); document.querySelector('#suite-timer [data-t="custom"]').click(); } else if (e.key === 'Escape') S.hideTimer(); e.stopImmediatePropagation(); return; }
+    if (e.key === 'Escape') { S.hideTimer(); }
+    else if (e.code === 'Space') { e.preventDefault(); tToggle(); }
+    else if (e.key === 'r' || e.key === 'R') tReset();
+    else if (/^[0-9+=\-]$/.test(e.key) || /^[a-z]$/i.test(e.key)) { /* swallow page shortcuts */ }
+    else return;
+    e.stopImmediatePropagation();
+  }, true);
+  setInterval(() => {
+    const t = tget();
+    if (t.state === 'running' && Date.now() >= t.end) {
+      t.state = 'done'; t.left = 0; tsave(t);
+      if (document.visibilityState === 'visible') { S.openTimer(); if (t.sound) chime(); }
+    }
+    timerDraw();
+  }, 250);
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.key === 'timer' || e.detail.key === '*')) timerDraw(); });
+
+  /* ---------- countdowns ---------- */
+  S.countdowns = () => S.get('countdowns', []);
+  // Days from today to dateStr. schoolOnly counts only days with bells (skips weekends and "No school" days).
+  S.daysUntil = (dateStr, schoolOnly) => {
+    const [y, m, d] = String(dateStr).split('-').map(Number); if (!y) return null;
+    const target = new Date(y, m - 1, d), today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((target - today) / 86400000);
+    if (diff <= 0 || !schoolOnly) return diff;
+    let n = 0; const cur = new Date(today);
+    for (let i = 0; i < diff && i < 400; i++) { cur.setDate(cur.getDate() + 1); if (S.scheduleFor(cur).periods.length) n++; }
+    return n;
+  };
+
   /* ---------- theme ---------- */
   const THEMES = ['auto', 'light', 'dark'];
   function applyTheme() { const t = S.get('theme', 'auto'); if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
@@ -278,11 +429,12 @@
         <nav aria-label="Tools"><ul>${NAV.map(n => `<li>${n.soon
           ? `<span class="soon" title="Coming soon">${S.esc(n.label)}</span>`
           : `<a href="${n.href}"${n.id === current ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`}</li>`).join('')}</ul></nav>
+        <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
         <button class="btn quiet theme-btn" data-suite="theme">Theme: ${theme[0].toUpperCase() + theme.slice(1)}</button>
       </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
-    draw();
-    window.addEventListener('suite:change', draw);
+    draw(); timerDraw();
+    window.addEventListener('suite:change', e => { if (!e.detail || e.detail.key !== 'timer') { draw(); timerDraw(); } });
     el.addEventListener('click', e => {
       if (!e.target.closest('[data-suite="theme"]')) return;
       const t = S.get('theme', 'auto');

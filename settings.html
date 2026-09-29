@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-29a">
-<script src="shared/core.js?v=2026-09-29a"></script>
-<script>window.PAGE_VERSION = '2026-09-29a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-29b">
+<script src="shared/core.js?v=2026-09-29b"></script>
+<script>window.PAGE_VERSION = '2026-09-29b';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .rail h2{font-size:19px;margin-bottom:8px}
@@ -75,6 +75,11 @@ main{min-width:0;max-width:820px}
 .room{display:grid;gap:8px;margin:8px 0 14px;max-width:560px}
 .spot{background:var(--sheet);border:1.5px solid var(--edge);border-top:6px solid var(--tc);border-radius:14px;padding:8px 10px;font-size:14px;font-weight:700;text-align:center}
 .spot.off{opacity:.45;font-weight:400}
+.cdrow{display:grid;grid-template-columns:170px minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.cdrow .field{width:100%}
+.cdrow label{font-size:14px;white-space:nowrap;display:flex;gap:5px;align-items:center}
+.cdrow.past{opacity:.55}
+@media (max-width:640px){.cdrow{grid-template-columns:1fr 1fr}}
 .danger-zone{margin-top:22px;padding-top:14px;border-top:1px solid var(--rule)}
 @media (max-width:760px){
   .layout{grid-template-columns:1fr;gap:18px}
@@ -96,6 +101,7 @@ main{min-width:0;max-width:820px}
     <ul id="rail-list"></ul>
     <button class="btn" data-a="addc">Add a class</button>
     <a class="jump" href="#schedule">Bell schedule</a>
+    <a class="jump" href="#countdowns" style="margin-top:6px">Countdowns</a>
     <a class="jump" href="#backup" style="margin-top:6px">Backup and data</a>
   </aside>
   <main>
@@ -104,6 +110,11 @@ main{min-width:0;max-width:820px}
       <h2 id="h-sched">Bell schedule</h2>
       <p class="hint">The dashboard uses this to show the current period. A period whose name matches a class (like "Period 2") links to that class automatically.</p>
       <div id="schedule-area"></div>
+    </section>
+    <section class="block" id="countdowns" aria-labelledby="h-cd">
+      <h2 id="h-cd">Countdowns</h2>
+      <p class="hint">Upcoming dates to show on the dashboard, like a unit test or project due date. They disappear from the dashboard after the day passes.</p>
+      <div id="cd-area"></div>
     </section>
     <section class="block" id="backup" aria-labelledby="h-backup">
       <h2 id="h-backup">Backup and data</h2>
@@ -221,6 +232,7 @@ main{min-width:0;max-width:820px}
     }
     renderBackup();
     renderSchedule();
+    renderCountdowns();
   }
 
   function renderBackup(){
@@ -362,12 +374,35 @@ main{min-width:0;max-width:820px}
     }, redraw);
   }
 
+
+  /* ---------- countdowns ---------- */
+  function renderCountdowns(){
+    const list = Suite.countdowns().slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const today = Suite.dateKey(new Date());
+    $('#cd-area').innerHTML = (list.map(cd => `<div class="cdrow${cd.date && cd.date < today ? ' past' : ''}">
+        <input type="date" class="field" data-cd="date" data-id="${esc(cd.id)}" value="${esc(cd.date)}" aria-label="Date">
+        <input class="field" data-cd="label" data-id="${esc(cd.id)}" value="${esc(cd.label)}" placeholder="What's coming, e.g. Unit 2 test" aria-label="What's coming">
+        <label><input type="checkbox" data-cd="school" data-id="${esc(cd.id)}"${cd.school ? ' checked' : ''}> School days only</label>
+        <button class="btn quiet danger" data-a="cdrm" data-id="${esc(cd.id)}" aria-label="Remove ${esc(cd.label || 'countdown')}">×</button></div>`).join('')
+      || '<p class="muted small">None yet.</p>') + '<button class="btn" data-a="cdadd">Add a countdown</button>';
+  }
+  function cdChange(el){
+    const list = Suite.countdowns(), cd = list.find(x => x.id === el.dataset.id); if (!cd) return;
+    const k = el.dataset.cd;
+    if (k === 'date') { if (!el.value) return; cd.date = el.value; }
+    else if (k === 'label') cd.label = el.value.trim();
+    else if (k === 'school') cd.school = el.checked;
+    Suite.set('countdowns', list);   // quiet save: no redraw while typing
+  }
+
   function save(list){ Suite.saveClasses(list); keepFocus(render); }
   function withClass(fn){ const list = Suite.classes(); const c = current(list); if (c) { fn(c, list); save(list); } }
 
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, id = el.dataset.id;
+    if (a === 'cdadd') { const l = Suite.countdowns(); const d = new Date(); d.setDate(d.getDate() + 7); l.push({ id: Suite.uid(), date: Suite.dateKey(d), label: '', school: true }); Suite.set('countdowns', l); renderCountdowns(); const f = document.querySelector('.cdrow:last-of-type [data-cd="label"]'); if (f) f.focus(); return; }
+    if (a === 'cdrm') { Suite.set('countdowns', Suite.countdowns().filter(x => x.id !== id)); renderCountdowns(); return; }
     if (['spick','snew','sdel','pins','prm','padd','dadd','drm','pfill','ppass'].includes(a)) {
       const f = document.activeElement;
       if (f && f.dataset && f.dataset.s && f !== el) scheduleChange(f, true);
@@ -455,6 +490,7 @@ main{min-width:0;max-width:820px}
   }
   document.addEventListener('change', async e => {
     const el = e.target, c = el.dataset.c, id = el.dataset.id;
+    if (el.dataset.cd) return cdChange(el);
     if (el.dataset.s) return scheduleChange(el);
     if (el.id === 'import-file') {
       const file = el.files[0]; el.value = '';
@@ -499,7 +535,7 @@ main{min-width:0;max-width:820px}
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.matches('input.time')) { e.preventDefault(); e.target.blur(); }
   });
-  document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.s) scheduleChange(e.target, true); });
+  document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.s) scheduleChange(e.target, true); if (e.target.dataset && e.target.dataset.cd === 'label') cdChange(e.target); });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) render(); });
   Suite.mountNav('settings');
   render();
