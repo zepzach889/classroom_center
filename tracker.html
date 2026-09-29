@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-29b">
-<script src="shared/core.js?v=2026-09-29b"></script>
-<script>window.PAGE_VERSION = '2026-09-29b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-29d">
+<script src="shared/core.js?v=2026-09-29d"></script>
+<script>window.PAGE_VERSION = '2026-09-29d';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -32,6 +32,18 @@
 .card.picked{outline:4px solid var(--land);outline-offset:4px}
 @media (prefers-reduced-motion:no-preference){.card.bump .score{animation:bump .6s ease-out}@keyframes bump{30%{transform:scale(1.18);color:var(--land)}}}
 .keys{margin:-6px 0 14px}
+.nextcap{min-height:0!important;padding:2px 10px!important;font-size:13px!important}
+body.proj .nextcap{display:none}
+.caprow{padding:8px 0;border-top:1px solid var(--rule)}
+.caprow:first-of-type{border-top:0}
+.caphead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.capnames{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.capnames span{font-size:14px;border:1.5px solid var(--rule);border-radius:999px;padding:1px 10px}
+.capnames span b{font-weight:600;color:var(--ink-2);margin-left:2px}
+.capnames span.is-now{border-color:var(--land);font-weight:600}
+.duebadge{font:600 13px var(--sans);letter-spacing:.04em;background:var(--land);color:var(--on-land);border-radius:999px;padding:2px 10px;vertical-align:5px;margin-left:6px}
+table.record tr.given td{color:var(--ink-2)}
+table.record input{width:18px;height:18px}
 .keys kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;padding:0 6px;background:var(--sheet)}
 body.proj .keys{display:none}
 body.proj .keynum{width:34px;height:34px;font-size:18px}
@@ -106,10 +118,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     'Everyone prepared with materials at the start of class',
     'Zero reminders needed to transition between activities'
   ].join('\n');
-  const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null };
+  const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null, rotateEvery: 1, captainLog: [], prizes: [] };
   let T, proj = false, picked = null, bump = null;
 
-  function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; }
+  function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; T.captainLog = T.captainLog || []; T.prizes = T.prizes || []; if (T.rotateEvery == null) T.rotateEvery = 1; }
   function save(){ Suite.set('tracker', T); }
   load();
   { const m = location.hash.match(/class=([\w-]+)/); if (m) T.cur = m[1]; }
@@ -126,6 +138,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const rows = Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w) - pts(c.id, t.id, w - 1)]);
     if (!rows.length) return null;
     const best = Math.max(...rows.map(r => r[1]));
+    if (best <= 0) return [];   // nobody gained on last week
     return rows.filter(r => r[1] === best).map(r => r[0]);
   }
   const tname = (c, id) => (c.tables.find(t => t.id === id) || { name: 'Removed table' }).name;
@@ -175,7 +188,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
                   <option value="">None</option>
                   ${members.map(s => `<option${s.name === capName ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}
                   ${capName && !members.some(s => s.name === capName) ? `<option selected>${esc(capName)}</option>` : ''}
-                </select></div>
+                </select>${members.length > 1 ? `<button class="btn quiet nextcap" data-a="nextcap" data-id="${esc(t.id)}" title="Pick the next captain for ${esc(t.name)}">Next</button>` : ''}</div>
             </div>
             <div class="score" aria-label="${wk} points this week">${wk}</div>
           </div>
@@ -198,6 +211,25 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const streakNow = lead.filter(id => (streaks[id] || 0) + 1 >= 2);
     const streakPrev = act.filter(t => (streaks[t.id] || 0) >= 2).map(t => t.id);
     const qLead = leaders(act.map(t => [t.id, pts(c.id, t.id)]));
+
+    const weeksAs = captainWeeks(c);
+    const capPanel = act.map(t => {
+      const members = c.students.filter(s => s.tableId === t.id).sort((a, b) => a.name.localeCompare(b.name));
+      const now = caps[t.id] || '', nx = nextCaptain(c, t.id);
+      return `<div class="caprow"><div class="caphead"><span class="swatch" style="background:${esc(t.color)}"></span><b>${esc(t.name)}</b>
+          <span class="muted small">${now ? 'Now: ' + esc(now) : 'No captain yet'}${nx && nx.name !== now ? ' · Up next: ' + esc(nx.name) : ''}</span></div>
+        ${members.length ? `<div class="capnames">${members.map(m => `<span class="${m.name === now ? 'is-now' : ''}">${esc(m.name)} <b>${weeksAs[m.id] || 0}</b></span>`).join('')}</div>` : '<div class="muted small">No students seated here.</div>'}</div>`;
+    }).join('') || '<p class="muted">No tables in use.</p>';
+    const due = ungiven(c);
+    const mine = T.prizes.filter(x => x.c === c.id).slice().sort((a, b) => b.q - a.q || b.w - a.w || (a.kind === 'quarter') - (b.kind === 'quarter'));
+    const record = mine.length ? `<div class="scroll"><table class="plain record">
+        <thead><tr><th>When</th><th>Prize</th><th>Winner</th><th class="n">Handed out</th></tr></thead>
+        <tbody>${mine.slice(0, 30).map(x => `<tr class="${x.given ? 'given' : ''}">
+          <td>${x.kind === 'quarter' ? 'Quarter ' + x.q : 'Q' + x.q + ' week ' + x.w}</td><td>${PRIZE_NAMES[x.kind]}</td><td>${x.tables.map(y => esc(y.name)).join(', ')}</td>
+          <td class="n"><input type="checkbox" data-c="given" data-id="${esc(x.id)}"${x.given ? ' checked' : ''} aria-label="${PRIZE_NAMES[x.kind]} handed out"></td></tr>`).join('')}</tbody>
+      </table></div>`
+      : '<p class="muted">Prizes are recorded here each time you end the week.</p>';
+    const quarters = Array.from(new Set([T.quarter].concat(T.log.map(e => e.q)))).sort((a, b) => b - a);
 
     const opts = T.menu.split('\n').map(s => s.trim()).filter(Boolean);
     const weeks = Array.from({ length: T.week }, (_, i) => i + 1);
@@ -225,7 +257,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
             <thead><tr><th>Award</th><th>This week so far</th><th>${prev >= 1 ? 'Week ' + prev + ' final' : 'Last week'}</th></tr></thead>
             <tbody>
               <tr><td>Top table</td><td>${names(c, lead)}</td><td>${prev >= 1 ? names(c, prevLead) : '<span class="muted">—</span>'}</td></tr>
-              <tr><td>Most improved</td><td>${T.week === 1 ? '<span class="muted">Starts week 2</span>' : imp ? names(c, imp) : '<span class="muted">Waiting for points</span>'}</td>
+              <tr><td>Most improved</td><td>${T.week === 1 ? '<span class="muted">Starts week 2</span>' : imp ? (imp.length ? names(c, imp) : '<span class="muted">No table ahead of last week yet</span>') : '<span class="muted">Waiting for points</span>'}</td>
                   <td>${prevImp ? names(c, prevImp) : '<span class="muted">—</span>'}</td></tr>
               <tr><td>Streak bonus</td><td>${streakNow.length ? names(c, streakNow) + ' <span class="muted">if they hold on</span>' : '<span class="muted">None yet</span>'}</td>
                   <td>${prev >= 1 ? names(c, streakPrev) : '<span class="muted">—</span>'}</td></tr>
@@ -251,6 +283,15 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           </table></div>
         </section>
 
+        <section class="panel" aria-labelledby="h-caps"><h2 id="h-caps">Captains</h2>
+          <p class="hint">${T.rotateEvery ? 'Captains change automatically every ' + (T.rotateEvery === 1 ? 'week' : T.rotateEvery + ' weeks') + ' when you end the week. The next captain is whoever has had the fewest turns.' : 'Captains only change when you pick them.'} Numbers are weeks as captain this year.</p>
+          ${capPanel}
+        </section>
+
+        <section class="panel" aria-labelledby="h-record"><h2 id="h-record">Prize record${due.length ? ` <span class="duebadge">${due.length} to hand out</span>` : ''}</h2>
+          ${record}
+        </section>
+
         <section class="panel" aria-labelledby="h-log"><h2 id="h-log">Recent points</h2>
           <div class="log">${recent.map(e => `<div>Q${e.q} week ${e.w}: ${esc(tname(c, e.t))} ${e.d > 0 ? '+' : ''}${e.d}${e.note ? ' <span class="muted">(' + esc(e.note) + ')</span>' : ''}</div>`).join('') || '<span class="muted">No points yet this quarter.</span>'}</div>
         </section>
@@ -261,7 +302,17 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           <label for="menu"><b>Weekly goal menu</b></label>
           <p class="hint">One goal per line. Used by every class.</p>
           <textarea id="menu" rows="7">${esc(T.menu)}</textarea>
-          <div class="bar" style="margin-top:14px">
+          <label for="rot" style="display:block;margin-top:16px"><b>Captain rotation</b></label>
+          <select id="rot" data-c="rot" style="margin-top:4px">
+            <option value="1"${T.rotateEvery === 1 ? ' selected' : ''}>New captains every week</option>
+            <option value="2"${T.rotateEvery === 2 ? ' selected' : ''}>New captains every 2 weeks</option>
+            <option value="0"${!T.rotateEvery ? ' selected' : ''}>Only when I pick them</option>
+          </select>
+          <label for="repq" style="display:block;margin-top:16px"><b>Quarter report</b></label>
+          <p class="hint" style="margin-top:0">A spreadsheet file (CSV) with every class's weekly points, captains, and prizes. It opens in Google Sheets or Excel.</p>
+          <div class="bar"><select id="repq">${quarters.map(q => `<option value="${q}">Quarter ${q}</option>`).join('')}</select>
+            <button class="btn" data-a="report">Download report</button></div>
+          <div class="bar" style="margin-top:18px">
             <button class="btn" data-a="newq">Start a new quarter</button>
             <button class="btn danger" data-a="resetpts">Reset all points</button>
           </div>
@@ -275,7 +326,77 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const rows = Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w) - pts(c.id, t.id, w - 1)]);
     if (!rows.length) return null;
     const best = Math.max(...rows.map(r => r[1]));
+    if (best <= 0) return [];   // nobody gained on last week
     return rows.filter(r => r[1] === best).map(r => r[0]);
+  }
+
+
+  /* ---------- captains ---------- */
+  // Weeks each student has been captain (all year), from the history recorded at each "End week".
+  function captainWeeks(c){
+    const n = {};
+    T.captainLog.forEach(x => { if (x.c === c.id && x.sid) n[x.sid] = (n[x.sid] || 0) + 1; });
+    return n;
+  }
+  function lastCaptained(c){
+    const last = {};
+    T.captainLog.forEach(x => { if (x.c === c.id && x.sid) last[x.sid] = Math.max(last[x.sid] || 0, x.q * 100 + x.w); });
+    return last;
+  }
+  // Next captain for a table: whoever has had the fewest weeks, then whoever went longest ago.
+  function nextCaptain(c, tid){
+    const members = c.students.filter(s => s.tableId === tid);
+    if (!members.length) return null;
+    const cur = (T.captains[c.id] || {})[tid];
+    const weeks = captainWeeks(c), last = lastCaptained(c);
+    const pool = members.length > 1 ? members.filter(s => s.name !== cur) : members;
+    return pool.slice().sort((a, b) => (weeks[a.id] || 0) - (weeks[b.id] || 0) || (last[a.id] || 0) - (last[b.id] || 0) || a.name.localeCompare(b.name))[0];
+  }
+  function recordCaptains(c){
+    const caps = T.captains[c.id] || {};
+    Suite.activeTables(c).forEach(t => {
+      const name = caps[t.id]; if (!name) return;
+      const st = c.students.find(s => s.name === name && s.tableId === t.id) || c.students.find(s => s.name === name);
+      T.captainLog.push({ c: c.id, q: T.quarter, w: T.week, t: t.id, sid: st ? st.id : '', name });
+    });
+  }
+  function rotateCaptains(c){
+    const caps = T.captains[c.id] = T.captains[c.id] || {};
+    Suite.activeTables(c).forEach(t => { const n = nextCaptain(c, t.id); if (n) caps[t.id] = n.name; });
+  }
+
+  /* ---------- prize record ---------- */
+  const PRIZE_NAMES = { top: 'Top table', improved: 'Most improved', streak: 'Streak bonus', quarter: 'Quarter champion' };
+  function recordPrizes(c, kind, ids, w){
+    if (!ids || !ids.length) return;
+    T.prizes.push({ id: Suite.uid(), c: c.id, q: T.quarter, w: w || T.week, kind, tables: ids.map(id => ({ id, name: tname(c, id) })), given: false });
+  }
+  const ungiven = c => T.prizes.filter(x => x.c === c.id && !x.given);
+
+  /* ---------- quarter report (CSV for Sheets or Excel) ---------- */
+  function downloadReport(q){
+    const cell = v => { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    const rows = [['Class', 'Week', 'Table', 'Points', 'Captain', 'Prizes']];
+    const lastWeek = q === T.quarter ? T.week : Math.max(1, ...T.log.filter(e => e.q === q).map(e => e.w));
+    classes().forEach(c => {
+      const tables = c.tables.filter(t => t.open || T.log.some(e => e.c === c.id && e.t === t.id && e.q === q));
+      for (let w = 1; w <= lastWeek; w++) tables.forEach(t => {
+        const p = T.log.reduce((a, e) => a + (e.c === c.id && e.t === t.id && e.q === q && e.w === w ? e.d : 0), 0);
+        const cap = (T.captainLog.find(x => x.c === c.id && x.q === q && x.w === w && x.t === t.id) || {}).name || '';
+        const won = T.prizes.filter(x => x.c === c.id && x.q === q && x.w === w && x.kind !== 'quarter' && x.tables.some(y => y.id === t.id)).map(x => PRIZE_NAMES[x.kind]).join('; ');
+        rows.push([c.name, w, t.name, p, cap, won]);
+      });
+      tables.forEach(t => {
+        const total = T.log.reduce((a, e) => a + (e.c === c.id && e.t === t.id && e.q === q ? e.d : 0), 0);
+        const champ = T.prizes.some(x => x.c === c.id && x.q === q && x.kind === 'quarter' && x.tables.some(y => y.id === t.id));
+        rows.push([c.name, 'Quarter total', t.name, total, '', champ ? PRIZE_NAMES.quarter : '']);
+      });
+    });
+    const csv = rows.map(r => r.map(cell).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
+    a.download = 'table-points-quarter-' + q + '.csv';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
   // Tables numbered the way they sit in the room: across the top row, then the next row.
@@ -333,21 +454,34 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     else if (a === 'aw') { award(c, id, +el.dataset.d, el.dataset.note || ''); }
     else if (a === 'double') { T.double = !T.double; save(); render(); }
     else if (a === 'undo') { undoLast(c); }
+    else if (a === 'nextcap') {
+      const n = nextCaptain(c, id); if (!n) return;
+      (T.captains[c.id] = T.captains[c.id] || {})[id] = n.name; save(); render(); Suite.toast(n.name + ' is captain of ' + tname(c, id));
+    }
+    else if (a === 'report') { downloadReport(+document.getElementById('repq').value); }
     else if (a === 'endweek') {
       if (!await Suite.dialog({ title: 'End week ' + T.week + '?', body: 'This locks in this week\'s winners for every class and starts week ' + (T.week + 1) + '. For a short week, skip this so its points roll into next week.', ok: 'End week' })) return;
+      const rotate = T.rotateEvery > 0 && T.week % T.rotateEvery === 0;
       classes().forEach(k => {
         const w = weekLeaders(k, T.week), s = T.streaks[k.id] = T.streaks[k.id] || {};
         k.tables.forEach(t => { s[t.id] = w.includes(t.id) ? (s[t.id] || 0) + 1 : 0; });
+        recordPrizes(k, 'top', w);
+        if (T.week >= 2 && T.log.some(e => e.c === k.id && e.q === T.quarter && e.w === T.week)) recordPrizes(k, 'improved', improvedFinal(k, T.week));
+        recordPrizes(k, 'streak', Suite.activeTables(k).filter(t => w.includes(t.id) && s[t.id] >= 2).map(t => t.id));
+        recordCaptains(k);
+        if (rotate) rotateCaptains(k);
       });
-      T.week++; T.double = false; save(); render(); Suite.toast('Week ' + T.week + ' started');
+      T.week++; T.double = false; save(); render();
+      Suite.toast('Week ' + T.week + ' started' + (rotate ? '. New captains are up.' : ''));
     }
     else if (a === 'newq') {
       if (!await Suite.dialog({ title: 'Start quarter ' + (T.quarter + 1) + '?', body: 'Every class goes back to week 1 with zero points, and streaks reset. Download a backup first if you want a record of this quarter.', ok: 'Start new quarter', danger: true })) return;
+      classes().forEach(k => recordPrizes(k, 'quarter', leaders(Suite.activeTables(k).map(t => [t.id, pts(k.id, t.id)])), T.week));
       T.quarter++; T.week = 1; T.streaks = {}; T.double = false; save(); render();
     }
     else if (a === 'resetpts') {
-      if (!await Suite.dialog({ title: 'Reset all points?', body: 'Points, weekly goals, and streaks are erased for every class. Classes, tables, captains, and the goal menu stay.', ok: 'Reset points', danger: true })) return;
-      T.log = []; T.goals = {}; T.streaks = {}; T.week = 1; T.quarter = 1; T.double = false; save(); render();
+      if (!await Suite.dialog({ title: 'Reset all points?', body: 'Points, weekly goals, streaks, prize records, and captain history are erased for every class. Classes, tables, current captains, and the goal menu stay.', ok: 'Reset points', danger: true })) return;
+      T.log = []; T.goals = {}; T.streaks = {}; T.prizes = []; T.captainLog = []; T.week = 1; T.quarter = 1; T.double = false; save(); render();
     }
   });
 
@@ -356,6 +490,8 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const c = curClass(classes());
     if (el.id === 'menu') { T.menu = el.value; save(); render(); return; }
     if (!c || !k) return;
+    if (k === 'rot') { T.rotateEvery = +el.value; save(); render(); return; }
+    if (k === 'given') { const x = T.prizes.find(p => p.id === id); if (x) { x.given = el.checked; save(); render(); } return; }
     if (k === 'cap') { (T.captains[c.id] = T.captains[c.id] || {})[id] = el.value; }
     else if (k === 'goal') { const g = T.goals[c.id] = T.goals[c.id] || {}; const key = gkey(id); g[key] = Object.assign({}, g[key], { text: el.value }); }
     else if (k === 'met') {
