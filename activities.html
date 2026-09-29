@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30b">
-<script src="shared/core.js?v=2026-09-30b"></script>
-<script>window.PAGE_VERSION = '2026-09-30b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-30c">
+<script src="shared/core.js?v=2026-09-30c"></script>
+<script>window.PAGE_VERSION = '2026-09-30c';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -110,6 +110,7 @@ body.proj .tbar{height:60px}
 .nline{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;background:var(--ink)}
 .nquiet{margin-top:18px;font-size:22px}
 .nquiet b{font-family:var(--serif);font-weight:400;font-size:34px;margin-left:6px;font-variant-numeric:tabular-nums}
+.ncal{margin-top:14px;font-size:16px;border-color:var(--land)}
 .ncontrols{margin-top:16px;display:flex;flex-wrap:wrap;gap:16px 30px;align-items:center}
 .ncontrols label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:15px}
 .ncontrols input[type=range]{width:260px;accent-color:var(--sea)}
@@ -144,7 +145,7 @@ body.proj .group li{font-size:24px}
     stations: { text: 'Primary source\nMap work\nArtifact\nVocabulary', minutes: 10, auto: true, runs: {} },
     tally: { question: '', options: [{ label: 'A', n: 0 }, { label: 'B', n: 0 }, { label: 'C', n: 0 }, { label: 'D', n: 0 }] },
     groups: { mode: 'pairs', n: 3, mix: false, last: {} },
-    noise: { line: 60, sens: 5 }
+    noise: { line: 60, sens: 5, base: null }
   };
   let A, proj = false, openQ = null, editing = false;
   const out = {};   // students left out of this grouping (this visit only, not saved)
@@ -155,7 +156,7 @@ body.proj .group li{font-size:24px}
     A.stations = Object.assign(d.stations, g.stations || {}); A.stations.runs = A.stations.runs || {};
     A.tally = Object.assign(JSON.parse(JSON.stringify(DEF.tally)), g.tally || {});
     A.groups = Object.assign(JSON.parse(JSON.stringify(DEF.groups)), g.groups || {}); A.groups.last = A.groups.last || {};
-    A.noise = Object.assign({ line: 60, sens: 5 }, g.noise || {});
+    A.noise = Object.assign({ line: 60, sens: 5, base: null }, g.noise || {});
     A.scores = A.scores || {}; A.used = A.used || {}; A.games = A.games || [];
   }
   function save(){ Suite.set('activities', A); }
@@ -380,10 +381,24 @@ body.proj .group li{font-size:24px}
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const an = ctx.createAnalyser(); an.fftSize = 2048;
-      ctx.createMediaStreamSource(stream).connect(an);
-      mic = { stream, ctx, an, buf: new Float32Array(an.fftSize), level: 0, quiet: 0, last: performance.now() };
+      // Two high-pass stages cut the low rumble of fans; voices sit well above 300 Hz.
+      const hp1 = ctx.createBiquadFilter(), hp2 = ctx.createBiquadFilter();
+      [hp1, hp2].forEach(f => { f.type = 'highpass'; f.frequency.value = 300; f.Q.value = 0.7; });
+      ctx.createMediaStreamSource(stream).connect(hp1); hp1.connect(hp2); hp2.connect(an);
+      mic = { stream, ctx, an, buf: new Float32Array(an.fftSize), level: 0, quiet: 0, last: performance.now(), cal: null };
       render(); micLoop();
     } catch (e) { micErr = e && e.name === 'NotAllowedError' ? 'blocked' : 'unavailable'; render(); }
+  }
+  function startCalibration(){
+    if (!mic) return;
+    mic.cal = { samples: [], until: performance.now() + 5000 }; render();
+  }
+  function finishCalibration(){
+    const v = mic.cal.samples.slice().sort((a, b) => a - b);
+    mic.cal = null;
+    if (v.length < 10) { Suite.toast("Couldn't hear the room. Try again."); render(); return; }
+    A.noise.base = v[Math.floor(v.length * 0.9)];   // the loud end of "quiet", so the fan's ups and downs count as zero
+    mic.level = 0; mic.quiet = 0; save(); render(); Suite.toast('Calibrated to your room');
   }
   function micStop(){
     if (!mic) return;
@@ -397,8 +412,13 @@ body.proj .group li{font-size:24px}
     mic.an.getFloatTimeDomainData(mic.buf);
     let sum = 0; for (let i = 0; i < mic.buf.length; i++) sum += mic.buf[i] * mic.buf[i];
     const db = 20 * Math.log10(Math.sqrt(sum / mic.buf.length) + 1e-9);                 // about -100 (silent) to 0 (very loud)
-    const floor = -80 + (A.noise.sens - 5) * -4;                                        // higher sensitivity lowers the floor
-    const lvl = Math.max(0, Math.min(100, (db - floor) / 60 * 100));
+    if (mic.cal) { mic.cal.samples.push(db); if (performance.now() >= mic.cal.until) finishCalibration(); }
+    // Calibrated: zero is the quiet room (fan included). Sensitivity sets how much louder counts as "full".
+    // Not calibrated: sensitivity moves the floor; 1 is far less sensitive than before.
+    const calibrated = A.noise.base != null;
+    const floor = calibrated ? A.noise.base + 3 : -66 - (A.noise.sens - 1) * 4;
+    const range = calibrated ? 20 + (10 - A.noise.sens) * 6 : 60;
+    const lvl = Math.max(0, Math.min(100, (db - floor) / range * 100));
     mic.level = mic.level * 0.88 + lvl * 0.12;
     const now = performance.now(), dt = now - mic.last; mic.last = now;
     if (mic.level < A.noise.line) mic.quiet += dt;
@@ -411,7 +431,9 @@ body.proj .group li{font-size:24px}
   }
   function noiseView(){
     const N = A.noise;
-    const head = `<div class="toolbar ctl"><div class="tooltitle">Noise meter</div><div class="bar">${mic ? '<button class="btn" data-a="nstop">Stop listening</button>' : ''}<button class="btn" data-a="proj">Projector view</button></div></div>`;
+    const head = `<div class="toolbar ctl"><div class="tooltitle">Noise meter</div><div class="bar">${mic ? `<button class="btn${N.base == null ? ' primary' : ''}" data-a="ncal"${mic.cal ? ' disabled' : ''}>${N.base == null ? 'Calibrate' : 'Recalibrate'}</button><button class="btn" data-a="nstop">Stop listening</button>` : ''}<button class="btn" data-a="proj">Projector view</button></div></div>`;
+    if (mic && mic.cal) return head + `<div class="nbox"><div class="nlabel" style="color:var(--ink)">Listening to the room…</div>
+        <p style="margin:0 auto;font-size:20px">Keep the room quiet for 5 seconds, with the fan running the way it usually does.</p></div>`;
     if (!mic) return head + `<div class="empty">
         <h2>${micErr === 'blocked' ? 'The microphone is blocked' : micErr ? "This computer can't use a microphone here" : 'Listen to the room'}</h2>
         <p>${micErr === 'blocked' ? 'The browser (or your school) has blocked microphone access for this site. You can allow it from the lock or camera icon in the address bar, if your school permits it.'
@@ -423,10 +445,12 @@ body.proj .group li{font-size:24px}
         <div class="nmeter" aria-hidden="true"><span id="nbar"></span><i class="nline" style="left:${N.line}%"></i></div>
         <div class="nquiet">Time under the line: <b id="nquiet">0:00</b> <button class="btn quiet small ctl" data-a="nreset">Reset</button></div>
       </div>
+      ${N.base == null ? `<div class="card ctl ncal"><b>Calibrate for your room.</b> With the fan on and the class quiet, press <b>Calibrate</b>. The meter then measures only the noise above that, so the fan reads as zero. You only need to do it again if the room changes.</div>`
+        : `<p class="hint ctl" style="margin-top:10px">Calibrated to your room. If the fan or the room changes, press Recalibrate. <a href="#" data-a="nclear">Clear calibration</a></p>`}
       <div class="card ctl ncontrols">
         <label>Where's the line? <input type="range" min="15" max="95" value="${N.line}" data-c="nline" aria-label="Loudness line"></label>
         <label>Microphone sensitivity <input type="range" min="1" max="10" value="${N.sens}" data-c="nsens" aria-label="Microphone sensitivity"></label>
-        <p class="hint" style="margin:0">Set the line during a normal work-time volume. Raise the sensitivity if the meter barely moves.</p>
+        <p class="hint" style="margin:0">Set the line at your normal work-time volume. Lower the sensitivity if the meter jumps too easily, raise it if it barely moves.</p>
       </div>`;
   }
 
@@ -478,7 +502,7 @@ body.proj .group li{font-size:24px}
     else if (a === 'qback') closeQ(false);
     // stations
     else if (a === 'ststart' && c) { A.stations.runs[c.id] = { round: 1, state: 'running', end: Date.now() + stMs(), left: 0 }; save(); render(); }
-    else if (c && runFor(c)) {
+    else if (/^st/.test(a) && c && runFor(c)) {
       const r = runFor(c);
       if (a === 'stpause') { r.left = stLeft(r); r.state = 'paused'; }
       else if (a === 'stresume') { r.end = Date.now() + r.left; r.state = 'running'; }
@@ -486,7 +510,6 @@ body.proj .group li{font-size:24px}
       else if (a === 'stback') { r.round = Math.max(1, r.round - 1); r.state = 'running'; r.end = Date.now() + stMs(); }
       else if (a === 'stadd') { if (r.state === 'running') r.end += 60000; else { r.left = (r.state === 'paused' ? r.left : 0) + 60000; r.state = 'paused'; } }
       else if (a === 'stend') { delete A.stations.runs[c.id]; }
-      else if (!/^t|^g/.test(a)) return;
       if (/^st/.test(a)) { save(); render(); return; }
     }
     // tally
@@ -498,6 +521,8 @@ body.proj .group li{font-size:24px}
     else if (a === 'nstart') micStart();
     else if (a === 'nstop') { micStop(); render(); }
     else if (a === 'nreset' && mic) { mic.quiet = 0; }
+    else if (a === 'ncal') startCalibration();
+    else if (a === 'nclear') { e.preventDefault(); A.noise.base = null; save(); render(); }
     // groups
     else if (a === 'gmake' && c) { A.groups.last[c.id] = makeGroups(c); save(); render(); }
   });
