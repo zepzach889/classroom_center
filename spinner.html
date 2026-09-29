@@ -6,19 +6,20 @@
 <title>Name spinner · Classroom Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-28c">
-<script src="shared/core.js?v=2026-09-28c"></script>
-<script>window.PAGE_VERSION = '2026-09-28c';</script>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-09-29a">
+<script src="shared/core.js?v=2026-09-29a"></script>
+<script>window.PAGE_VERSION = '2026-09-29a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
-.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--rule);margin-bottom:14px}
-.tabs button{font:inherit;color:var(--ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px;cursor:pointer;white-space:nowrap}
-.tabs button[aria-current="true"]{color:var(--ink);font-weight:700;border-bottom:3px double var(--land)}
+.tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
+.tabs button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:6px 18px;cursor:pointer;white-space:nowrap}
+.tabs button:hover{background:var(--wash)}
+.tabs button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
 .topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
-.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
-.seg button{font:inherit;font-size:15px;border:0;background:var(--sheet);color:var(--ink);padding:7px 14px;cursor:pointer}
-.seg button+button{border-left:1px solid var(--rule)}
+.seg{display:inline-flex;border:2px solid var(--edge);border-radius:999px;overflow:hidden}
+.seg button{font:inherit;font-size:15px;font-weight:600;border:0;background:var(--sheet);color:var(--ink);padding:7px 14px;cursor:pointer}
+.seg button+button{border-left:2px solid var(--edge)}
 .seg button[aria-pressed="true"]{background:var(--sea);color:var(--on-sea);font-weight:700}
 .stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
 .wheelcol{padding-top:10px}
@@ -29,13 +30,13 @@ body.nopanel .panel{display:none}
 canvas{display:block;max-width:100%}
 .pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:30px solid var(--ink);filter:drop-shadow(0 2px 0 var(--sheet))}
 .result{min-height:84px;text-align:center}
-.result .who{font-family:var(--serif);font-size:clamp(40px,6vw,68px);font-weight:800;line-height:1.05}
+.result .who{font-family:var(--serif);font-size:clamp(42px,6vw,72px);line-height:1.05}
 .result .sub{color:var(--ink-2);font-size:18px;margin-top:4px}
-.spin{font:inherit;font-size:22px;font-weight:700;background:var(--sea);color:var(--on-sea);border:0;border-radius:8px;padding:12px 56px;cursor:pointer}
+.spin{font:inherit;font-size:22px;font-weight:700;background:var(--sea);color:var(--on-sea);border:0;border-radius:999px;padding:12px 56px;cursor:pointer}
 .spin:disabled{opacity:.5;cursor:default}
 .below{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
-.panel h2{font-size:20px;padding-bottom:6px;border-bottom:3px double var(--land);margin-bottom:8px}
+.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:14px 16px}
+.panel h2{font-size:20px;padding-bottom:6px;border-bottom:3px solid var(--land);margin-bottom:8px}
 .count{font-size:15px;color:var(--ink-2);margin-bottom:8px}
 .plist{list-style:none;margin:0;padding:0;max-height:52vh;overflow:auto}
 .plist li{display:flex;align-items:center;gap:8px;padding:5px 2px;border-top:1px solid var(--rule);font-size:16px}
@@ -45,7 +46,7 @@ canvas{display:block;max-width:100%}
 .plist li.away{opacity:.45}
 .plist label{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--ink-2)}
 .opt{display:flex;align-items:center;gap:6px;font-size:14px;margin-top:10px}
-.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:28px;max-width:640px}
+.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
 .empty h2{margin-bottom:8px}
 @media (max-width:860px){.stage{grid-template-columns:1fr}}
 </style>
@@ -120,7 +121,7 @@ canvas{display:block;max-width:100%}
       const mid = ((a + slice / 2) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
       const left = mid > Math.PI / 2 && mid < Math.PI * 1.5;   // flip names on the left half so none read upside down
       ctx.save(); ctx.translate(cx, cy); ctx.rotate(left ? mid + Math.PI : mid);
-      ctx.fillStyle = textOn(f); ctx.font = `700 ${fs}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+      ctx.fillStyle = textOn(f); ctx.font = `700 ${fs}px Jost, "Century Gothic", system-ui, sans-serif`;
       ctx.textAlign = left ? 'left' : 'right'; ctx.textBaseline = 'middle';
       const max = r * .68; let label = x.label;
       while (ctx.measureText(label).width > max && label.length > 2) label = label.slice(0, -2) + '…';
@@ -255,6 +256,7 @@ canvas{display:block;max-width:100%}
 
   Suite.mountNav('spinner');
   render();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!spinning) draw(spunList || available(curClass())); });
 })();
 </script>
 </body>

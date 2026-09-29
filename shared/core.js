@@ -4,7 +4,8 @@
 (function () {
   'use strict';
   const PREFIX = 'suite:';
-  const PALETTE = ['#2E6378', '#B7924A', '#6B7F3A', '#7A2E4F', '#4F5D8A', '#A0643A', '#3F7F74', '#8A5A83'];
+  const PALETTE = ['#24405E', '#C99A3E', '#B84A32', '#5E806B', '#6A5577', '#3F7F8A', '#8A6A3E', '#4A5663'];
+  const OLD_PALETTE = ['#2E6378', '#B7924A', '#6B7F3A', '#7A2E4F', '#4F5D8A', '#A0643A', '#3F7F74', '#8A5A83'];
   // [id, name, seats, row, spot] — spot = position from the left, matching the room
   const DEFAULT_TABLES = [['sequoyah', 'Sequoyah', 8, 1, 1], ['delmarva', 'Delmarva', 6, 1, 2], ['franklin', 'Franklin', 6, 1, 3], ['jefferson', 'Jefferson', 6, 2, 2], ['metropotamia', 'Metropotamia', 6, 2, 3]];
   // Flip "soon" to false as each page is added to the site.
@@ -18,7 +19,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-09-28c';   // bump with every build; pages check they match
+  const VERSION = '2026-09-29a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -66,6 +67,12 @@
     students: []
   });
   S.nextColor = tables => { const used = new Set(tables.map(t => t.color)); return PALETTE.find(c => !used.has(c)) || PALETTE[tables.length % PALETTE.length]; };
+  S.textOn = hex => {
+    const h = String(hex || '').replace('#', ''); if (h.length !== 6) return '#FFFFFF';
+    const lum = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
+    const L = .2126 * lum[0] + .7152 * lum[1] + .0722 * lum[2];
+    return L > .3 ? '#1C2B3A' : '#FFFFFF';
+  };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
 
@@ -245,6 +252,15 @@
     setTimeout(() => t.remove(), 2800);
   };
 
+  (function paletteV2(){
+    try {
+      const m = S.get('meta', {}); if (m.palette2) return;
+      const list = S.get('classes', null);
+      if (list) { list.forEach(c => (c.tables || []).forEach(t => { const i = OLD_PALETTE.indexOf(String(t.color).toUpperCase()); if (i > -1) t.color = PALETTE[i]; })); rawSet('classes', list); }
+      m.palette2 = true; rawSet('meta', m);
+    } catch (e) {}
+  })();
+
   /* ---------- theme ---------- */
   const THEMES = ['auto', 'light', 'dark'];
   function applyTheme() { const t = S.get('theme', 'auto'); if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
@@ -258,7 +274,7 @@
       const b = S.backupStatus();
       const theme = S.get('theme', 'auto');
       el.innerHTML = `<div class="nav-inner">
-        <a class="wordmark" href="index.html">Classroom Suite</a>
+        <a class="wordmark" href="index.html">Classroom Suite <span class="speed" aria-hidden="true"><i></i><i></i><i></i></span></a>
         <nav aria-label="Tools"><ul>${NAV.map(n => `<li>${n.soon
           ? `<span class="soon" title="Coming soon">${S.esc(n.label)}</span>`
           : `<a href="${n.href}"${n.id === current ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`}</li>`).join('')}</ul></nav>

@@ -6,30 +6,30 @@
 <title>Dashboard · Classroom Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-28c">
-<script src="shared/core.js?v=2026-09-28c"></script>
-<script>window.PAGE_VERSION = '2026-09-28c';</script>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-09-29a">
+<script src="shared/core.js?v=2026-09-29a"></script>
+<script>window.PAGE_VERSION = '2026-09-29a';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:28px 20px 60px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:40px;align-items:start}
-.clock{font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums;font-size:clamp(72px,11vw,150px);line-height:1;letter-spacing:-.02em}
-.clock .sec{font-size:.38em;color:var(--ink-2);font-weight:400;margin-left:.12em}
-.clock .ap{font-size:.28em;color:var(--ink-2);font-weight:400;margin-left:.2em}
-.date{font-family:var(--serif);font-size:24px;color:var(--ink-2);margin:8px 0 30px}
-.status h1{font-size:clamp(34px,4.5vw,52px);margin-bottom:6px}
+.clock{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:clamp(76px,11vw,156px);line-height:1}
+.clock .sec{font-family:var(--sans);font-size:.34em;color:var(--ink-2);font-weight:500;margin-left:.14em}
+.clock .ap{font-family:var(--sans);font-size:.24em;color:var(--ink-2);font-weight:600;margin-left:.3em;letter-spacing:.1em}
+.date{font-size:22px;font-weight:500;letter-spacing:.04em;color:var(--ink-2);margin:10px 0 30px}
+.status h1{font-size:clamp(36px,4.6vw,56px);margin-bottom:6px}
 .status .range{font-size:19px;color:var(--ink-2)}
-.progress{height:14px;background:var(--wash);border:1px solid var(--rule);border-radius:7px;overflow:hidden;margin:16px 0 8px;max-width:640px}
+.progress{height:16px;background:var(--wash);border:2px solid var(--edge);border-radius:999px;overflow:hidden;margin:16px 0 8px;max-width:640px}
 .progress span{display:block;height:100%;background:var(--land)}
-.left{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.left{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
 .nextup{font-size:18px;color:var(--ink-2);margin-top:6px}
-.classbox{margin-top:34px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;max-width:640px}
+.classbox{margin-top:34px;background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;max-width:640px}
 .classbox h2{font-size:24px;margin-bottom:10px}
 .stand{list-style:none;margin:0 0 14px;padding:0}
 .stand li{display:flex;align-items:center;padding:5px 0;border-top:1px solid var(--rule);font-size:17px}
 .stand li:first-child{border-top:0}
-.stand li b{margin-left:auto;font-family:var(--serif);font-size:22px}
-.today{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
-.today h2{font-size:22px;padding-bottom:6px;border-bottom:3px double var(--land);margin-bottom:6px}
+.stand li b{margin-left:auto;font-family:var(--serif);font-size:26px;font-weight:400}
+.today{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px}
+.today h2{font-size:22px;padding-bottom:6px;border-bottom:3px solid var(--land);margin-bottom:6px}
 .today ol{list-style:none;margin:0 0 12px;padding:0}
 .today li{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:7px 8px;border-left:3px solid transparent;font-size:16px;font-variant-numeric:tabular-nums}
 .today li .t{color:var(--ink-2)}
