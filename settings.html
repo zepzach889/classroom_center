@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30a">
-<script src="shared/core.js?v=2026-09-30a"></script>
-<script>window.PAGE_VERSION = '2026-09-30a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-30b">
+<script src="shared/core.js?v=2026-09-30b"></script>
+<script>window.PAGE_VERSION = '2026-09-30b';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .rail h2{font-size:19px;margin-bottom:8px}
@@ -80,6 +80,17 @@ main{min-width:0;max-width:820px}
 .cdrow label{font-size:14px;white-space:nowrap;display:flex;gap:5px;align-items:center}
 .cdrow.past{opacity:.55}
 @media (max-width:640px){.cdrow{grid-template-columns:1fr 1fr}}
+.shuffle{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:14px 18px;margin-bottom:18px}
+.shuffle>h3{margin-bottom:4px}
+.shgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+@media (max-width:760px){.shgrid{grid-template-columns:1fr}}
+.pairs{list-style:none;margin:6px 0;padding:0}
+.pairs li{display:flex;align-items:center;gap:6px;font-size:15px}
+.pins{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;max-height:160px;overflow:auto}
+.pins label{font-size:15px;display:flex;gap:5px;align-items:center}
+.warn{color:var(--plum);font-weight:600;margin:10px 0 0}
+.roster.preview{margin-top:14px}
+.nm-static{flex:1}
 .danger-zone{margin-top:22px;padding-top:14px;border-top:1px solid var(--rule)}
 @media (max-width:760px){
   .layout{grid-template-columns:1fr;gap:18px}
@@ -102,6 +113,7 @@ main{min-width:0;max-width:820px}
     <button class="btn" data-a="addc">Add a class</button>
     <a class="jump" href="#schedule">Bell schedule</a>
     <a class="jump" href="#countdowns" style="margin-top:6px">Countdowns</a>
+    <a class="jump" href="sub.html" style="margin-top:6px">Substitute page</a>
     <a class="jump" href="#backup" style="margin-top:6px">Backup and data</a>
   </aside>
   <main>
@@ -218,6 +230,9 @@ main{min-width:0;max-width:820px}
           ${c.tables.map(t => group(t, c.students.filter(s => s.tableId === t.id))).join('')}
           ${unassigned.length ? group(null, unassigned) : ''}
         </div>
+        <div class="bar" style="margin:-4px 0 16px"><button class="btn" data-a="shopen">${shuffleOpen ? 'Close seat shuffle' : 'Shuffle seats'}</button>
+          ${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="shundo">Undo last shuffle</button>' : ''}</div>
+        ${shuffleOpen ? shufflePanel(c) : ''}
         <div class="add-names">
           <label for="names">Add students</label>
           <textarea id="names" rows="4" placeholder="One name per line"></textarea>
@@ -395,12 +410,86 @@ main{min-width:0;max-width:820px}
     Suite.set('countdowns', list);   // quiet save: no redraw while typing
   }
 
+
+  /* ---------- seat shuffle ---------- */
+  let shuffleOpen = false, proposal = null, lastSeats = null;
+  const shuf = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function proposeSeats(c){
+    const tables = c.tables.filter(t => t.open), pinned = new Set(c.pinned || []), apart = c.apart || [];
+    const assign = {}, count = {}; tables.forEach(t => { count[t.id] = 0; });
+    c.students.forEach(s => { if (pinned.has(s.id) && count[s.tableId] != null) { assign[s.id] = s.tableId; count[s.tableId]++; } });
+    // place students with keep-apart pairs first, so there's room to separate them
+    const hasPair = s => apart.some(p => p.includes(s.id));
+    const movers = shuf(c.students.filter(s => !(s.id in assign))).sort((a, b) => hasPair(b) - hasPair(a));
+    const clash = (sid, tid) => apart.some(([a, b]) => (a === sid && assign[b] === tid) || (b === sid && assign[a] === tid));
+    movers.forEach(s => {
+      let open = tables.filter(t => count[t.id] < t.seats); if (!open.length) open = tables.slice();
+      let cand = open.filter(t => !clash(s.id, t.id)); if (!cand.length) cand = open;
+      const fill = t => count[t.id] / Math.max(1, t.seats), low = Math.min(...cand.map(fill));
+      const best = cand.filter(t => fill(t) === low), t = best[Math.floor(Math.random() * best.length)];
+      assign[s.id] = t.id; count[t.id]++;
+    });
+    const conflicts = apart.filter(([a, b]) => assign[a] && assign[a] === assign[b]).length;
+    const seats = tables.reduce((n, t) => n + t.seats, 0);
+    return { assign, conflicts, over: c.students.length > seats };
+  }
+  function shufflePanel(c){
+    const byName = (a, b) => a.name.localeCompare(b.name), kids = c.students.slice().sort(byName);
+    const nm = id => (c.students.find(s => s.id === id) || { name: '?' }).name;
+    const pinned = new Set(c.pinned || []), apart = c.apart || [];
+    const opts = kids.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+    const tables = c.tables.filter(t => t.open);
+    return `<div class="shuffle">
+      <h3>Shuffle seats for ${esc(c.name)}</h3>
+      <p class="hint">Students are spread across the tables that are in use, filling each table in proportion to its seats. Nothing changes until you press Apply.</p>
+      <div class="shgrid">
+        <div><b class="small">Keep apart</b>
+          ${apart.length ? `<ul class="pairs">${apart.map((p, i) => `<li>${esc(nm(p[0]))} and ${esc(nm(p[1]))} <button class="btn quiet danger x" data-a="aprm" data-i="${i}" aria-label="Stop keeping ${esc(nm(p[0]))} and ${esc(nm(p[1]))} apart">×</button></li>`).join('')}</ul>` : '<p class="muted small" style="margin:4px 0">No pairs yet.</p>'}
+          <div class="bar"><select id="ap1" aria-label="First student">${opts}</select><select id="ap2" aria-label="Second student">${opts}</select><button class="btn" data-a="apadd">Keep apart</button></div>
+        </div>
+        <div><b class="small">Stays at their current table</b>
+          <div class="pins">${kids.map(s => `<label><input type="checkbox" data-c="pin" data-id="${esc(s.id)}"${pinned.has(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">No students yet.</span>'}</div>
+        </div>
+      </div>
+      <div class="bar" style="margin-top:14px"><button class="btn primary" data-a="shgo"${kids.length && tables.length ? '' : ' disabled'}>${proposal ? 'Shuffle again' : 'Shuffle'}</button>
+        ${proposal ? '<button class="btn primary" data-a="shapply">Apply these seats</button><button class="btn quiet" data-a="shcancel">Cancel</button>' : ''}</div>
+      ${proposal ? `${proposal.conflicts ? `<p class="warn">${proposal.conflicts} keep-apart pair${proposal.conflicts === 1 ? ' is' : 's are'} still together; there wasn't room to separate ${proposal.conflicts === 1 ? 'it' : 'them'}. Try again or open another table.</p>` : ''}
+        ${proposal.over ? '<p class="warn">There are more students than seats, so some tables are over their seat count.</p>' : ''}
+        <div class="roster preview">${tables.map(t => { const m = kids.filter(s => proposal.assign[s.id] === t.id);
+          return `<div class="group"><h3><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}<span class="fill${m.length > t.seats ? ' over' : ''}">${m.length} of ${t.seats}</span></h3>
+            <ul>${m.map(s => `<li><span class="nm-static">${esc(s.name)}${pinned.has(s.id) ? ' <span class="muted small">(stays)</span>' : s.tableId === t.id ? ' <span class="muted small">(same table)</span>' : ''}</span></li>`).join('') || '<li class="none">Empty</li>'}</ul></div>`; }).join('')}</div>` : ''}
+    </div>`;
+  }
+  function shuffleClick(a, el){
+    const list = Suite.classes(), c = current(list); if (!c) return;
+    if (a === 'shopen') { shuffleOpen = !shuffleOpen; proposal = null; render(); }
+    else if (a === 'shgo') { proposal = proposeSeats(c); render(); }
+    else if (a === 'shcancel') { proposal = null; render(); }
+    else if (a === 'shapply' && proposal) {
+      lastSeats = { classId: c.id, seats: Object.fromEntries(c.students.map(s => [s.id, s.tableId])) };
+      c.students.forEach(s => { if (proposal.assign[s.id]) s.tableId = proposal.assign[s.id]; });
+      proposal = null; shuffleOpen = false; Suite.saveClasses(list); render(); Suite.toast('New seats saved for ' + c.name);
+    }
+    else if (a === 'shundo' && lastSeats && lastSeats.classId === c.id) {
+      c.students.forEach(s => { if (s.id in lastSeats.seats) s.tableId = lastSeats.seats[s.id]; });
+      lastSeats = null; Suite.saveClasses(list); render(); Suite.toast('Seats put back');
+    }
+    else if (a === 'apadd') {
+      const x = $('#ap1').value, y = $('#ap2').value;
+      if (!x || !y || x === y) { Suite.toast('Pick two different students'); return; }
+      c.apart = (c.apart || []).filter(p => !(p.includes(x) && p.includes(y))); c.apart.push([x, y]);
+      Suite.saveClasses(list); render();
+    }
+    else if (a === 'aprm') { (c.apart || []).splice(+el.dataset.i, 1); Suite.saveClasses(list); render(); }
+  }
+
   function save(list){ Suite.saveClasses(list); keepFocus(render); }
   function withClass(fn){ const list = Suite.classes(); const c = current(list); if (c) { fn(c, list); save(list); } }
 
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, id = el.dataset.id;
+    if (['shopen','shgo','shcancel','shapply','shundo','apadd','aprm'].includes(a)) return shuffleClick(a, el);
     if (a === 'cdadd') { const l = Suite.countdowns(); const d = new Date(); d.setDate(d.getDate() + 7); l.push({ id: Suite.uid(), date: Suite.dateKey(d), label: '', school: false }); Suite.set('countdowns', l); renderCountdowns(); const f = document.querySelector('.cdrow:last-of-type [data-cd="label"]'); if (f) f.focus(); return; }
     if (a === 'cdrm') { Suite.set('countdowns', Suite.countdowns().filter(x => x.id !== id)); renderCountdowns(); return; }
     if (['spick','snew','sdel','pins','prm','padd','dadd','drm','pfill','ppass'].includes(a)) {
@@ -431,6 +520,8 @@ main{min-width:0;max-width:820px}
       if (tr) { tr.log = (tr.log || []).filter(x => x.c !== gone.id); tr.prizes = (tr.prizes || []).filter(x => x.c !== gone.id); tr.captainLog = (tr.captainLog || []).filter(x => x.c !== gone.id); ['goals', 'streaks', 'captains'].forEach(k => { if (tr[k]) delete tr[k][gone.id]; }); Suite.set('tracker', tr); }
       const tp = Suite.get('topics', null);
       if (tp && tp.claims) { Object.values(tp.claims).forEach(byClass => { delete byClass[gone.id]; }); Suite.set('topics', tp); }
+      const ag = Suite.get('agenda', null);
+      if (ag) { Object.values(ag).forEach(day => { delete day[gone.id]; }); Suite.set('agenda', ag); }
       const sp = Suite.get('spinner', null);
       if (sp) { if (sp.absent) delete sp.absent[gone.id]; if (sp.picked) Object.keys(sp.picked).forEach(k => { if (k.startsWith(gone.id + ':')) delete sp.picked[k]; }); Suite.set('spinner', sp); }
       list.splice(list.indexOf(gone), 1);
@@ -466,7 +557,7 @@ main{min-width:0;max-width:820px}
     else if (a === 'rms') {
       const s = c.students.find(x => x.id === id);
       if (!await Suite.dialog({ title: 'Remove ' + s.name + '?', body: 'They will be removed from ' + c.name + '.', ok: 'Remove', danger: true })) return;
-      withClass(k => { k.students = k.students.filter(x => x.id !== id); });
+      withClass(k => { k.students = k.students.filter(x => x.id !== id); k.pinned = (k.pinned || []).filter(x => x !== id); k.apart = (k.apart || []).filter(p => !p.includes(id)); });
     }
     else if (a === 'export') { Suite.exportBackup(); renderBackup(); Suite.toast('Backup downloaded'); }
     else if (a === 'wipe') {
@@ -513,6 +604,7 @@ main{min-width:0;max-width:820px}
       else if (c === 'topen' && t) t.open = el.checked;
       else if (c === 'tcolor' && t) t.color = el.value;
       else if (c === 'smove') { const s = k.students.find(x => x.id === id); if (s) s.tableId = el.value; }
+      else if (c === 'pin') { const set = new Set(k.pinned || []); if (el.checked) set.add(id); else set.delete(id); k.pinned = [...set]; }
       else if ((c === 'trow' || c === 'tcol') && t) {
         const lay = Suite.roomLayout(k.tables);
         k.tables.forEach(x => { if (!x.row || !x.col) { x.row = lay.at[x.id].row; x.col = lay.at[x.id].col; } });   // pin current spots

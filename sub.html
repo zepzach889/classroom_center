@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Substitute page · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-09-30b">
+<script src="shared/core.js?v=2026-09-30b"></script>
+<script>window.PAGE_VERSION = '2026-09-30b';</script>
+<style>
+.wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
+.controls{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin-bottom:24px}
+.controls h1{font-size:30px;margin-bottom:4px}
+.cgrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;margin-top:12px}
+.cgrid label.lb{display:block;font-weight:700;font-size:14px;margin-bottom:4px}
+.classpick{display:flex;flex-wrap:wrap;gap:4px 14px}
+.classpick label{display:flex;gap:5px;align-items:center;font-size:15px}
+.texts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:14px}
+.texts label.lb{display:block;font-weight:700;font-size:14px;margin-bottom:4px}
+@media (max-width:760px){.cgrid,.texts{grid-template-columns:1fr}}
+/* the printed packet */
+.sheet{background:#FFFFFF;color:#111;border:1px solid var(--rule);border-radius:6px;padding:28px 32px;margin-bottom:24px;font-size:15px}
+.sheet h2{font-size:28px;color:#111;margin-bottom:2px}
+.sheet .sub{color:#444;margin-bottom:14px}
+.sheet h3{font-size:18px;color:#111;margin:16px 0 6px;padding-bottom:3px;border-bottom:2px solid #111}
+.sheet table{width:100%;border-collapse:collapse}
+.sheet td,.sheet th{border-bottom:1px solid #ccc;padding:4px 6px;text-align:left;vertical-align:top}
+.sheet th{font-weight:600;color:#444;font-size:13px}
+.sheet .pre{white-space:pre-wrap}
+.room{display:grid;gap:10px;margin-top:6px}
+.tbl{border:1.5px solid #111;border-radius:8px;overflow:hidden;break-inside:avoid}
+.tbl .tn{color:#111;border-bottom:1.5px solid #111;padding:4px 10px;font-weight:700;font-size:16px;display:flex;justify-content:space-between}
+.tbl .tn span{font-weight:400;font-size:12px;color:#444}
+.tbl ul{list-style:none;margin:0;padding:6px 10px}
+.tbl li{padding:1px 0}
+.tbl li.cap{font-weight:700}
+.tbl.off{border-style:dashed;opacity:.6}
+.tbl.off .tn{color:#666}
+.noroster{color:#666;font-style:italic}
+.agenda ol{margin:4px 0;padding-left:22px}
+.k{font-weight:700}
+@media print{
+  @page{margin:.55in}
+  body{background:#fff}
+  #suite-nav,.controls,.backup-banner{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .sheet{border:0;border-radius:0;padding:0;margin:0;break-after:page}
+  .sheet:last-child{break-after:auto}
+}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="wrap">
+  <section class="controls" aria-labelledby="h-sub">
+    <h1 id="h-sub">Substitute page</h1>
+    <p class="hint">A packet for a substitute: the day's schedule, your notes, how table points work, and a page for each class with its room map, captains, and plan. Choose what to include, then print.</p>
+    <div class="cgrid">
+      <div><label class="lb" for="sdate">Date</label><input type="date" class="field" id="sdate"></div>
+      <div><span class="lb" style="display:block;font-weight:700;font-size:14px;margin-bottom:4px">Classes</span><div class="classpick" id="classpick"></div></div>
+    </div>
+    <div class="texts">
+      <div><label class="lb" for="snotes">Notes for the sub</label>
+        <textarea id="snotes" rows="7" placeholder="Where to find things, who to call for help, emergency procedures, students who can help..."></textarea></div>
+      <div><label class="lb" for="srules">How table points work</label>
+        <textarea id="srules" rows="7"></textarea></div>
+    </div>
+    <div class="bar" style="margin-top:14px"><button class="btn primary" id="print">Print</button><span class="muted small">Notes save automatically for next time.</span></div>
+  </section>
+  <div id="packet"></div>
+</div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  const RULES = [
+    'Each table is a team. Points go to the whole table, not to one student.',
+    '+1 for good participation or behavior. -1 for disruptions such as talking during instructions.',
+    'At the end of class: +2 if the table area is clean, +1 if it is mostly clean.',
+    'Each table has a captain who makes sure the area is cleaned up, chairs are pushed in, and papers are passed out and collected.',
+    'Please leave a note with any points you gave, and I will add them.'
+  ].join('\n');
+  const S0 = Object.assign({ notes: '', rules: RULES, skip: [] }, Suite.get('sub', {}));
+  let date = Suite.dateKey(new Date());
+  const save = () => Suite.set('sub', S0);
+
+  function parseDate(k){ const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d, 12); }
+  function render(){
+    const list = Suite.classes(), day = Suite.scheduleFor(parseDate(date));
+    const when = parseDate(date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    const T = Suite.get('tracker', {}), caps = (T && T.captains) || {};
+    const chosen = list.filter(c => !S0.skip.includes(c.id));
+    const periodFor = c => day.periods.find(p => Suite.classForPeriod(p, [c]));
+
+    const overview = `<section class="sheet">
+      <h2>Substitute plans</h2><div class="sub">${esc(when)} · ${esc(day.label)}</div>
+      ${S0.notes.trim() ? `<h3>Notes</h3><div class="pre">${esc(S0.notes.trim())}</div>` : ''}
+      <h3>Schedule</h3>
+      ${day.periods.length ? `<table><thead><tr><th>Time</th><th>Period</th><th>Class</th></tr></thead><tbody>${day.periods.filter(p => !Suite.isPassing(p)).map(p => {
+        const c = Suite.classForPeriod(p, list);
+        return `<tr><td>${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)}</td><td>${esc(p.name)}</td><td>${c ? esc(c.name) : p.isBreak ? '' : '<span style="color:#666">No class</span>'}</td></tr>`; }).join('')}</tbody></table>`
+        : '<p>No bells on this day.</p>'}
+      ${S0.rules.trim() ? `<h3>How table points work</h3><div class="pre">${esc(S0.rules.trim())}</div>` : ''}
+    </section>`;
+
+    const pages = chosen.map(c => {
+      const lay = Suite.roomLayout(c.tables), p = periodFor(c), a = Suite.agendaFor(date, c.id), cp = caps[c.id] || {};
+      const tables = c.tables.slice().sort((x, y) => lay.at[x.id].row - lay.at[y.id].row || lay.at[x.id].col - lay.at[y.id].col);
+      const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId));
+      const room = `<div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${tables.map(t => {
+        const m = c.students.filter(s => s.tableId === t.id).sort((x, y) => (x.name === cp[t.id] ? -1 : y.name === cp[t.id] ? 1 : x.name.localeCompare(y.name)));
+        return `<div class="tbl${t.open ? '' : ' off'}" style="grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col}">
+          <div class="tn">${esc(t.name)}<span>${t.open ? m.length + ' students' : 'not in use'}</span></div>
+          <ul>${m.map(s => `<li${s.name === cp[t.id] ? ' class="cap"' : ''}>${esc(s.name)}${s.name === cp[t.id] ? ' (captain)' : ''}</li>`).join('') || '<li class="noroster">Empty</li>'}</ul></div>`; }).join('')}</div>`;
+      return `<section class="sheet">
+        <h2>${esc(c.name)}</h2><div class="sub">${p ? Suite.fmt12(p.start) + ' to ' + Suite.fmt12(p.end) + ' · ' : ''}${esc(when)}</div>
+        ${a ? `<h3>Today's plan</h3><div class="agenda">
+          ${a.target ? `<div><span class="k">Learning target:</span> ${esc(a.target)}</div>` : ''}
+          ${a.items && a.items.length ? `<ol>${a.items.map(i => `<li>${esc(i)}</li>`).join('')}</ol>` : ''}
+          ${a.homework ? `<div><span class="k">Homework:</span> ${esc(a.homework)}</div>` : ''}</div>` : ''}
+        <h3>Seating chart</h3>
+        ${c.students.length ? room : '<p class="noroster">No roster entered for this class.</p>'}
+        ${unassigned.length ? `<p style="margin-top:8px"><span class="k">Not at a table:</span> ${unassigned.map(s => esc(s.name)).join(', ')}</p>` : ''}
+        <h3>Points given today</h3>
+        <table><thead><tr>${c.tables.filter(t => t.open).map(t => `<th>${esc(t.name)}</th>`).join('')}</tr></thead>
+          <tbody><tr>${c.tables.filter(t => t.open).map(() => '<td style="height:54px"></td>').join('')}</tr></tbody></table>
+      </section>`;
+    }).join('');
+    $('#packet').innerHTML = list.length ? overview + pages
+      : '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>';
+  }
+  function renderControls(){
+    const list = Suite.classes();
+    $('#sdate').value = date;
+    $('#classpick').innerHTML = list.map(c => `<label><input type="checkbox" value="${esc(c.id)}"${S0.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="muted small">No classes yet.</span>';
+    $('#snotes').value = S0.notes; $('#srules').value = S0.rules;
+  }
+  document.addEventListener('change', e => {
+    if (e.target.id === 'sdate' && e.target.value) { date = e.target.value; render(); }
+    else if (e.target.closest('#classpick')) {
+      const id = e.target.value; S0.skip = S0.skip.filter(x => x !== id); if (!e.target.checked) S0.skip.push(id); save(); render();
+    }
+  });
+  document.addEventListener('input', e => {
+    if (e.target.id === 'snotes') { S0.notes = e.target.value; save(); render(); }
+    else if (e.target.id === 'srules') { S0.rules = e.target.value; save(); render(); }
+  });
+  $('#print').addEventListener('click', () => window.print());
+  window.addEventListener('suite:change', e => { if (e.detail && e.detail.external) { renderControls(); render(); } });
+  Suite.mountNav('sub');
+  renderControls(); render();
+})();
+</script>
+</body>
+</html>

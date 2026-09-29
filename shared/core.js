@@ -20,7 +20,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-09-30a';   // bump with every build; pages check they match
+  const VERSION = '2026-09-30b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -400,6 +400,24 @@
     timerDraw();
   }, 250);
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.key === 'timer' || e.detail.key === '*')) timerDraw(); });
+
+
+  /* ---------- daily agenda (learning target, steps, homework) per class per date ---------- */
+  S.agendaAll = () => S.get('agenda', {});
+  S.agendaFor = (dateKey, classId) => { const a = S.agendaAll(); return (a[dateKey] || {})[classId] || null; };
+  // Most recent plan for a class before a date, to start from when a lesson runs several days.
+  S.lastAgenda = (dateKey, classId) => {
+    const a = S.agendaAll(); const days = Object.keys(a).filter(k => k < dateKey && a[k][classId]).sort();
+    return days.length ? a[days[days.length - 1]][classId] : null;
+  };
+  S.saveAgenda = (dateKey, classIds, entry) => {
+    const a = S.agendaAll(), day = a[dateKey] = a[dateKey] || {};
+    classIds.forEach(id => { if (entry) day[id] = JSON.parse(JSON.stringify(entry)); else delete day[id]; });
+    if (!Object.keys(day).length) delete a[dateKey];
+    const cut = new Date(); cut.setDate(cut.getDate() - 180); const ck = S.dateKey(cut);   // keep about a semester
+    Object.keys(a).forEach(k => { if (k < ck) delete a[k]; });
+    S.set('agenda', a);
+  };
 
   /* ---------- countdowns ---------- */
   S.countdowns = () => S.get('countdowns', []);

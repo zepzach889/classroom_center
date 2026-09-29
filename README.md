@@ -10,7 +10,8 @@ tracker.html      Table points
 spinner.html      Name spinner
 topics.html       Topic picker
 activities.html   Review game, station rotations, tally, partners and groups
-settings.html     Classes, tables, rosters, backups
+settings.html     Classes, tables, rosters, seat shuffle, bell schedule, countdowns, backups
+sub.html          Printable substitute packet
 shared/style.css  Shared look
 shared/core.js    Shared data and helpers
 ```
