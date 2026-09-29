@@ -14,12 +14,13 @@
     { id: 'tracker', label: 'Table points', href: 'tracker.html', soon: false },
     { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: false },
     { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: false },
+    { id: 'activities', label: 'Activities', href: 'activities.html', soon: false },
     { id: 'settings', label: 'Classes & settings', href: 'settings.html', soon: false }
   ];
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-09-29d';   // bump with every build; pages check they match
+  const VERSION = '2026-09-30a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -296,6 +297,7 @@
       });
     } catch (e) {}
   }
+  S.chime = chime;
   const PRESETS = [1, 2, 3, 5, 10, 15];
   let tEl = null, tOpen = false;
   function timerMarkup(){

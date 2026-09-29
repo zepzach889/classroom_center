@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activities · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-09-30a">
+<script src="shared/core.js?v=2026-09-30a"></script>
+<script>window.PAGE_VERSION = '2026-09-30a';</script>
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pills button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:6px 18px;cursor:pointer;white-space:nowrap}
+.pills button:hover{background:var(--wash)}
+.pills button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:6px 0 16px}
+.tooltitle{font-family:var(--serif);font-size:32px}
+.card{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:14px 18px}
+.empty{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:28px;max-width:680px}
+.empty h2{margin-bottom:8px}
+details.edit{margin-top:26px;background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:12px 18px}
+details.edit summary{cursor:pointer;font-weight:700}
+details.edit label.lb{display:block;font-weight:700;margin:12px 0 4px}
+.sp{height:10px}
+#exit-proj{display:none}
+body.proj #suite-nav,body.proj .ctl{display:none!important}
+body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
+body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
+body.proj .wrap{max-width:none;padding:24px 36px}
+
+/* ---------- review game ---------- */
+.scores{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.score{display:flex;align-items:center;gap:10px;background:var(--tc);color:var(--tx);border:2px solid var(--edge);border-radius:999px;padding:4px 8px 4px 16px}
+.score .nm{font-family:var(--serif);font-size:20px}
+.score .pt{background:var(--sheet);color:var(--ink);border-radius:999px;padding:1px 12px;font:700 18px var(--sans);font-variant-numeric:tabular-nums;min-width:56px;text-align:center}
+.board{display:grid;gap:10px}
+.board .cat{font-family:var(--serif);font-size:19px;text-align:center;background:var(--sea);color:var(--on-sea);border-radius:14px;padding:12px 8px;display:flex;align-items:center;justify-content:center;min-height:62px;line-height:1.15}
+.board .sq{font:inherit;font-family:var(--serif);font-size:36px;color:var(--ink);background:var(--sheet);border:2px solid var(--edge);border-radius:14px;min-height:78px;cursor:pointer}
+.board .sq:hover{background:var(--wash)}
+.board .sq.used{color:transparent;background:var(--wash);border-style:dashed;border-color:var(--rule);cursor:pointer}
+.board .sq.blank{visibility:hidden}
+.final{margin:0 0 14px;background:var(--land);color:var(--on-land);border-radius:16px;padding:12px 18px;font-size:20px}
+.final b{font-family:var(--serif);font-weight:400;font-size:26px}
+.qview{position:fixed;inset:0;z-index:50;background:var(--paper);display:flex;flex-direction:column;align-items:center;padding:24px;overflow:auto}
+.qhead{width:100%;max-width:1100px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.qcat{font-family:var(--serif);font-size:28px}
+.qcat span{font-family:var(--sans);font-weight:700;font-size:22px;color:var(--land);margin-left:12px}
+.qtext{max-width:1100px;width:100%;flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;gap:28px;padding:20px 0}
+.qtext .q{font-size:clamp(30px,4.4vw,58px);font-weight:600;line-height:1.2}
+.qtext .a{font-family:var(--serif);font-size:clamp(28px,4vw,52px);color:var(--land)}
+.qscore{width:100%;max-width:1100px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.qteam{display:flex;align-items:center;gap:6px;border:2px solid var(--edge);border-radius:999px;padding:4px;background:var(--sheet)}
+.qteam .nm{padding:0 10px 0 12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.qteam button{font:inherit;font-weight:700;font-size:15px;border-radius:999px;border:2px solid var(--edge);padding:5px 12px;cursor:pointer;background:var(--sheet);color:var(--ink)}
+.qteam .plus{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.qteam .minus{color:var(--plum);border-color:var(--plum)}
+.qteam .tot{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:center}
+.qfoot{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.qfoot .btn{font-size:18px;min-height:50px;padding:8px 24px}
+body.proj .board .cat{font-size:24px;min-height:80px}
+body.proj .board .sq{font-size:48px;min-height:100px}
+body.proj .score .nm{font-size:26px}
+body.proj .score .pt{font-size:24px}
+
+/* ---------- stations ---------- */
+.st-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.st-round{font-family:var(--serif);font-size:30px}
+.st-clock{font-family:var(--serif);font-size:clamp(56px,8vw,110px);line-height:1;font-variant-numeric:tabular-nums}
+.st-clock.low{color:var(--land)}
+.st-msg{font-family:var(--serif);font-size:30px;color:var(--land)}
+.st-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.station{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;overflow:hidden}
+.station h3{background:var(--sea);color:var(--on-sea);padding:10px 16px;font-size:22px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.station h3 span{font:600 14px var(--sans);opacity:.8}
+.station .who{padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px;min-height:64px;align-items:center}
+.tchip{background:var(--tc);color:var(--tx);border:2px solid var(--edge);border-radius:999px;padding:4px 16px;font-family:var(--serif);font-size:20px}
+.station .who .none{color:var(--ink-2);font-size:15px}
+.st-controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.setup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+.setup label.lb{display:block;font-weight:700;margin:0 0 4px}
+@media (max-width:760px){.setup{grid-template-columns:1fr}}
+body.proj .station h3{font-size:30px}
+body.proj .tchip{font-size:28px}
+
+/* ---------- tally ---------- */
+.tq{font-size:24px;width:100%;margin-bottom:14px;font-weight:600}
+.tq-show{font-family:var(--serif);font-size:40px;margin-bottom:18px}
+.trow{display:grid;grid-template-columns:minmax(120px,220px) 110px minmax(0,1fr) auto;gap:12px;align-items:center;margin-bottom:12px}
+.trow .field{width:100%;font-weight:600}
+.trow .lab{font-family:var(--serif);font-size:28px}
+.tbtn{font:inherit;font-size:30px;font-weight:700;background:var(--sea);color:var(--on-sea);border:0;border-radius:18px;min-height:64px;cursor:pointer;font-variant-numeric:tabular-nums}
+.tbtn:active{transform:scale(.97)}
+.tbar{height:44px;background:var(--wash);border:2px solid var(--edge);border-radius:999px;overflow:hidden}
+.tbar span{display:block;height:100%;background:var(--land);transition:width .2s}
+.tminus{min-width:42px}
+body.proj .trow{grid-template-columns:minmax(160px,300px) 130px minmax(0,1fr)}
+body.proj .trow .lab{font-size:40px}
+body.proj .tbar{height:60px}
+
+/* ---------- groups ---------- */
+.gctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.gctl .num{width:70px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-top:18px}
+.group{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;overflow:hidden}
+.group h3{background:var(--sea);color:var(--on-sea);padding:8px 16px;font-size:22px}
+.group ul{list-style:none;margin:0;padding:10px 16px 12px}
+.group li{padding:4px 0;font-size:18px;display:flex;align-items:center;border-top:1px solid var(--rule)}
+.group li:first-child{border-top:0}
+.outlist{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px}
+.outlist label{font-size:15px;display:flex;gap:5px;align-items:center}
+body.proj .group h3{font-size:28px}
+body.proj .group li{font-size:24px}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  const TOOLS = [['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Groups']];
+  const DEF = {
+    tool: 'game', cur: null, games: [], activeGame: null, scores: {}, used: {},
+    stations: { text: 'Primary source\nMap work\nArtifact\nVocabulary', minutes: 10, auto: true, runs: {} },
+    tally: { question: '', options: [{ label: 'A', n: 0 }, { label: 'B', n: 0 }, { label: 'C', n: 0 }, { label: 'D', n: 0 }] },
+    groups: { mode: 'pairs', n: 3, mix: false, last: {} }
+  };
+  let A, proj = false, openQ = null, editing = false;
+  const out = {};   // students left out of this grouping (this visit only, not saved)
+
+  function load(){
+    const g = Suite.get('activities', {}), d = JSON.parse(JSON.stringify(DEF));
+    A = Object.assign(d, g);
+    A.stations = Object.assign(d.stations, g.stations || {}); A.stations.runs = A.stations.runs || {};
+    A.tally = Object.assign(JSON.parse(JSON.stringify(DEF.tally)), g.tally || {});
+    A.groups = Object.assign(JSON.parse(JSON.stringify(DEF.groups)), g.groups || {}); A.groups.last = A.groups.last || {};
+    A.scores = A.scores || {}; A.used = A.used || {}; A.games = A.games || [];
+  }
+  function save(){ Suite.set('activities', A); }
+  load();
+  { const m = location.hash.match(/tool=(\w+)/); if (m && TOOLS.some(t => t[0] === m[1])) A.tool = m[1]; }
+
+  const classes = () => Suite.classes();
+  const curClass = () => { const l = classes(); return l.find(c => c.id === A.cur) || l[0] || null; };
+  function roomOrder(c){
+    const lay = Suite.roomLayout(c.tables);
+    return Suite.activeTables(c).slice().sort((a, b) => lay.at[a.id].row - lay.at[b.id].row || lay.at[a.id].col - lay.at[b.id].col);
+  }
+  const chip = t => `style="--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)}"`;
+  const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  /* ================= review game ================= */
+  const curGame = () => A.games.find(g => g.id === A.activeGame) || A.games[0] || null;
+  const scoreFor = (g, c) => ((A.scores[g.id] = A.scores[g.id] || {})[c.id] = A.scores[g.id][c.id] || {});
+  const usedFor = (g, c) => ((A.used[g.id] = A.used[g.id] || {})[c.id] = A.used[g.id][c.id] || []);
+  const val = qi => (qi + 1) * 100;
+  const gameText = g => g.cats.flatMap(ct => ct.qs.map(q => [ct.name, q.q, q.a].join(' | '))).join('\n');
+  function parseGame(text){
+    const cats = [], warn = [];
+    text.split('\n').map(l => l.trim()).filter(Boolean).forEach((l, n) => {
+      const parts = l.split('|').map(x => x.trim());
+      if (parts.length < 3 || !parts[0] || !parts[1]) { warn.push('Line ' + (n + 1) + ' needs Category | Question | Answer'); return; }
+      let ct = cats.find(x => x.name.toLowerCase() === parts[0].toLowerCase());
+      if (!ct) { if (cats.length >= 6) { warn.push('Only 6 categories fit; "' + parts[0] + '" was left out'); return; } ct = { name: parts[0], qs: [] }; cats.push(ct); }
+      if (ct.qs.length >= 5) { warn.push('Only 5 questions fit in "' + ct.name + '"'); return; }
+      ct.qs.push({ q: parts[1], a: parts.slice(2).join(' | ') });
+    });
+    return { cats, warn };
+  }
+
+  function gameView(c){
+    const g = curGame();
+    const pickGame = A.games.length > 1 ? `<label class="visually-hidden" for="gsel">Game</label><select id="gsel" data-c="game">${A.games.map(x => `<option value="${esc(x.id)}"${g && x.id === g.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : '';
+    const bar = `<div class="toolbar ctl"><div class="tooltitle">${g ? esc(g.name) : 'Review game'}</div>
+      <div class="bar">${pickGame}<button class="btn" data-a="gnew">New game</button>${g ? '<button class="btn" data-a="greset">Reset this class\'s board</button><button class="btn" data-a="proj">Projector view</button>' : ''}</div></div>`;
+    if (!g) return bar + `<div class="empty"><h2>Make a review game</h2><p>A board of questions by category, worth 100 to 500 points. Your tables are the teams. One game works for every class, and each class keeps its own scores.</p><button class="btn primary" data-a="gnew">New game</button></div>`;
+    if (!c) return bar + `<div class="empty"><h2>Add a class first</h2><p>The tables in Classes & settings are the teams.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    const teams = roomOrder(c), sc = scoreFor(g, c), used = usedFor(g, c);
+    const rows = Math.max(0, ...g.cats.map(ct => ct.qs.length));
+    const total = g.cats.reduce((a, ct) => a + ct.qs.length, 0);
+    let final = '';
+    if (total && used.length >= total && teams.length) {
+      const top = Math.max(...teams.map(t => sc[t.id] || 0));
+      const win = teams.filter(t => (sc[t.id] || 0) === top);
+      final = `<div class="final">Final score: <b>${win.map(t => esc(t.name)).join(' and ')}</b> ${win.length > 1 ? 'tie' : 'wins'} with ${top} points.</div>`;
+    }
+    const grid = g.cats.length ? `<div class="board" style="grid-template-columns:repeat(${g.cats.length},minmax(0,1fr))">
+        ${g.cats.map(ct => `<div class="cat">${esc(ct.name)}</div>`).join('')}
+        ${Array.from({ length: rows }, (_, qi) => g.cats.map((ct, ci) => ct.qs[qi]
+          ? `<button class="sq${used.includes(ci + '-' + qi) ? ' used' : ''}" data-a="q" data-ci="${ci}" data-qi="${qi}" aria-label="${esc(ct.name)} for ${val(qi)}${used.includes(ci + '-' + qi) ? ', already played' : ''}">${val(qi)}</button>`
+          : '<div class="sq blank"></div>').join('')).join('')}
+      </div>` : '<p class="muted">This game has no questions yet. Add them below.</p>';
+    return bar + final +
+      `<div class="scores">${teams.map(t => `<div class="score" ${chip(t)}><span class="nm">${esc(t.name)}</span><span class="pt">${sc[t.id] || 0}</span></div>`).join('')}</div>` +
+      grid +
+      `<details class="edit ctl"${editing || !total ? ' open' : ''}><summary>Edit this game</summary>
+        <label class="lb" for="gname">Game name</label><input id="gname" class="field" style="width:100%" data-c="gname" value="${esc(g.name)}">
+        <label class="lb" for="gtext">Questions</label>
+        <p class="hint" style="margin-top:0">One question per line: <b>Category | Question | Answer</b>. Up to 6 categories with 5 questions each. Within a category, the first question is worth 100, the next 200, and so on.</p>
+        <textarea id="gtext" rows="12" placeholder="Egypt | What river flooded every year and made farming possible? | The Nile&#10;Egypt | What were Egyptian kings called? | Pharaohs&#10;Mesopotamia | What is the oldest known writing system? | Cuneiform">${esc(gameText(g))}</textarea>
+        <div class="bar" style="margin-top:8px"><button class="btn primary" data-a="gsave">Save questions</button><span class="sp"></span>
+          <button class="btn danger" data-a="gdel">Delete this game</button></div>
+        <p class="hint" style="margin-top:10px">Clicking a square that was already played opens it again, in case you need to redo it.</p>
+      </details>` + questionView(g, c);
+  }
+  function questionView(g, c){
+    if (!openQ) return '';
+    const ct = g.cats[openQ.ci], q = ct && ct.qs[openQ.qi];
+    if (!q) { openQ = null; return ''; }
+    const v = val(openQ.qi), sc = scoreFor(g, c);
+    return `<div class="qview" role="dialog" aria-modal="true" aria-label="${esc(ct.name)} for ${v}">
+      <div class="qhead"><div class="qcat">${esc(ct.name)}<span>${v}</span></div><button class="btn" data-a="qback">Back to the board</button></div>
+      <div class="qtext"><div class="q">${esc(q.q)}</div>${openQ.showA ? `<div class="a">${esc(q.a)}</div>` : ''}</div>
+      ${openQ.showA ? '' : '<div class="qfoot"><button class="btn primary" data-a="qans" id="qans">Show answer</button></div>'}
+      <div class="qscore" style="margin-top:18px">${roomOrder(c).map(t => `<div class="qteam"><span class="nm"><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}</span>
+        <button class="plus" data-a="qpt" data-id="${esc(t.id)}" data-d="${v}">+${v}</button><button class="minus" data-a="qpt" data-id="${esc(t.id)}" data-d="${-v}">−${v}</button>
+        <span class="tot">${sc[t.id] || 0}</span></div>`).join('')}</div>
+      <p class="hint" style="text-align:center;margin-top:10px">Space shows the answer. Esc goes back to the board.</p>
+    </div>`;
+  }
+  function closeQ(markUsed){
+    const g = curGame(), c = curClass();
+    if (g && c && openQ && (markUsed || openQ.showA || openQ.scored)) { const u = usedFor(g, c), k = openQ.ci + '-' + openQ.qi; if (!u.includes(k)) u.push(k); }
+    openQ = null; save(); render();
+  }
+
+  /* ================= stations ================= */
+  const stationNames = () => A.stations.text.split('\n').map(s => s.trim()).filter(Boolean);
+  const runFor = c => A.stations.runs[c.id];
+  const stMs = () => Math.max(1, Number(A.stations.minutes) || 10) * 60000;
+  const stLeft = r => r.state === 'running' ? Math.max(0, r.end - Date.now()) : r.state === 'paused' ? r.left : 0;
+  function stationsView(c){
+    const names = stationNames();
+    const head = `<div class="toolbar ctl"><div class="tooltitle">Station rotations</div><div class="bar"><button class="btn" data-a="proj">Projector view</button></div></div>`;
+    if (!c) return head + `<div class="empty"><h2>Add a class first</h2><p>Stations rotate your tables from Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    const teams = roomOrder(c), r = runFor(c);
+    const place = round => { const at = names.map(() => []); if (names.length) teams.forEach((t, k) => at[(k + round - 1) % names.length].push(t)); return at; };
+    const cards = round => `<div class="st-grid">${names.map((n, i) => `<div class="station"><h3>${esc(n)}<span>Station ${i + 1}</span></h3>
+      <div class="who">${place(round)[i].map(t => `<span class="tchip" ${chip(t)}>${esc(t.name)}</span>`).join('') || '<span class="none">Open</span>'}</div></div>`).join('')}</div>`;
+    if (!r) {
+      return head + `<div class="card ctl setup">
+          <div><label class="lb" for="sttext">Stations</label><p class="hint" style="margin-top:0">One per line, in the order tables move through them.</p>
+            <textarea id="sttext" rows="7" data-c="sttext">${esc(A.stations.text)}</textarea></div>
+          <div><label class="lb" for="stmin">Minutes at each station</label><input id="stmin" class="field num" type="number" min="1" max="120" data-c="stmin" value="${A.stations.minutes}">
+            <label class="lb" style="margin-top:14px">When time's up</label>
+            <label style="display:flex;gap:6px;align-items:center"><input type="radio" name="stauto" data-c="stauto" value="1"${A.stations.auto ? ' checked' : ''}> Chime and rotate automatically</label>
+            <label style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="radio" name="stauto" data-c="stauto" value="0"${A.stations.auto ? '' : ' checked'}> Chime, then wait for me to rotate</label>
+            <div class="bar" style="margin-top:18px"><button class="btn primary" data-a="ststart"${names.length && teams.length ? '' : ' disabled'}>Start stations</button></div></div>
+        </div>
+        <h2 style="margin:22px 0 10px;font-size:24px">Where each table starts</h2>${names.length ? cards(1) : '<p class="muted">Add at least one station.</p>'}`;
+    }
+    const left = stLeft(r);
+    const msg = r.state === 'done' ? 'All stations done!' : r.state === 'waiting' ? 'Time to rotate!' : r.state === 'paused' ? 'Paused' : '';
+    return head + `<div class="st-top"><div><div class="st-round">Round ${r.round} of ${names.length}</div><div class="st-msg" id="stmsg">${msg}</div></div>
+        <div class="st-clock${left <= 30000 && r.state === 'running' ? ' low' : ''}" id="stclock">${Suite.fmtDuration(left)}</div></div>
+      ${cards(r.round)}
+      <div class="st-controls ctl">
+        ${r.state === 'running' ? '<button class="btn" data-a="stpause">Pause</button>' : r.state === 'paused' ? '<button class="btn primary" data-a="stresume">Resume</button>' : ''}
+        ${r.state !== 'done' ? `<button class="btn${r.state === 'waiting' ? ' primary' : ''}" data-a="strotate">${r.round < names.length ? 'Rotate now' : 'Finish'}</button>` : ''}
+        <button class="btn" data-a="stback"${r.round > 1 ? '' : ' disabled'}>Back one station</button>
+        <button class="btn" data-a="stadd">+1 min</button>
+        <button class="btn danger" data-a="stend">${r.state === 'done' ? 'Close stations' : 'End stations'}</button>
+      </div>`;
+  }
+  function stNext(c, r){
+    const n = stationNames().length;
+    if (r.round >= n) { r.state = 'done'; r.left = 0; }
+    else { r.round++; r.state = 'running'; r.end = Date.now() + stMs(); }
+  }
+  setInterval(() => {
+    const c = curClass(); if (!c) return;
+    let changed = false;
+    Object.entries(A.stations.runs).forEach(([cid, r]) => {
+      if (r.state === 'running' && Date.now() >= r.end) {
+        const k = classes().find(x => x.id === cid);
+        if (A.stations.auto) { if (k) stNext(k, r); } else { r.state = 'waiting'; r.left = 0; }
+        changed = true;
+        if (cid === c.id && A.tool === 'stations' && document.visibilityState === 'visible') Suite.chime();
+      }
+    });
+    if (changed) { save(); render(); return; }
+    if (A.tool !== 'stations') return;
+    const r = runFor(c), el = document.getElementById('stclock');
+    if (r && el) { const left = stLeft(r); el.textContent = Suite.fmtDuration(left); el.classList.toggle('low', r.state === 'running' && left <= 30000); }
+  }, 250);
+
+  /* ================= tally ================= */
+  function tallyView(){
+    const T = A.tally, total = T.options.reduce((a, o) => a + o.n, 0), max = Math.max(1, ...T.options.map(o => o.n));
+    return `<div class="toolbar ctl"><div class="tooltitle">Tally</div><div class="bar">
+        <button class="btn" data-a="treset">Reset counts</button><button class="btn" data-a="proj">Projector view</button></div></div>
+      ${proj ? (T.question ? `<div class="tq-show">${esc(T.question)}</div>` : '')
+        : `<label class="visually-hidden" for="tq">Question</label><input id="tq" class="field tq" data-c="tq" value="${esc(T.question)}" placeholder="What are we voting on? (optional)">`}
+      ${T.options.map((o, i) => `<div class="trow">
+        ${proj ? `<div class="lab">${esc(o.label)}</div>` : `<input class="field" data-c="tlabel" data-i="${i}" value="${esc(o.label)}" aria-label="Option ${i + 1} name">`}
+        <button class="tbtn" data-a="tplus" data-i="${i}" aria-label="Add one to ${esc(o.label)}">${o.n}</button>
+        <div class="tbar" aria-hidden="true"><span style="width:${(o.n / max * 100).toFixed(1)}%"></span></div>
+        ${proj ? '' : `<span class="bar"><button class="btn tminus" data-a="tminus" data-i="${i}" aria-label="Take one from ${esc(o.label)}">−1</button>${T.options.length > 2 ? `<button class="btn quiet danger" data-a="trm" data-i="${i}" aria-label="Remove ${esc(o.label)}">×</button>` : ''}</span>`}
+      </div>`).join('')}
+      <div class="bar ctl" style="margin-top:6px">${T.options.length < 6 ? '<button class="btn" data-a="tadd">Add an option</button>' : ''}
+        <span class="muted">${total} vote${total === 1 ? '' : 's'} total. Number keys 1 to ${T.options.length} add a vote.</span></div>`;
+  }
+
+  /* ================= groups ================= */
+  function makeGroups(c){
+    const G = A.groups, skip = out[c.id] || new Set();
+    const people = c.students.filter(s => !skip.has(s.id));
+    if (!people.length) return [];
+    let count;
+    if (G.mode === 'pairs') count = Math.max(1, Math.floor(people.length / 2));
+    else if (G.mode === 'size') count = Math.max(1, Math.floor(people.length / Math.max(2, G.n)));
+    else count = Math.max(1, Math.min(people.length, G.n));
+    let order;
+    if (G.mix) {   // spread each table's students across the groups
+      const byTable = {}; shuffle(people).forEach(s => (byTable[s.tableId] = byTable[s.tableId] || []).push(s));
+      order = shuffle(Object.values(byTable)).flat();
+    } else order = shuffle(people);
+    const groups = Array.from({ length: count }, () => []);
+    order.forEach((s, i) => groups[i % count].push(s.id));
+    return groups;
+  }
+  function groupsView(c){
+    const G = A.groups;
+    const head = `<div class="toolbar ctl"><div class="tooltitle">Partners and groups</div><div class="bar"><button class="btn" data-a="proj">Projector view</button></div></div>`;
+    if (!c) return head + `<div class="empty"><h2>Add a class first</h2><p>Groups are made from the rosters in Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    if (!c.students.length) return head + `<div class="empty"><h2>No students in ${esc(c.name)} yet</h2><a class="btn primary" href="settings.html#class=${esc(c.id)}">Add a roster</a></div>`;
+    const skip = out[c.id] || new Set();
+    const res = (G.last[c.id] || []).map(g => g.map(id => c.students.find(s => s.id === id)).filter(Boolean)).filter(g => g.length);
+    const color = s => { const t = c.tables.find(x => x.id === s.tableId); return t ? t.color : '#8A9491'; };
+    return head + `<div class="card ctl">
+        <div class="gctl">
+          <label class="visually-hidden" for="gmode">Kind of groups</label>
+          <select id="gmode" data-c="gmode">
+            <option value="pairs"${G.mode === 'pairs' ? ' selected' : ''}>Partners</option>
+            <option value="size"${G.mode === 'size' ? ' selected' : ''}>Groups of a size</option>
+            <option value="count"${G.mode === 'count' ? ' selected' : ''}>A number of groups</option>
+          </select>
+          ${G.mode === 'pairs' ? '' : `<input class="field num" type="number" min="2" max="30" data-c="gn" value="${G.n}" aria-label="${G.mode === 'size' ? 'Students per group' : 'Number of groups'}"><span>${G.mode === 'size' ? 'students per group' : 'groups'}</span>`}
+          <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-c="gmix"${G.mix ? ' checked' : ''}> Mix up the tables</label>
+          <button class="btn primary" data-a="gmake">${res.length ? 'Shuffle again' : 'Make groups'}</button>
+        </div>
+        <details style="margin-top:10px"><summary class="small">Leave someone out this round${skip.size ? ` (${skip.size} left out)` : ''}</summary>
+          <div class="outlist">${c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => `<label><input type="checkbox" data-c="gin" data-id="${esc(s.id)}"${skip.has(s.id) ? '' : ' checked'}> ${esc(s.name)}</label>`).join('')}</div>
+          <p class="hint" style="margin-top:6px">This is only for making groups right now. Nothing is saved.</p></details>
+        ${G.mode === 'pairs' ? '<p class="hint" style="margin:8px 0 0">With an odd number, one group gets three.</p>' : ''}
+      </div>
+      ${res.length ? `<div class="ggrid">${res.map((g, i) => `<div class="group"><h3>${G.mode === 'pairs' ? 'Partners' : 'Group'} ${i + 1}</h3>
+        <ul>${g.map(s => `<li><span class="swatch" style="background:${esc(color(s))}"></span>${esc(s.name)}</li>`).join('')}</ul></div>`).join('')}</div>` : ''}`;
+  }
+
+  /* ================= page ================= */
+  function render(){
+    document.body.classList.toggle('proj', proj);
+    const cl = classes(), c = curClass();
+    if (c) A.cur = c.id;
+    const needsClass = A.tool !== 'tally';
+    const top = `<nav class="pills ctl" aria-label="Activity">${TOOLS.map(([k, l]) => `<button data-a="tool" data-id="${k}"${A.tool === k ? ' aria-current="true"' : ''}>${l}</button>`).join('')}</nav>
+      ${needsClass && cl.length > 1 ? `<nav class="pills ctl" aria-label="Class periods">${cl.map(k => `<button data-a="pickc" data-id="${esc(k.id)}"${c && k.id === c.id ? ' aria-current="true"' : ''} style="font-size:14px;padding:4px 14px">${esc(k.name)}</button>`).join('')}</nav>` : ''}`;
+    const body = A.tool === 'game' ? gameView(c) : A.tool === 'stations' ? stationsView(c) : A.tool === 'tally' ? tallyView() : groupsView(c);
+    $('#app').innerHTML = top + body;
+    history.replaceState(null, '', '#tool=' + A.tool);
+    const qa = document.getElementById('qans'); if (qa) qa.focus();
+  }
+
+  document.addEventListener('click', async e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a, id = el.dataset.id, c = curClass(), g = curGame();
+    if (a === 'tool') { A.tool = id; openQ = null; save(); render(); }
+    else if (a === 'pickc') { A.cur = id; openQ = null; save(); render(); }
+    else if (a === 'proj') { proj = !proj; render(); }
+    // review game
+    else if (a === 'gnew') {
+      const name = await Suite.dialog({ title: 'Name the review game', input: 'Unit review', ok: 'Create game' });
+      if (!name) return;
+      const n = { id: Suite.uid(), name, cats: [] }; A.games.push(n); A.activeGame = n.id; editing = true; save(); render();
+      const t = document.getElementById('gtext'); if (t) t.focus();
+    }
+    else if (a === 'gsave' && g) {
+      const r = parseGame($('#gtext').value);
+      g.cats = r.cats; editing = false; save(); render();
+      if (r.warn.length) await Suite.dialog({ title: 'Saved, with a note', body: r.warn.slice(0, 4).join('. ') + '.', alert: true });
+      else Suite.toast('Questions saved');
+    }
+    else if (a === 'gdel' && g) {
+      if (!await Suite.dialog({ title: 'Delete "' + g.name + '"?', body: 'The questions and every class\'s scores for it will be deleted.', ok: 'Delete game', danger: true })) return;
+      A.games = A.games.filter(x => x.id !== g.id); delete A.scores[g.id]; delete A.used[g.id]; A.activeGame = null; save(); render();
+    }
+    else if (a === 'greset' && g && c) {
+      if (!await Suite.dialog({ title: 'Reset the board for ' + c.name + '?', body: 'Scores go back to zero and every square opens up again. Other classes are not affected.', ok: 'Reset board', danger: true })) return;
+      A.scores[g.id][c.id] = {}; A.used[g.id][c.id] = []; save(); render();
+    }
+    else if (a === 'q') { openQ = { ci: +el.dataset.ci, qi: +el.dataset.qi, showA: false, scored: false }; render(); }
+    else if (a === 'qans' && openQ) { openQ.showA = true; render(); }
+    else if (a === 'qpt' && openQ && g && c) { const sc = scoreFor(g, c); sc[id] = (sc[id] || 0) + +el.dataset.d; openQ.scored = true; save(); render(); }
+    else if (a === 'qback') closeQ(false);
+    // stations
+    else if (a === 'ststart' && c) { A.stations.runs[c.id] = { round: 1, state: 'running', end: Date.now() + stMs(), left: 0 }; save(); render(); }
+    else if (c && runFor(c)) {
+      const r = runFor(c);
+      if (a === 'stpause') { r.left = stLeft(r); r.state = 'paused'; }
+      else if (a === 'stresume') { r.end = Date.now() + r.left; r.state = 'running'; }
+      else if (a === 'strotate') stNext(c, r);
+      else if (a === 'stback') { r.round = Math.max(1, r.round - 1); r.state = 'running'; r.end = Date.now() + stMs(); }
+      else if (a === 'stadd') { if (r.state === 'running') r.end += 60000; else { r.left = (r.state === 'paused' ? r.left : 0) + 60000; r.state = 'paused'; } }
+      else if (a === 'stend') { delete A.stations.runs[c.id]; }
+      else if (!/^t|^g/.test(a)) return;
+      if (/^st/.test(a)) { save(); render(); return; }
+    }
+    // tally
+    if (a === 'tplus') { A.tally.options[+el.dataset.i].n++; save(); render(); }
+    else if (a === 'tminus') { const o = A.tally.options[+el.dataset.i]; o.n = Math.max(0, o.n - 1); save(); render(); }
+    else if (a === 'tadd') { A.tally.options.push({ label: String.fromCharCode(65 + A.tally.options.length), n: 0 }); save(); render(); }
+    else if (a === 'trm') { A.tally.options.splice(+el.dataset.i, 1); save(); render(); }
+    else if (a === 'treset') { A.tally.options.forEach(o => { o.n = 0; }); save(); render(); }
+    // groups
+    else if (a === 'gmake' && c) { A.groups.last[c.id] = makeGroups(c); save(); render(); }
+  });
+
+  document.addEventListener('change', e => {
+    const el = e.target, k = el.dataset.c, c = curClass(), g = curGame();
+    if (!k) return;
+    if (k === 'game') { A.activeGame = el.value; openQ = null; }
+    else if (k === 'gname' && g) g.name = el.value.trim() || g.name;
+    else if (k === 'sttext') A.stations.text = el.value;
+    else if (k === 'stmin') A.stations.minutes = Math.max(1, Math.min(120, parseInt(el.value, 10) || 10));
+    else if (k === 'stauto') A.stations.auto = el.value === '1';
+    else if (k === 'tq') { A.tally.question = el.value; save(); return; }
+    else if (k === 'tlabel') { A.tally.options[+el.dataset.i].label = el.value.trim() || A.tally.options[+el.dataset.i].label; save(); return; }
+    else if (k === 'gmode') A.groups.mode = el.value;
+    else if (k === 'gn') A.groups.n = Math.max(2, Math.min(30, parseInt(el.value, 10) || 3));
+    else if (k === 'gmix') A.groups.mix = el.checked;
+    else if (k === 'gin' && c) { const s = out[c.id] = out[c.id] || new Set(); if (el.checked) s.delete(el.dataset.id); else s.add(el.dataset.id); render(); const d = document.querySelector('.card details'); if (d) d.open = true; return; }
+    else return;
+    save(); render();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('.suite-dialog') || document.body.classList.contains('timer-open')) return;
+    if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) return;
+    if (openQ) {
+      if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); if (!openQ.showA) { openQ.showA = true; render(); } }
+      else if (e.key === 'Escape') closeQ(false);
+      return;
+    }
+    if (A.tool === 'tally' && /^[1-6]$/.test(e.key)) { const o = A.tally.options[+e.key - 1]; if (o) { o.n++; save(); render(); } return; }
+    if (e.key === 'Escape' && proj) { proj = false; render(); }
+  });
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*' || e.detail.key === 'classes')) { if (e.detail.external || e.detail.key === '*') load(); render(); } });
+
+  Suite.mountNav('activities');
+  render();
+})();
+</script>
+</body>
+</html>
