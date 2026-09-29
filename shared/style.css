@@ -73,7 +73,7 @@ textarea{width:100%;resize:vertical}
 .field.num{width:76px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .swatch{display:inline-block;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--ink);vertical-align:-1px;margin-right:8px}
-.scroll{overflow-x:auto}
+.scroll{overflow-x:auto;position:relative}
 
 /* dialog + toast */
 .suite-dialog-back{position:fixed;inset:0;background:rgba(12,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
@@ -109,3 +109,15 @@ textarea{width:100%;resize:vertical}
 #suite-timer.is-done{background:var(--wash)}
 #suite-timer.is-done .st-time{color:var(--land)}
 @media (prefers-reduced-motion:no-preference){#suite-timer.is-done .st-time{animation:st-blink 1s steps(2,start) infinite}@keyframes st-blink{to{visibility:hidden}}}
+
+.gear{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;color:var(--bar-ink);border:2px solid transparent}
+.gear:hover{color:#FFFFFF;border-color:var(--bar-ink)}
+.gear.on{color:#FFFFFF;border-color:var(--land)}
+#suite-nav.slim .gear{width:32px;height:32px}
+
+@media (max-width:640px){
+  .nav-inner{gap:8px 14px}
+  .nav-inner nav{flex-basis:100%;order:3}
+  .nav-inner ul{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .nav-inner ul::-webkit-scrollbar{display:none}
+}

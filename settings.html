@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30c">
-<script src="shared/core.js?v=2026-09-30c"></script>
-<script>window.PAGE_VERSION = '2026-09-30c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-09-30e">
+<script src="shared/core.js?v=2026-09-30e"></script>
+<script>window.PAGE_VERSION = '2026-09-30e';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .rail h2{font-size:19px;margin-bottom:8px}
@@ -64,18 +64,37 @@ main{min-width:0;max-width:820px}
 .stabs button{font:inherit;font-size:15px;background:var(--sheet);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:5px 12px;cursor:pointer}
 .stabs button[aria-current="true"]{border-color:var(--land);box-shadow:inset 0 -3px 0 var(--land);font-weight:700}
 .stabs button:last-child{border-style:dashed;color:var(--ink-2)}
-.grid-table.sched input.time{width:112px}
-.grid-table.sched input.time.bad{border-color:var(--plum);box-shadow:0 0 0 1px var(--plum)}
-.grid-table.sched select{max-width:160px}
+.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:6px;border-bottom:3px solid var(--land);margin-bottom:10px}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary h2{margin:0;border:0;padding:0}
+.fold-hint{font-size:14px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.fold-hint::after{content:"";width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .15s}
+.fold[open] .fold-hint::after{transform:rotate(-135deg) translate(-2px,0)}
+.ptable{margin-bottom:10px}
+.prow{display:grid;grid-template-columns:96px 96px minmax(100px,1fr) 128px 46px 150px;gap:6px;align-items:center;padding:4px 6px;border-top:1px solid var(--rule)}
+.prow.phead{border-top:0;font-size:13px;color:var(--ink-2);padding-bottom:0}
+.prow .field,.prow select{width:100%;min-width:0;font-size:15px;padding:5px 8px}
+.prow .brk{display:flex;justify-content:center}
+.prow .brk input{width:18px;height:18px}
+.prow .brk-t{display:none}
+.prow .row-actions{display:flex;gap:2px;justify-content:flex-end}
+.prow .row-actions .btn{min-height:34px;padding:2px 9px;font-size:14px}
+.prow.passrow{background:var(--wash);border-left:3px solid var(--land);border-radius:6px}
+.prow input.time.bad{border-color:var(--plum);box-shadow:0 0 0 1px var(--plum)}
+@media (max-width:1000px){
+  .prow{grid-template-columns:1fr 1fr;padding:8px 6px}
+  .prow.phead{display:none}
+  .prow .pname,.prow select{grid-column:span 2}
+  .prow .brk{justify-content:flex-start;gap:6px;align-items:center}.prow .brk-t{display:inline}
+}
 .row-actions{white-space:nowrap}
-.passrow td{background:var(--wash)}
-.passrow td:first-child{border-left:3px solid var(--land)}
 .special{margin-bottom:8px}
 .roomh{margin:18px 0 2px}
 .room{display:grid;gap:8px;margin:8px 0 14px;max-width:560px}
 .spot{background:var(--sheet);border:1.5px solid var(--edge);border-top:6px solid var(--tc);border-radius:14px;padding:8px 10px;font-size:14px;font-weight:700;text-align:center}
 .spot.off{opacity:.45;font-weight:400}
-.cdrow{display:grid;grid-template-columns:170px minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.cdrow{display:grid;grid-template-columns:160px 130px minmax(0,1fr) auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.cdrow .field.time.bad{border-color:var(--plum);box-shadow:0 0 0 1px var(--plum)}
 .cdrow .field{width:100%}
 .cdrow label{font-size:14px;white-space:nowrap;display:flex;gap:5px;align-items:center}
 .cdrow.past{opacity:.55}
@@ -119,13 +138,15 @@ main{min-width:0;max-width:820px}
   <main>
     <div id="class-area"></div>
     <section class="block" id="schedule" aria-labelledby="h-sched">
-      <h2 id="h-sched">Bell schedule</h2>
-      <p class="hint">The dashboard uses this to show the current period. A period whose name matches a class (like "Period 2") links to that class automatically.</p>
-      <div id="schedule-area"></div>
+      <details class="fold" id="sched-fold">
+        <summary><h2 id="h-sched">Bell schedule</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">The dashboard uses this to show the current period. A period whose name matches a class (like "Period 2") links to that class automatically.</p>
+        <div id="schedule-area"></div>
+      </details>
     </section>
     <section class="block" id="countdowns" aria-labelledby="h-cd">
       <h2 id="h-cd">Countdowns</h2>
-      <p class="hint">Upcoming dates to show on the dashboard, like a unit test or project due date. They disappear from the dashboard after the day passes.</p>
+      <p class="hint">Upcoming dates for the dashboard, like a unit test or the end of a school day. The dashboard shows the three closest. Add a time (like 3:45) to count down to that moment; without one, it counts days. Each one drops off once it passes.</p>
       <div id="cd-area"></div>
     </section>
     <section class="block" id="backup" aria-labelledby="h-backup">
@@ -268,7 +289,7 @@ main{min-width:0;max-width:820px}
     editSched = cur ? cur.id : null;
     const days = [[1,'Monday'],[2,'Tuesday'],[3,'Wednesday'],[4,'Thursday'],[5,'Friday']];
     const schedOpts = v => S.schedules.map(x => `<option value="${esc(x.id)}"${x.id === v ? ' selected' : ''}>${esc(x.name)}</option>`).join('') + `<option value="none"${v === 'none' ? ' selected' : ''}>No school</option>`;
-    const classOpts = v => `<option value=""${!v ? ' selected' : ''}>Match by name</option><option value="none"${v === 'none' ? ' selected' : ''}>No class</option>`
+    const classOpts = v => `<option value=""${!v ? ' selected' : ''}>By name</option><option value="none"${v === 'none' ? ' selected' : ''}>No class</option>`
       + list.map(k => `<option value="${esc(k.id)}"${k.id === v ? ' selected' : ''}>${esc(k.name)}</option>`).join('');
     $('#schedule-area').innerHTML = `
       <h3>Which schedule runs each day</h3>
@@ -283,18 +304,17 @@ main{min-width:0;max-width:820px}
         <span class="small">minutes</span>
         <button class="btn" data-a="pfill">Fill in passing periods</button>
       </div>
-      <div class="scroll"><table class="grid-table sched">
-        <thead><tr><th>Start</th><th>End</th><th>Name</th><th>Class</th><th>Break</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
-        <tbody>${cur.periods.map((p, i) => `<tr${Suite.isPassing(p) ? ' class="passrow"' : ''}>
-          <td><input type="text" class="field time" inputmode="text" autocomplete="off" data-s="start" data-i="${i}" value="${esc(Suite.fmt12(p.start))}" placeholder="8:00 AM" aria-label="Start time"></td>
-          <td><input type="text" class="field time" inputmode="text" autocomplete="off" data-s="end" data-i="${i}" value="${esc(Suite.fmt12(p.end))}" placeholder="8:00 AM" aria-label="End time"></td>
-          <td><input class="field" data-s="pname" data-i="${i}" value="${esc(p.name)}" aria-label="Period name"></td>
-          <td><select data-s="pclass" data-i="${i}" aria-label="Class"${p.isBreak ? ' disabled' : ''}>${classOpts(p.classId || '')}</select></td>
-          <td><input type="checkbox" data-s="pbreak" data-i="${i}"${p.isBreak ? ' checked' : ''} aria-label="Break"></td>
-          <td class="row-actions"><button class="btn quiet" data-a="pins" data-i="${i}" aria-label="Insert a period below" title="Insert a period below">+</button>
-            ${Suite.isPassing(p) ? '' : `<button class="btn quiet small" data-a="ppass" data-i="${i}" aria-label="Add a passing period after ${esc(p.name)}" title="Add a passing period after this row">+ Passing</button>`}
-            <button class="btn quiet danger" data-a="prm" data-i="${i}" aria-label="Remove row" title="Remove row">×</button></td></tr>`).join('')}</tbody>
-      </table></div>
+      <div class="ptable">
+        <div class="prow phead" aria-hidden="true"><span>Start</span><span>End</span><span>Name</span><span>Class</span><span style="text-align:center">Break</span><span></span></div>
+        ${cur.periods.map((p, i) => `<div class="prow${Suite.isPassing(p) ? ' passrow' : ''}">
+          <input type="text" class="field time" inputmode="text" autocomplete="off" data-s="start" data-i="${i}" value="${esc(Suite.fmt12(p.start))}" placeholder="8:00 AM" aria-label="Start time">
+          <input type="text" class="field time" inputmode="text" autocomplete="off" data-s="end" data-i="${i}" value="${esc(Suite.fmt12(p.end))}" placeholder="8:00 AM" aria-label="End time">
+          <input class="field pname" data-s="pname" data-i="${i}" value="${esc(p.name)}" aria-label="Period name">
+          <select data-s="pclass" data-i="${i}" aria-label="Class"${p.isBreak ? ' disabled' : ''}>${classOpts(p.classId || '')}</select>
+          <label class="brk"><input type="checkbox" data-s="pbreak" data-i="${i}"${p.isBreak ? ' checked' : ''}><span class="brk-t">Break</span></label>
+          <span class="row-actions"><button class="btn quiet" data-a="pins" data-i="${i}" aria-label="Insert a period below" title="Insert a period below">+</button>${Suite.isPassing(p) ? '' : `<button class="btn quiet" data-a="ppass" data-i="${i}" aria-label="Add a passing period after ${esc(p.name)}" title="Add a passing period after this row">Passing</button>`}<button class="btn quiet danger" data-a="prm" data-i="${i}" aria-label="Remove row" title="Remove row">×</button></span>
+        </div>`).join('')}
+      </div>
       <button class="btn" data-a="padd">Add a period</button>` : ''}
       <h3>Special days</h3>
       <p class="hint">Run a different schedule, or no school, on a specific date.</p>
@@ -392,10 +412,11 @@ main{min-width:0;max-width:820px}
 
   /* ---------- countdowns ---------- */
   function renderCountdowns(){
-    const list = Suite.countdowns().slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    const today = Suite.dateKey(new Date());
-    $('#cd-area').innerHTML = (list.map(cd => `<div class="cdrow${cd.date && cd.date < today ? ' past' : ''}">
+    const list = Suite.countdowns().slice().sort((a, b) => (Suite.countdownEnd(a) || 0) - (Suite.countdownEnd(b) || 0));
+    const now = new Date();
+    $('#cd-area').innerHTML = (list.map(cd => `<div class="cdrow${cd.date && !Suite.countdownLive(Object.assign({}, cd, { label: cd.label || 'x' }), now) ? ' past' : ''}">
         <input type="date" class="field" data-cd="date" data-id="${esc(cd.id)}" value="${esc(cd.date)}" aria-label="Date">
+        <input class="field time" data-cd="time" data-id="${esc(cd.id)}" value="${cd.time ? esc(Suite.fmt12(cd.time)) : ''}" placeholder="Time (opt.)" autocomplete="off" aria-label="Time, optional">
         <input class="field" data-cd="label" data-id="${esc(cd.id)}" value="${esc(cd.label)}" placeholder="What's coming, e.g. Unit 2 test" aria-label="What's coming">
         <label><input type="checkbox" data-cd="school" data-id="${esc(cd.id)}"${cd.school ? ' checked' : ''}> School days only</label>
         <button class="btn quiet danger" data-a="cdrm" data-id="${esc(cd.id)}" aria-label="Remove ${esc(cd.label || 'countdown')}">×</button></div>`).join('')
@@ -405,6 +426,10 @@ main{min-width:0;max-width:820px}
     const list = Suite.countdowns(), cd = list.find(x => x.id === el.dataset.id); if (!cd) return;
     const k = el.dataset.cd;
     if (k === 'date') { if (!el.value) return; cd.date = el.value; }
+    else if (k === 'time') {
+      if (!el.value.trim()) { cd.time = ''; el.classList.remove('bad'); }
+      else { const t = Suite.parseTime(el.value); if (!t) { el.classList.add('bad'); Suite.toast("Couldn't read that time. Try 3:45"); return; } cd.time = t; el.value = Suite.fmt12(t); el.classList.remove('bad'); }
+    }
     else if (k === 'label') cd.label = el.value.trim();
     else if (k === 'school') cd.school = el.checked;
     Suite.set('countdowns', list);   // quiet save: no redraw while typing
@@ -629,6 +654,13 @@ main{min-width:0;max-width:820px}
   });
   document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.s) scheduleChange(e.target, true); if (e.target.dataset && e.target.dataset.cd === 'label') cdChange(e.target); });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) render(); });
+  // The bell schedule stays folded unless you go to it.
+  const fold = document.getElementById('sched-fold');
+  const syncFold = () => { fold.querySelector('.fold-hint').textContent = fold.open ? 'Hide' : 'Show'; };
+  fold.addEventListener('toggle', syncFold);
+  const openIfSchedule = () => { if (location.hash === '#schedule') { fold.open = true; syncFold(); } };
+  window.addEventListener('hashchange', openIfSchedule); openIfSchedule();
+  document.addEventListener('click', e => { if (e.target.closest('a[href="#schedule"]')) { fold.open = true; syncFold(); } });
   Suite.mountNav('settings');
   render();
 })();

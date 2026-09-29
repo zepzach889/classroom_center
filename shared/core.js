@@ -15,12 +15,13 @@
     { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: false },
     { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: false },
     { id: 'activities', label: 'Activities', href: 'activities.html', soon: false },
-    { id: 'settings', label: 'Classes & settings', href: 'settings.html', soon: false }
+    { id: 'noise', label: 'Noise meter', href: 'noise.html', soon: false }
   ];
+  const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-09-30c';   // bump with every build; pages check they match
+  const VERSION = '2026-09-30e';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -422,6 +423,18 @@
   /* ---------- countdowns ---------- */
   S.countdowns = () => S.get('countdowns', []);
   // Days from today to dateStr. schoolOnly counts only days with bells (skips weekends and "No school" days).
+  // The moment a countdown ends: its time on that date, or the start of the day if no time was set.
+  S.countdownEnd = cd => {
+    const [y, m, d] = String(cd.date || '').split('-').map(Number); if (!y) return null;
+    const [hh, mm] = cd.time ? cd.time.split(':').map(Number) : [0, 0];
+    return new Date(y, m - 1, d, hh || 0, mm || 0);
+  };
+  // Still showing? Timed ones end at their time; untimed ones stay through their day.
+  S.countdownLive = (cd, now) => {
+    const end = S.countdownEnd(cd); if (!end || !cd.label) return false;
+    if (cd.time) return end > now;
+    return cd.date >= S.dateKey(now);
+  };
   S.daysUntil = (dateStr, schoolOnly) => {
     const [y, m, d] = String(dateStr).split('-').map(Number); if (!y) return null;
     const target = new Date(y, m - 1, d), today = new Date(); today.setHours(0, 0, 0, 0);
@@ -451,6 +464,7 @@
           : `<a href="${n.href}"${n.id === current ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`}</li>`).join('')}</ul></nav>
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
         <button class="btn quiet theme-btn" data-suite="theme">Theme: ${theme[0].toUpperCase() + theme.slice(1)}</button>
+        <a class="gear${current === 'settings' || current === 'sub' ? ' on' : ''}" href="settings.html" aria-label="Classes and settings" title="Classes and settings"${current === 'settings' ? ' aria-current="page"' : ''}>${GEAR}</a>
       </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw(); timerDraw();

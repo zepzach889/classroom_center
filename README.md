@@ -10,6 +10,7 @@ tracker.html      Table points
 spinner.html      Name spinner
 topics.html       Topic picker
 activities.html   Review game, station rotations, tally, partners and groups
+noise.html        Noise meter
 settings.html     Classes, tables, rosters, seat shuffle, bell schedule, countdowns, backups
 sub.html          Printable substitute packet
 shared/style.css  Shared look
