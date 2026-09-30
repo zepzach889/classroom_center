@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
-<script src="shared/core.js?v=2026-10-01c"></script>
-<script>window.PAGE_VERSION = '2026-10-01c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02a">
+<script src="shared/core.js?v=2026-10-02a"></script>
+<script>window.PAGE_VERSION = '2026-10-02a';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -45,6 +45,34 @@ body.printing #printarea{width:1100px}
 .loose{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:6px}
 .loose:empty{display:none}
 .chip{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--rule);border-radius:999px;background:var(--paper);color:var(--ink);padding:3px 12px;cursor:pointer}
+.modes{display:inline-flex;border:2px solid var(--edge);border-radius:999px;overflow:hidden;margin:0 0 12px}
+.modes button{font:inherit;font-size:15px;font-weight:600;border:0;background:var(--sheet);color:var(--ink);padding:7px 18px;cursor:pointer}
+.modes button+button{border-left:2px solid var(--edge)}
+.modes button[aria-current="true"]{background:var(--sea);color:var(--on-sea)}
+.needs{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;margin:-4px 0 12px;font-size:15px}
+.roomgrid{display:grid;gap:14px}
+.rtbl{background:var(--sheet);border:2px solid var(--edge);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;touch-action:none;user-select:none;cursor:grab;min-height:120px}
+.rtbl.off{opacity:.55;border-style:dashed}
+.rt-h{background:var(--tc);color:var(--tx);font-family:var(--serif);font-size:20px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+.rt-h .grip{font-family:var(--sans);opacity:.7;font-size:18px}
+.rt-b{padding:8px 12px;font-size:15px;flex:1}
+.rtbl .btn{margin:0 12px 10px;align-self:flex-start;min-height:0;padding:3px 14px;font-size:14px}
+.slot{border:2px dashed var(--rule);border-radius:18px;min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--ink-2);font-size:13px}
+.tdlg{max-width:520px}.tdlg .lb{display:block;font-size:14px;font-weight:700;margin:10px 0 3px}.tdlg .field:not(.num){width:100%}
+.tdgrid{display:grid;grid-template-columns:auto auto 1fr;gap:10px 14px;margin-top:10px}
+.tdgrid label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700}
+.tdgrid input[type=color]{width:52px;height:36px;border:1.5px solid var(--rule);border-radius:8px;background:none;padding:2px}
+.checks{display:flex;gap:6px;align-items:center;font-size:15px;flex-wrap:wrap}
+.shdlg{max-width:760px}
+.shgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
+.pairs{list-style:none;margin:6px 0;padding:0}.pairs li{display:flex;align-items:center;gap:6px;font-size:15px}
+.pins{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;max-height:150px;overflow:auto}.pins label{display:flex;gap:5px;align-items:center;font-size:15px}
+.preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:12px}
+.pv{border:2px solid var(--edge);border-radius:12px;padding:0 0 8px;font-size:14px;overflow:hidden}
+.pv b{display:flex;justify-content:space-between;background:var(--tc);color:var(--tx);padding:4px 10px;margin-bottom:6px}
+.pv{padding-left:0}.pv>*:not(b){padding:0 10px}
+.warn{color:var(--plum);font-weight:600;margin:10px 0 0}
+@media (max-width:700px){.shgrid{grid-template-columns:1fr}.roomgrid{grid-template-columns:1fr 1fr!important}.rtbl,.slot{grid-row:auto!important;grid-column:auto!important}}
 .tray{margin-top:18px;background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:12px 16px}
 .tray h3{margin-bottom:6px}
 .tray .list{display:flex;flex-wrap:wrap;gap:6px;min-height:38px;align-items:center}
@@ -84,7 +112,8 @@ body.proj .tbl h2{font-size:28px}
   const $ = q => document.querySelector(q);
   const esc = Suite.esc;
   let proj = Suite.startInProjector, sel = null;   // sel: the student waiting to be placed
-  const UI = Object.assign({ cur: null, front: 'top' }, Suite.get('seating', {}));
+  const UI = Object.assign({ cur: null, front: 'top', mode: 'seat' }, Suite.get('seating', {}));
+  let lastSeats = null;
   const saveUI = () => Suite.set('seating', UI);
   { const m = location.hash.match(/class=([\w-]+)/); if (m) UI.cur = m[1]; }
 
@@ -102,8 +131,9 @@ body.proj .tbl h2{font-size:28px}
   function render(){
     document.body.classList.toggle('proj', proj);
     const list = classes(), c = curClass(list);
-    if (!c) { $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>Seating charts use the tables and rosters from Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`; return; }
+    if (!c) { $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>Seating charts use your classes and rosters.</p><a class="btn primary" href="settings.html#classes">Go to Classes and rosters</a></div>`; return; }
     UI.cur = c.id;
+    if (UI.mode === 'room' && !proj) { renderRoom(c, list); return; }
     const T = Suite.get('tracker', {}) || {}, caps = (T.captains || {})[c.id] || {};
     const lay = Suite.roomLayout(c.tables);
     const rowOf = t => UI.front === 'bottom' ? lay.rows - lay.at[t.id].row + 1 : lay.at[t.id].row;
@@ -128,11 +158,12 @@ body.proj .tbl h2{font-size:28px}
     }).join('');
     const front = `<div class="front${UI.front === 'bottom' ? ' bottom' : ''}">Front of the room</div>`;
     $('#app').innerHTML = `
-      ${list.length > 1 ? `<nav class="pills ctl" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
+      ${topTabs(list, c)}
       <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} seating chart</div>
-        <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>
+        <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="shuffle">Shuffle seats</button>${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="unshuffle">Undo shuffle</button>' : ''}
           <button class="btn" data-a="print">Print</button><button class="btn" data-a="proj">Projector view</button></div></div>
-      <p class="help ctl">${!sel && c.tables.some(t => !t.seatCols) ? 'Seats not arranged the way your tables are? Change each table\'s seat arrangement under <a href="settings.html#classes">Classes and rosters</a>, in "Tables and room layout." ' : ''}${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
+      ${needSeats(c) ? `<p class="needs ctl"><b>${needSeats(c)} student${needSeats(c) === 1 ? ' needs' : 's need'} a seat.</b> Drag them into place, or press Fill empty seats.</p>` : ''}
+      <p class="help ctl">${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
         : 'Drag a name onto a seat to move them, or onto another student to trade places. Moving someone to a different table changes their table too. (You can also tap a name, then tap a seat.)'}</p>
       <div id="printarea"><div class="printhead">${esc(c.name)} seating chart</div>
       ${UI.front === 'top' ? front : ''}
@@ -142,15 +173,141 @@ body.proj .tbl h2{font-size:28px}
         <div class="list">${unassigned.map(s => btn(s, 'chip')).join('') || `<span class="muted small">${sel ? 'Tap here to take the selected student out of their seat.' : 'Everyone has a table.'}</span>`}</div></div>`;
   }
 
+
+  /* ---------- page tabs: classes, and the two modes ---------- */
+  function topTabs(list, c){
+    return `${list.length > 1 ? `<nav class="pills ctl" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
+      <nav class="modes ctl" aria-label="Seating mode"><button data-a="mode" data-id="seat"${UI.mode !== 'room' ? ' aria-current="true"' : ''}>Seat students</button><button data-a="mode" data-id="room"${UI.mode === 'room' ? ' aria-current="true"' : ''}>Edit room</button></nav>`;
+  }
+  const needSeats = c => c.students.length - c.tables.reduce((n, t) => n + seatMap(c, t).seats.filter(Boolean).length, 0);
+
+  /* ---------- Edit room: tables, seats, and where they sit ---------- */
+  const TEAM = () => Suite.word('team'), TEAMS = () => Suite.word('team', { plural: true });
+  function arrangeLabel(t){ const o = Suite.seatOptions(t.seats).find(x => x.cols === Suite.seatLayout(t).cols); return o ? o.label : ''; }
+  function renderRoom(c, list){
+    const lay = Suite.roomLayout(c.tables), gc = Math.max(3, lay.cols) + 1, gr = lay.rows + 1, at = {};
+    c.tables.forEach(t => { const p = lay.at[t.id]; at[p.row + ',' + p.col] = t; });
+    const rowOf = r => UI.front === 'bottom' ? gr - r + 1 : r;
+    let cells = '';
+    for (let r = 1; r <= gr; r++) for (let k = 1; k <= gc; k++) {
+      const t = at[r + ',' + k];
+      cells += t ? `<div class="rtbl${t.open ? '' : ' off'}" data-a="tbl" data-id="${esc(t.id)}" style="grid-row:${rowOf(r)};grid-column:${k};--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)}">
+          <div class="rt-h"><span>${esc(t.name)}</span><span class="grip" aria-hidden="true">⠿</span></div>
+          <div class="rt-b">${t.seats} seats<br><span class="muted small">${esc(arrangeLabel(t))}${t.open ? '' : ' · not in use'}</span></div>
+          <button class="btn small" data-a="tedit" data-id="${esc(t.id)}">Edit</button></div>`
+        : `<div class="slot" data-a="slot" data-r="${r}" data-c="${k}" style="grid-row:${rowOf(r)};grid-column:${k}"><span>Empty spot</span></div>`;
+    }
+    const front = `<div class="front${UI.front === 'bottom' ? ' bottom' : ''}">Front of the room</div>`;
+    $('#app').innerHTML = `${topTabs(list, c)}
+      <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} room</div>
+        <div class="bar"><button class="btn" data-a="tadd">Add a ${esc(TEAM())}</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>${list.length > 1 ? `<button class="btn" data-a="tcopy">Use this room in every class</button>` : ''}</div></div>
+      <p class="help ctl">Drag ${esc(TEAMS())} into the spots that match your room. Press Edit on a ${esc(TEAM())} to rename it, change its color or seats, or turn it off for ${esc(c.name)}.</p>
+      ${UI.front === 'top' ? front : ''}<div class="roomgrid" style="grid-template-columns:repeat(${gc},minmax(0,1fr))">${cells}</div>${UI.front === 'bottom' ? front : ''}`;
+  }
+  // pin every table to its current spot, then trim empty rows and columns at the top and left
+  function pinAll(c){ const lay = Suite.roomLayout(c.tables); c.tables.forEach(t => { t.row = lay.at[t.id].row; t.col = lay.at[t.id].col; }); }
+  function tidy(c){ const r0 = Math.min(...c.tables.map(t => t.row)), c0 = Math.min(...c.tables.map(t => t.col)); c.tables.forEach(t => { t.row -= r0 - 1; t.col -= c0 - 1; }); }
+  function editTable(c, list, t){
+    const isNew = !t;
+    t = t || { id: Suite.uid(), name: '', seats: 6, open: true, color: Suite.nextColor(c.tables), seatCols: 2 };
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const opts = n => Suite.seatOptions(n).map(o => `<option value="${o.cols}"${Suite.seatLayout(Object.assign({}, t, { seats: n })).cols === o.cols ? ' selected' : ''}>${o.label}</option>`).join('');
+    back.innerHTML = `<div class="suite-dialog tdlg" role="dialog" aria-modal="true" aria-labelledby="td-t">
+      <h2 id="td-t">${isNew ? 'Add a ' + esc(TEAM()) : 'Edit ' + esc(t.name)}</h2>
+      <label class="lb" for="td-name">Name</label><input class="field" id="td-name" value="${esc(t.name)}" placeholder="${esc(TEAM().charAt(0).toUpperCase() + TEAM().slice(1))} ${c.tables.length + 1}">
+      <div class="tdgrid">
+        <label>Color<input type="color" id="td-color" value="${esc(t.color)}"></label>
+        <label>Seats<input class="field num" type="number" min="1" max="30" id="td-seats" value="${t.seats}"></label>
+        <label>Seat arrangement<select id="td-cols">${opts(t.seats)}</select></label>
+      </div>
+      <label class="checks" style="margin-top:10px"><input type="checkbox" id="td-open"${t.open ? ' checked' : ''}> In use in ${esc(c.name)} <span class="muted small">(turn off to leave it empty in this class; it keeps its points)</span></label>
+      <div class="suite-dialog-actions" style="justify-content:space-between">${isNew ? '<span></span>' : `<button class="btn quiet danger" data-d="del">Remove from ${esc(c.name)}</button>`}<span class="bar"><button class="btn" data-d="cancel">Cancel</button><button class="btn primary" data-d="save">${isNew ? 'Add' : 'Save'}</button></span></div></div>`;
+    document.body.appendChild(back);
+    const q = id => back.querySelector('#' + id);
+    q('td-name').focus();
+    q('td-seats').addEventListener('input', () => { const n = Math.max(1, Math.min(30, parseInt(q('td-seats').value, 10) || 1)); q('td-cols').innerHTML = opts(n); });
+    const close = () => { back.remove(); document.removeEventListener('keydown', key, true); };
+    const key = e => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
+    document.addEventListener('keydown', key, true);
+    back.addEventListener('click', async e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('[data-d]'); if (!b) return;
+      if (b.dataset.d === 'cancel') return close();
+      if (b.dataset.d === 'del') {
+        close();
+        if (!await Suite.dialog({ title: 'Remove ' + t.name + ' from ' + c.name + '?', body: 'Students sitting there move to "Not at a table."', ok: 'Remove', danger: true })) return;
+        c.tables = c.tables.filter(x => x.id !== t.id); c.students.forEach(s => { if (s.tableId === t.id) { s.tableId = ''; delete s.seat; } });
+        Suite.saveClasses(list); render(); return;
+      }
+      t.name = q('td-name').value.trim() || t.name || (TEAM().charAt(0).toUpperCase() + TEAM().slice(1)) + ' ' + (c.tables.length + 1);
+      t.color = q('td-color').value; t.seats = Math.max(1, Math.min(30, parseInt(q('td-seats').value, 10) || 6)); t.seatCols = +q('td-cols').value; t.open = q('td-open').checked;
+      if (isNew) {
+        pinAll(c);
+        const lay = Suite.roomLayout(c.tables), cols = Math.max(3, lay.cols), used = new Set(c.tables.map(x => x.row + ',' + x.col));
+        for (let r = 1, placed = false; !placed; r++) for (let k = 1; k <= cols; k++) if (!used.has(r + ',' + k)) { t.row = r; t.col = k; placed = true; break; }
+        c.tables.push(t);
+      }
+      c.students.forEach(s => { if (s.tableId === t.id && Number.isInteger(s.seat) && s.seat >= t.seats) delete s.seat; });
+      close(); Suite.saveClasses(list); render();
+    });
+  }
+
+  /* ---------- Shuffle seats ---------- */
+  function openShuffle(c, list){
+    let proposal = null;
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const kids = c.students.slice().sort((a, b) => a.name.localeCompare(b.name));
+    const nm = id => (c.students.find(s => s.id === id) || { name: '?' }).name;
+    const draw = () => {
+      const pinned = new Set(c.pinned || []), apart = c.apart || [], tables = c.tables.filter(t => t.open);
+      const opts = kids.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+      back.innerHTML = `<div class="suite-dialog shdlg" role="dialog" aria-modal="true" aria-labelledby="sh-t">
+        <h2 id="sh-t">Shuffle seats for ${esc(c.name)}</h2>
+        <p>Students are spread across the ${esc(TEAMS())} in use, in proportion to their seats. Nothing changes until you press Apply.</p>
+        <div class="shgrid">
+          <div><b class="small">Keep apart</b>
+            ${apart.length ? `<ul class="pairs">${apart.map((p, i) => `<li>${esc(nm(p[0]))} and ${esc(nm(p[1]))} <button class="btn quiet danger small" data-h="aprm" data-i="${i}" aria-label="Stop keeping them apart">×</button></li>`).join('')}</ul>` : '<p class="muted small" style="margin:4px 0">No pairs yet.</p>'}
+            <div class="bar"><select id="ap1" aria-label="First student">${opts}</select><select id="ap2" aria-label="Second student">${opts}</select><button class="btn small" data-h="apadd">Keep apart</button></div></div>
+          <div><b class="small">Stays where they are</b>
+            <div class="pins">${kids.map(s => `<label><input type="checkbox" data-pin="${esc(s.id)}"${pinned.has(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">No students yet.</span>'}</div></div>
+        </div>
+        ${proposal ? `${proposal.conflicts ? `<p class="warn">${proposal.conflicts} keep-apart pair${proposal.conflicts === 1 ? ' is' : 's are'} still together. Try again, or turn on another ${esc(TEAM())}.</p>` : ''}
+          <div class="preview">${tables.map(t => { const m = kids.filter(s => proposal.assign[s.id] === t.id);
+            return `<div class="pv" style="--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)}"><b>${esc(t.name)} <span>${m.length}/${t.seats}</span></b><span>${m.map(s => esc(s.name)).join(', ') || '<span class="muted">Empty</span>'}</span></div>`; }).join('')}</div>` : ''}
+        <div class="suite-dialog-actions"><button class="btn" data-h="cancel">Cancel</button><button class="btn${proposal ? '' : ' primary'}" data-h="go"${kids.length && tables.length ? '' : ' disabled'}>${proposal ? 'Shuffle again' : 'Shuffle'}</button>${proposal ? '<button class="btn primary" data-h="apply">Apply these seats</button>' : ''}</div></div>`;
+    };
+    document.body.appendChild(back); draw();
+    const close = () => { back.remove(); document.removeEventListener('keydown', key, true); render(); };
+    const key = e => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
+    document.addEventListener('keydown', key, true);
+    back.addEventListener('change', e => { const id = e.target.dataset.pin; if (!id) return; const set = new Set(c.pinned || []); if (e.target.checked) set.add(id); else set.delete(id); c.pinned = [...set]; Suite.saveClasses(list); });
+    back.addEventListener('click', e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('[data-h]'); if (!b) return;
+      const h = b.dataset.h;
+      if (h === 'cancel') return close();
+      if (h === 'go') { proposal = Suite.proposeSeats(c); draw(); }
+      else if (h === 'apadd') { const x = back.querySelector('#ap1').value, y = back.querySelector('#ap2').value; if (x === y) { Suite.toast('Pick two different students'); return; } c.apart = (c.apart || []).filter(p => !(p.includes(x) && p.includes(y))); c.apart.push([x, y]); Suite.saveClasses(list); draw(); }
+      else if (h === 'aprm') { (c.apart || []).splice(+b.dataset.i, 1); Suite.saveClasses(list); draw(); }
+      else if (h === 'apply' && proposal) {
+        lastSeats = { classId: c.id, seats: Object.fromEntries(c.students.map(s => [s.id, [s.tableId, s.seat]])) };
+        c.students.forEach(s => { const to = proposal.assign[s.id]; if (to && to !== s.tableId) { s.tableId = to; delete s.seat; } });
+        c.tables.forEach(t => { const m = seatMap(c, t); m.loose.forEach(s => { const i = m.seats.indexOf(null); if (i > -1) { m.seats[i] = s; s.seat = i; } }); });
+        Suite.saveClasses(list); close(); Suite.toast('New seats for ' + c.name);
+      }
+    });
+  }
+
   /* ---------- drag and drop, for mouse and touch ---------- */
   let drag = null, justDragged = false;
   function dropTarget(x, y){
     const el = document.elementFromPoint(x, y); if (!el) return null;
-    return el.closest('[data-a="seat"], [data-a="stu"], [data-a="tray"]');
+    return drag && drag.kind === 'tbl' ? el.closest('[data-a="slot"], [data-a="tbl"]') : el.closest('[data-a="seat"], [data-a="stu"], [data-a="tray"]');
   }
   document.addEventListener('pointerdown', e => {
-    const el = e.target.closest('[data-a="stu"]'); if (!el || e.button > 0) return;
-    drag = { id: el.dataset.id, x: e.clientX, y: e.clientY, el, on: false, ghost: null, over: null };
+    if (e.button > 0 || e.target.closest('[data-a="tedit"]')) return;
+    const el = e.target.closest('[data-a="stu"], [data-a="tbl"]'); if (!el) return;
+    drag = { id: el.dataset.id, kind: el.dataset.a, x: e.clientX, y: e.clientY, el, on: false, ghost: null, over: null };
     try { el.setPointerCapture(e.pointerId); } catch (x) {}
   });
   document.addEventListener('pointermove', e => {
@@ -158,7 +315,7 @@ body.proj .tbl h2{font-size:28px}
     if (!drag.on) {
       if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
       drag.on = true; sel = null;
-      drag.ghost = document.createElement('div'); drag.ghost.className = 'ghost'; drag.ghost.textContent = drag.el.textContent.replace(' (captain)', '');
+      drag.ghost = document.createElement('div'); drag.ghost.className = 'ghost'; drag.ghost.textContent = drag.kind === 'tbl' ? drag.el.querySelector('.rt-h span').textContent : drag.el.textContent.replace(' (captain)', '');
       document.body.appendChild(drag.ghost); document.body.classList.add('dragging'); drag.el.classList.add('lifted');
     }
     drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
@@ -184,8 +341,16 @@ body.proj .tbl h2{font-size:28px}
     justDragged = true; setTimeout(() => { justDragged = false; }, 50);
     d.ghost.remove(); document.body.classList.remove('dragging');
     if (cancel) { render(); return; }
-    const t = dropTarget(e.clientX, e.clientY), list = classes(), c = curClass(list);
+    const t = (drag = d, dropTarget(e.clientX, e.clientY)); drag = null;
+    const list = classes(), c = curClass(list);
     if (!t || !c || t === d.el) { render(); return; }
+    if (d.kind === 'tbl') {
+      pinAll(c);
+      const T1 = c.tables.find(x => x.id === d.id);
+      if (t.dataset.a === 'slot') { const lay = Suite.roomLayout(c.tables), gr = lay.rows + 1, r = +t.dataset.r; T1.row = r; T1.col = +t.dataset.c; }
+      else { const T2 = c.tables.find(x => x.id === t.dataset.id); [T1.row, T2.row] = [T2.row, T1.row]; [T1.col, T2.col] = [T2.col, T1.col]; }
+      tidy(c); Suite.saveClasses(list); render(); return;
+    }
     const A = c.students.find(x => x.id === d.id); if (!A) { render(); return; }
     if (t.dataset.a === 'seat') place(c, A.id, t.dataset.t, +t.dataset.i);
     else if (t.dataset.a === 'stu') {
@@ -209,6 +374,35 @@ body.proj .tbl h2{font-size:28px}
     area.style.zoom = z.toFixed(3);
   }
   window.addEventListener('beforeprint', fitForPrint);
+  // The Print button builds a page-sized copy of just the chart, measures it at that size, and scales it to fit one sheet.
+  function printChart(){
+    const area = document.getElementById('printarea'); if (!area) return;
+    const W = Math.round((11 - 0.8) * 96), H = Math.round((8.5 - 0.8) * 96);   // letter, landscape, 0.4in margins
+    const fr = document.createElement('iframe');
+    fr.setAttribute('aria-hidden', 'true');
+    fr.style.cssText = `position:fixed;left:-10000px;top:0;width:${W}px;height:${H}px;border:0;visibility:hidden`;
+    document.body.appendChild(fr);
+    const d = fr.contentDocument;
+    const styles = [...document.querySelectorAll('link[rel="stylesheet"]')].map(l => `<link rel="stylesheet" href="${l.href}">`).join('')
+      + [...document.querySelectorAll('style')].map(x => `<style>${x.textContent}</style>`).join('');
+    d.open();
+    d.write(`<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>Seating chart</title>${styles}
+      <style>@page{size:landscape;margin:.4in}html,body{margin:0;background:#fff}body{width:${W}px}
+      #fit{width:1100px;transform-origin:top left}.printhead{display:block!important;font-family:var(--serif);font-size:26px;margin-bottom:8px}
+      .tbl h2{background:none!important;color:#111!important;border-bottom:2px solid #111}.seat{background:#fff;color:#111;border-color:#999}.seat.sel,.over{outline:none}</style></head>
+      <body><div id="fit">${area.innerHTML}</div></body></html>`);
+    d.close();
+    const go = () => {
+      const fit = d.getElementById('fit');
+      const z = Math.min(1, W / fit.scrollWidth, (H - 4) / fit.scrollHeight);
+      fit.style.transform = `scale(${z.toFixed(4)})`;
+      d.body.style.height = Math.floor(fit.scrollHeight * z) + 'px'; d.body.style.overflow = 'hidden';
+      fr.contentWindow.focus(); fr.contentWindow.print();
+      setTimeout(() => fr.remove(), 1500);
+    };
+    const ready = d.fonts && d.fonts.ready ? Promise.race([d.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();
+    fr.onload = null; setTimeout(() => ready.then(go), 150);
+  }
   window.addEventListener('afterprint', () => { document.body.classList.remove('printing'); const a = document.getElementById('printarea'); if (a) a.style.zoom = ''; });
 
   function place(c, sid, tid, seat){
@@ -217,14 +411,25 @@ body.proj .tbl h2{font-size:28px}
     if (other) { other.tableId = s.tableId; if (Number.isInteger(s.seat)) other.seat = s.seat; else delete other.seat; }
     s.tableId = tid; s.seat = seat;
   }
-  document.addEventListener('click', e => {
+  document.addEventListener('click', async e => {
     if (justDragged) return;
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, list = classes(), c = curClass(list);
     if (a === 'pick') { UI.cur = el.dataset.id; sel = null; saveUI(); render(); return; }
     if (a === 'proj') { proj = !proj; sel = null; render(); return; }
-    if (a === 'print') { sel = null; render(); fitForPrint(); window.print(); return; }
+    if (a === 'print') { sel = null; render(); printChart(); return; }
     if (a === 'flip') { UI.front = UI.front === 'top' ? 'bottom' : 'top'; saveUI(); render(); return; }
+    if (a === 'mode') { UI.mode = el.dataset.id; sel = null; saveUI(); render(); return; }
+    if (c && a === 'shuffle') { openShuffle(c, list); return; }
+    if (c && a === 'unshuffle' && lastSeats) { c.students.forEach(s => { const v = lastSeats.seats[s.id]; if (v) { s.tableId = v[0]; if (Number.isInteger(v[1])) s.seat = v[1]; else delete s.seat; } }); lastSeats = null; Suite.saveClasses(list); render(); Suite.toast('Seats put back'); return; }
+    if (c && a === 'tadd') { editTable(c, list, null); return; }
+    if (c && a === 'tedit') { editTable(c, list, c.tables.find(x => x.id === el.dataset.id)); return; }
+    if (c && a === 'tcopy') {
+      if (!await Suite.dialog({ title: 'Use this room in every class?', body: 'Every other class gets these ' + TEAMS() + ', seats, colors, and spots. Students stay where their ' + TEAM() + ' still exists; others move to "Not at a table."', ok: 'Copy the room' })) return;
+      pinAll(c);
+      list.forEach(o => { if (o === c) return; o.tables = JSON.parse(JSON.stringify(c.tables)); o.students.forEach(s => { const t = o.tables.find(x => x.id === s.tableId); if (!t) { s.tableId = ''; delete s.seat; } else if (Number.isInteger(s.seat) && s.seat >= t.seats) delete s.seat; }); });
+      Suite.saveClasses(list); render(); Suite.toast('Room copied to every class'); return;
+    }
     if (!c) return;
     if (a === 'stu') {
       const id = el.dataset.id;

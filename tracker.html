@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
-<script src="shared/core.js?v=2026-10-01c"></script>
-<script>window.PAGE_VERSION = '2026-10-01c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02a">
+<script src="shared/core.js?v=2026-10-02a"></script>
+<script>window.PAGE_VERSION = '2026-10-02a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -38,6 +38,8 @@
 .card.picked{outline:4px solid var(--land);outline-offset:4px}
 @media (prefers-reduced-motion:no-preference){.card.bump .score{animation:bump .6s ease-out}@keyframes bump{30%{transform:scale(1.18);color:var(--land)}}}
 .keys{margin:-6px 0 14px}
+.picked-note{margin:-6px 0 12px;font-size:15px;color:var(--ink-2)}
+body.proj .picked-note{display:none}
 body.nocaps .cap,body.nocaps .capspanel,body.nocaps .nextcap{display:none!important}
 body.nogoals .goalspanel{display:none!important}
 .nextcap{min-height:0!important;padding:2px 10px!important;font-size:13px!important}
@@ -127,7 +129,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     'Zero reminders needed to transition between activities'
   ].join('\n');
   const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null, rotateEvery: 1, captainLog: [], prizes: [] };
-  let T, proj = Suite.startInProjector, picked = null, bump = null, moreOpen = false;
+  let T, proj = Suite.startInProjector, picked = null, bump = null, moreOpen = false, showKeys = false;
 
   function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; T.captainLog = T.captainLog || []; T.prizes = T.prizes || []; if (T.rotateEvery == null) T.rotateEvery = 1; }
   function save(){ Suite.set('tracker', T); }
@@ -259,10 +261,12 @@ body.proj .tag{font-size:18px;padding:2px 12px}
             <span class="moremenu"${moreOpen ? '' : ' hidden'} role="menu">
               <button role="menuitem" data-a="double">${T.double ? 'Turn off double points' : 'Turn on double points'}</button>
               <button role="menuitem" data-a="endweek">End week ${T.week}</button>
+              <button role="menuitem" data-a="keys">${showKeys ? 'Hide' : 'Show'} keyboard shortcuts</button>
             </span></span>
         </div>
       </div>
-      <div class="keys hint">Keyboard: press a table's number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean +2, <kbd>M</kbd> mostly clean +1, <kbd>P</kbd> 3-point challenge. <kbd>U</kbd> undo, <kbd>D</kbd> double points, <kbd>Esc</kbd> deselect.${picked ? ` <b>Picked: ${esc(tname(c, picked))}</b>` : ''}</div>
+      ${picked ? `<div class="picked-note">Picked: <b>${esc(tname(c, picked))}</b>. Press + or −, C, M, or P. Esc to deselect.</div>` : ''}
+      ${showKeys ? `<div class="keys hint">Press a ${esc(W('team'))}'s number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean +2, <kbd>M</kbd> mostly clean +1, <kbd>P</kbd> 3-point challenge. <kbd>U</kbd> undo, <kbd>D</kbd> double points, <kbd>Esc</kbd> deselect, <kbd>?</kbd> show or hide this.</div>` : ''}
       <div class="proj-title">${esc(c.name)}<span>Quarter ${T.quarter}, week ${T.week}${T.double ? ' · Double points!' : ''}</span></div>
       ${act.length ? `<div class="cards room-grid" style="--cols:${lay.cols}">${cards}</div>`
         : `<div class="empty"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
@@ -456,6 +460,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       if (!picked) { Suite.toast('Press a table number first (1 to ' + keyOrder(c).length + ')'); return; }
       award(c, picked, acts[lk][0], acts[lk][1]); return;
     }
+    if (k === '?') { e.preventDefault(); showKeys = !showKeys; render(); return; }
     if (lk === 'u') { e.preventDefault(); undoLast(c); }
     else if (lk === 'd') { e.preventDefault(); T.double = !T.double; save(); render(); Suite.toast(T.double ? 'Double points on' : 'Double points off'); }
   }, true);
@@ -465,6 +470,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (moreOpen && (!el || el.dataset.a !== 'more')) { moreOpen = false; if (!el) { render(); return; } }
     if (!el) return;
     if (el.dataset.a === 'more') { moreOpen = !moreOpen; render(); return; }
+    if (el.dataset.a === 'keys') { showKeys = !showKeys; render(); return; }
     const a = el.dataset.a, id = el.dataset.id;
     const c = curClass(classes());
     if (a === 'pick') { T.cur = id; save(); render(); }

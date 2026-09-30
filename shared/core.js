@@ -13,7 +13,8 @@
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
     { id: 'tracker', label: 'Table points', href: 'tracker.html', feature: 'points' },
-    { id: 'seating', label: 'Seating', href: 'seating.html', feature: 'seating' },
+    { id: 'seating', label: 'Seating', href: 'seating.html' },
+    { id: 'planner', label: 'Planner', href: 'planner.html' },
     { id: 'tools', label: 'Tools', menu: [
       { id: 'spinner', label: 'Name spinner', href: 'spinner.html', feature: 'spinner' },
       { id: 'topics', label: 'Topic picker', href: 'topics.html', feature: 'topics' },
@@ -36,7 +37,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-01c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-02a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -122,6 +123,26 @@
       out.push({ cols: c, label: c === 1 ? 'One column' : r === 1 ? 'One row' : c + ' columns, ' + r + ' rows' });
     });
     return out;
+  };
+  // Spread students across the tables in use, in proportion to seats, honoring keep-apart pairs and stay-put students.
+  S.proposeSeats = c => {
+    const shuf = arr => { const x = arr.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; };
+    const tables = c.tables.filter(t => t.open), pinned = new Set(c.pinned || []), apart = c.apart || [];
+    const assign = {}, count = {}; tables.forEach(t => { count[t.id] = 0; });
+    c.students.forEach(s => { if (pinned.has(s.id) && count[s.tableId] != null) { assign[s.id] = s.tableId; count[s.tableId]++; } });
+    const hasPair = s => apart.some(p => p.includes(s.id));
+    const movers = shuf(c.students.filter(s => !(s.id in assign))).sort((a, b) => hasPair(b) - hasPair(a));
+    const clash = (sid, tid) => apart.some(([a, b]) => (a === sid && assign[b] === tid) || (b === sid && assign[a] === tid));
+    movers.forEach(s => {
+      let open = tables.filter(t => count[t.id] < t.seats); if (!open.length) open = tables.slice();
+      let cand = open.filter(t => !clash(s.id, t.id)); if (!cand.length) cand = open;
+      if (!cand.length) return;
+      const fill = t => count[t.id] / Math.max(1, t.seats), low = Math.min(...cand.map(fill));
+      const best = cand.filter(t => fill(t) === low), t = best[Math.floor(Math.random() * best.length)];
+      assign[s.id] = t.id; count[t.id]++;
+    });
+    const conflicts = apart.filter(([a, b]) => assign[a] && assign[a] === assign[b]).length;
+    return { assign, conflicts, over: c.students.length > tables.reduce((n, t) => n + t.seats, 0) };
   };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
@@ -525,7 +546,33 @@
 
   /* ---------- daily agenda (learning target, steps, homework) per class per date ---------- */
   S.agendaAll = () => S.get('agenda', {});
-  S.agendaFor = (dateKey, classId) => { const a = S.agendaAll(); return (a[dateKey] || {})[classId] || null; };
+  // Courses group sections that share a plan (e.g. all 6th grade periods). A period's own plan, if any, wins.
+  S.courses = () => S.get('courses', []);
+  S.saveCourses = list => S.set('courses', list);
+  S.courseOf = classId => S.courses().find(c => (c.classIds || []).includes(classId)) || null;
+  const CK = id => 'course:' + id;
+  S.courseKey = CK;
+  S.agendaFor = (dateKey, classId) => {
+    const day = S.agendaAll()[dateKey] || {};
+    if (day[classId]) return day[classId];
+    const co = S.courseOf(classId);
+    return co ? day[CK(co.id)] || null : null;
+  };
+  // true when a period has its own plan on that day, different from its course
+  S.agendaIsOwn = (dateKey, classId) => !!((S.agendaAll()[dateKey] || {})[classId]) && !!S.courseOf(classId);
+  // Move a row's plans (a course with its sections' own plans, or one class) forward by n school days, from a date on.
+  S.shiftPlans = (keys, fromKey, n) => {
+    const a = S.agendaAll();
+    const isSchool = k => { const [y, m, d] = k.split('-').map(Number); return S.scheduleFor(new Date(y, m - 1, d, 12)).periods.length > 0; };
+    const step = (k, dir) => { const [y, m, d] = k.split('-').map(Number); const dt = new Date(y, m - 1, d, 12); do { dt.setDate(dt.getDate() + dir); } while (!isSchool(S.dateKey(dt))); return S.dateKey(dt); };
+    const moveBy = (k, count) => { let out = k; for (let i = 0; i < Math.abs(count); i++) out = step(out, count > 0 ? 1 : -1); return out; };
+    const moved = [];
+    keys.forEach(key => Object.keys(a).filter(d => d >= fromKey && a[d][key]).forEach(d => { moved.push({ key, from: d, entry: a[d][key] }); delete a[d][key]; }));
+    moved.forEach(m => { const to = moveBy(m.from, n); (a[to] = a[to] || {})[m.key] = m.entry; });
+    Object.keys(a).forEach(d => { if (!Object.keys(a[d]).length) delete a[d]; });
+    S.set('agenda', a);
+    return moved.length;
+  };
   // Most recent plan for a class before a date, to start from when a lesson runs several days.
   S.lastAgenda = (dateKey, classId) => {
     const a = S.agendaAll(); const days = Object.keys(a).filter(k => k < dateKey && a[k][classId]).sort();
@@ -681,12 +728,20 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   };
   S.DISPLAY_FONTS = { 'Limelight': 'Deco (Limelight)', 'Playfair Display': 'Classic serif (Playfair)', 'Poppins': 'Modern (Poppins)', 'Jost': 'Clean (Jost)' };
   S.BODY_FONTS = { 'Jost': 'Jost', 'Atkinson Hyperlegible': 'Atkinson Hyperlegible (extra readable)', 'system': "This computer's default" };
-  S.appearance = () => Object.assign({ theme: 'streamline', main: '', accent: '', display: '', body: '', name: '' }, S.get('appearance', {}));
+  S.appearance = () => Object.assign({ theme: 'emerald', main: '', accent: '', display: '', body: '', name: '' }, S.get('appearance', {}));
+  (function keepExistingLook(){
+    // runs once: anyone already set up before Emerald became the default keeps Streamline
+    try {
+      if (localStorage.getItem('suite:look2')) return;
+      if (!localStorage.getItem('suite:appearance') && localStorage.getItem('suite:classes')) localStorage.setItem('suite:appearance', JSON.stringify({ theme: 'streamline' }));
+      localStorage.setItem('suite:look2', '1');
+    } catch (e) {}
+  })();
   S.suiteName = () => S.appearance().name.trim() || 'Classroom Suite';
   const lumOf = hex => { const h = String(hex).replace('#', ''); if (h.length !== 6) return 0; return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4)).reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0); };
   S.applyAppearance = (doc) => {
     doc = doc || document;
-    const a = S.appearance(), t = S.THEMES[a.theme] || S.THEMES.streamline;
+    const a = S.appearance(), t = S.THEMES[a.theme] || S.THEMES.emerald;
     const main = a.main || t.main, accent = a.accent || t.accent, display = a.display || t.display, body = a.body || t.body;
     const ink = lumOf(main) < .08 ? main : '#1C2B3A';
     const stack = f => f === 'system' ? 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif' : `"${f}",${f === 'Limelight' || f === 'Playfair Display' ? 'Georgia,serif' : 'system-ui,sans-serif'}`;

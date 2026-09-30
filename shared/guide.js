@@ -5,7 +5,7 @@
   const S = window.Suite, esc = S.esc;
   const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink', 'Gray', 'Brown', 'Navy', 'Gold'];
   const ALMOST_STATES = ['Sequoyah', 'Delmarva', 'Franklin', 'Jefferson', 'Metropotamia', 'Deseret', 'Absaroka', 'Superior', 'Lincoln', 'Westsylvania', 'Nickajack', 'Vandalia'];
-  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['seating', 'Seating charts'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
+  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
 
   const G = {
     step: 0,

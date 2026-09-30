@@ -11,7 +11,8 @@ spinner.html      Name spinner
 topics.html       Topic picker
 activities.html   Review game, station rotations, tally, partners and groups
 noise.html        Noise meter
-seating.html      Seating charts: whole room and assigned seats
+seating.html      Seating charts and room setup (tables, seats, layout)
+planner.html      Weekly planner: courses, snow-day shift, printable week
 present.html      Show published Google Slides with tools on top
 help.html         Help and the menu tour
 shared/guide.js   First-visit setup guide and tour

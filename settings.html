@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
-<script src="shared/core.js?v=2026-10-01c"></script>
-<script>window.PAGE_VERSION = '2026-10-01c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02a">
+<script src="shared/core.js?v=2026-10-02a"></script>
+<script>window.PAGE_VERSION = '2026-10-02a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -67,6 +67,14 @@ main{min-width:0;max-width:820px}
 .group li select{font-size:13px;padding:2px 4px;max-width:112px}
 .group li .x{font-size:18px;line-height:1;padding:2px 7px}
 .group .none{color:var(--ink-2);font-size:14px}
+.names{list-style:none;margin:0 0 16px;padding:0;columns:2;column-gap:28px}
+.names li{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--rule);break-inside:avoid}
+.names .nm{flex:1;min-width:0;font:inherit;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:6px;padding:3px 6px}
+.names .nm:hover{border-color:var(--rule)}.names .nm:focus{background:var(--paper);border-color:var(--sea)}
+.names .where{font-size:13px;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center}
+.names .x{font-size:18px;line-height:1;padding:1px 7px;min-height:0}
+@media (max-width:760px){.names{columns:1}}
+.roommove{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--wash);border-radius:16px;padding:12px 16px}
 .add-names{background:var(--wash);border-radius:20px;padding:12px}
 .add-names label[for=names]{font-weight:700;display:block;margin-bottom:4px}
 .add-names .bar{margin-top:8px}
@@ -263,51 +271,22 @@ main{min-width:0;max-width:820px}
         </div>
       </div>
 
-      <section class="block" aria-labelledby="h-tables"><details class="fold" data-fold="tables"${folds.has('tables') ? ' open' : ''}>
-        <summary><h2 id="h-tables">${esc(Suite.word('team', { plural: true, cap: true }))} and room layout</h2><span class="fold-hint">${folds.has('tables') ? 'Hide' : 'Show'}</span></summary>
-        <p class="hint">Turn off "In use" for a table you're leaving empty in this class. It disappears from the tools but keeps its points. "Seat arrangement" sets how the seats are drawn on the seating chart.</p>
-        <div class="scroll"><table class="grid-table">
-          <thead><tr><th>Color</th><th>Name</th><th>Seats</th><th>Seat arrangement</th><th>Row</th><th>Spot</th><th>In use</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
-          <tbody>${c.tables.map(t => `<tr>
-            <td><input type="color" data-c="tcolor" data-id="${esc(t.id)}" value="${esc(t.color)}" aria-label="${esc(t.name)} color"></td>
-            <td><input class="field" data-c="tname" data-id="${esc(t.id)}" value="${esc(t.name)}" aria-label="Table name"></td>
-            <td><input class="field num" type="number" min="1" max="30" data-c="tseats" data-id="${esc(t.id)}" value="${t.seats}" aria-label="${esc(t.name)} seats"></td>
-            <td><select data-c="tcols" data-id="${esc(t.id)}" aria-label="${esc(t.name)} seat arrangement">${Suite.seatOptions(t.seats).map(o => `<option value="${o.cols}"${Suite.seatLayout(t).cols === o.cols ? ' selected' : ''}>${o.label}</option>`).join('')}</select></td>
-            <td><select data-c="trow" data-id="${esc(t.id)}" aria-label="${esc(t.name)} row">${[1,2,3,4].map(n => `<option${lay.at[t.id].row === n ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
-            <td><select data-c="tcol" data-id="${esc(t.id)}" aria-label="${esc(t.name)} spot from the left">${[1,2,3,4,5,6].map(n => `<option${lay.at[t.id].col === n ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
-            <td><input type="checkbox" data-c="topen" data-id="${esc(t.id)}"${t.open ? ' checked' : ''} aria-label="${esc(t.name)} in use"></td>
-            <td><button class="btn quiet danger" data-a="rmt" data-id="${esc(t.id)}">Remove</button></td></tr>`).join('')
-            || '<tr><td colspan="8" class="muted">No tables yet.</td></tr>'}</tbody>
-        </table></div>
-        <h3 class="roomh">How the tables sit in the room</h3>
-        <p class="hint">Row 1 is the row you want at the top of the screen. The table points page lays its cards out the same way.</p>
-        <div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${c.tables.map(t => `<div class="spot${t.open ? '' : ' off'}" style="grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col};--tc:${esc(t.color)}">${esc(t.name)}</div>`).join('')}</div>
-        <div class="bar">
-          <button class="btn" data-a="addt">Add a table</button>
-          ${list.length > 1 ? '<button class="btn quiet" data-a="copyt">Use these tables in every class</button>' : ''}
-        </div>
-      </details></section>
-
       <section class="block" aria-labelledby="h-roster"><details class="fold" data-fold="roster"${folds.has('roster') ? ' open' : ''}>
-        <summary><h2 id="h-roster">Roster</h2><span class="fold-hint">${folds.has('roster') ? 'Hide' : 'Show'}</span></summary>
-        <p class="hint">Student names stay in this browser (and your backup file). They are never part of the website's files.</p>
-        <div class="roster room-like" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">
-          ${c.tables.map(t => group(t, c.students.filter(s => s.tableId === t.id), lay.at[t.id])).join('')}
-          ${unassigned.length ? group(null, unassigned, null) : ''}
-        </div>
-        <div class="bar" style="margin:-4px 0 16px"><button class="btn" data-a="shopen">${shuffleOpen ? 'Close seat shuffle' : 'Shuffle seats'}</button>
-          ${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="shundo">Undo last shuffle</button>' : ''}</div>
-        ${shuffleOpen ? shufflePanel(c) : ''}
+        <summary><h2 id="h-roster">Students in ${esc(c.name)} <span class="muted small" style="font-family:var(--sans)">${c.students.length}</span></h2><span class="fold-hint">${folds.has('roster') ? 'Hide' : 'Show'}</span></summary>
+        <p class="hint">Who is in this class. Click a name to fix its spelling. To choose where students sit, or to set up ${esc(Suite.word('team', { plural: true }))}, use <a href="seating.html#class=${esc(c.id)}">Seating</a>.</p>
+        ${c.students.length ? `<ul class="names">${c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => { const t = c.tables.find(x => x.id === s.tableId);
+          return `<li><input class="nm" data-c="stname" data-id="${esc(s.id)}" value="${esc(s.name)}" aria-label="Student name">
+            <span class="where">${t ? `<span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}` : '<span class="muted">No seat yet</span>'}</span>
+            <button class="btn quiet x" data-a="rms" data-id="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">×</button></li>`; }).join('')}</ul>` : '<p class="muted">No students yet.</p>'}
         <div class="add-names">
           <label for="names">Add students</label>
           <textarea id="names" rows="4" placeholder="One name per line"></textarea>
-          <div class="bar">
-            <label for="ntable" class="small">Seat them at</label>
-            <select id="ntable">${tableOptions(c, c.tables[0] ? c.tables[0].id : '')}</select>
-            <button class="btn primary" data-a="adds">Add students</button>
-          </div>
+          <div class="bar"><button class="btn primary" data-a="adds">Add students</button><span class="muted small">New students show up in Seating under "Not at a table," ready to be seated.</span></div>
         </div>
-      </details></section>`;
+      </details></section>
+      <section class="block"><div class="roommove">
+        <div><b>${esc(Suite.word('team', { plural: true, cap: true }))}, seats, and room layout</b> are set up on the Seating page, under <b>Edit room</b>.</div>
+        <a class="btn" href="seating.html#class=${esc(c.id)}">Open Seating</a></div></section>`;
       if (tab === 'classes') history.replaceState(null, '', '#class=' + c.id);
     }
     renderBackup();
@@ -586,7 +565,7 @@ main{min-width:0;max-width:820px}
 
 
   /* ---------- words and tools ---------- */
-  const TOOL_LIST = [['points', 'Team points (and weekly prizes)'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['seating', 'Seating charts'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
+  const TOOL_LIST = [['points', 'Team points (and weekly prizes)'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
   function renderWords(){
     const P = Suite.prefs();
     const sel = (k, opts) => `<select data-word="${k}">${opts.map(o => `<option${P.words[k] === o ? ' selected' : ''}>${o}</option>`).join('')}${opts.includes(P.words[k]) ? '' : `<option selected>${esc(P.words[k])}</option>`}</select>`;
@@ -605,7 +584,7 @@ main{min-width:0;max-width:820px}
 
   /* ---------- appearance ---------- */
   function renderLook(){
-    const a = Suite.appearance(), t = Suite.THEMES[a.theme] || Suite.THEMES.streamline;
+    const a = Suite.appearance(), t = Suite.THEMES[a.theme] || Suite.THEMES.emerald;
     const opt = (map, v) => Object.entries(map).map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
     $('#look-area').innerHTML = `<div class="lookgrid">
       <label>Suite name<input class="field" data-look="name" value="${esc(a.name)}" placeholder="Classroom Suite"></label>
@@ -669,6 +648,7 @@ main{min-width:0;max-width:820px}
       if (tr) { tr.log = (tr.log || []).filter(x => x.c !== gone.id); tr.prizes = (tr.prizes || []).filter(x => x.c !== gone.id); tr.captainLog = (tr.captainLog || []).filter(x => x.c !== gone.id); ['goals', 'streaks', 'captains'].forEach(k => { if (tr[k]) delete tr[k][gone.id]; }); Suite.set('tracker', tr); }
       const tp = Suite.get('topics', null);
       if (tp && tp.claims) { Object.values(tp.claims).forEach(byClass => { delete byClass[gone.id]; }); Suite.set('topics', tp); }
+      const cos = Suite.courses(); if (cos.some(x => (x.classIds || []).includes(gone.id))) Suite.saveCourses(cos.map(x => Object.assign({}, x, { classIds: (x.classIds || []).filter(i => i !== gone.id) })));
       const ag = Suite.get('agenda', null);
       if (ag) { Object.values(ag).forEach(day => { delete day[gone.id]; }); Suite.set('agenda', ag); }
       const sp = Suite.get('spinner', null);
@@ -699,8 +679,7 @@ main{min-width:0;max-width:820px}
     else if (a === 'adds') {
       const names = $('#names').value.split('\n').map(x => x.trim()).filter(Boolean);
       if (!names.length) return;
-      const tid = $('#ntable').value;
-      withClass(k => names.forEach(n => k.students.push({ id: Suite.uid(), name: n, tableId: tid })));
+      withClass(k => names.forEach(n => k.students.push({ id: Suite.uid(), name: n, tableId: '' })));
       Suite.toast(names.length === 1 ? 'Added 1 student' : 'Added ' + names.length + ' students');
     }
     else if (a === 'rms') {

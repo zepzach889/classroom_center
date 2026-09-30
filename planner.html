@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planner · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02a">
+<script src="shared/core.js?v=2026-10-02a"></script>
+<script>window.PAGE_VERSION = '2026-10-02a';</script>
+<style>
+.wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.toolbar h1{font-size:34px}
+.weeknav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.weeknav .wk{font-family:var(--serif);font-size:22px;min-width:220px;text-align:center}
+.banner{background:var(--wash);border:2px dashed var(--rule);border-radius:16px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.gridwrap{overflow-x:auto}
+table.plan{width:100%;border-collapse:separate;border-spacing:6px;table-layout:fixed;min-width:900px}
+table.plan th{font-weight:600;text-align:left;vertical-align:bottom;padding:4px 6px}
+table.plan th.day{font-size:15px}
+table.plan th.day span{display:block;font-size:12px;font-weight:500;color:var(--ink-2)}
+table.plan th.day.today{color:var(--land)}
+table.plan th.rowh{width:170px;vertical-align:top;background:var(--sheet);border:2px solid var(--edge);border-radius:14px;padding:10px 12px}
+.rowh .nm{font-family:var(--serif);font-size:19px;font-weight:400;display:block}
+.rowh .secs{font-size:12px;color:var(--ink-2);display:block;margin:2px 0 6px}
+.rowh .btn{min-height:0;padding:3px 10px;font-size:13px}
+td.cell{vertical-align:top;padding:0}
+.cellbtn{font:inherit;text-align:left;width:100%;min-height:118px;background:var(--sheet);color:var(--ink);border:2px solid var(--rule);border-radius:14px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.cellbtn:hover{border-color:var(--edge)}
+.cellbtn.empty{border-style:dashed;color:var(--ink-2);align-items:center;justify-content:center;font-size:14px}
+.cellbtn.off{background:repeating-linear-gradient(135deg,var(--wash) 0 10px,var(--paper) 10px 20px);border-style:dashed;cursor:default;color:var(--ink-2);align-items:center;justify-content:center;font-size:13px}
+.cellbtn .tg{font-weight:700;font-size:14px;line-height:1.25}
+.cellbtn ol{margin:0;padding-left:18px;font-size:13px;line-height:1.3}
+.cellbtn .hw{font-size:12px;color:var(--ink-2)}
+.cellbtn .own{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--land);color:var(--on-land);border-radius:999px;padding:1px 8px}
+td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
+/* editor */
+.ed{max-width:620px}
+.ed .lb{display:block;font-size:14px;font-weight:700;margin:12px 0 3px}
+.ed .field,.ed textarea,.ed select{width:100%}
+.ed .scope{background:var(--wash);border-radius:12px;padding:8px 12px;font-size:14px;margin-top:4px}
+.ed .scope .bar{margin-top:6px}
+.courses li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--rule)}
+.courses li:first-child{border-top:0}
+.courses .nm{flex:1;font-weight:600}
+.courses ul{list-style:none;margin:0 0 10px;padding:0}
+.checks{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
+.checks label{display:flex;gap:5px;align-items:center;font-size:15px}
+.printonly{display:none}
+@media print{
+  @page{size:landscape;margin:.4in}
+  body{background:#fff}
+  #suite-nav,.noprint,.backup-banner{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .printonly{display:block;font-family:var(--serif);font-size:24px;margin-bottom:6px}
+  .gridwrap{overflow:visible}
+  table.plan{min-width:0;border-spacing:3px}
+  table.plan th.rowh{width:120px;border:1.5px solid #111;border-radius:6px;padding:5px 7px}
+  .rowh .btn{display:none}
+  .cellbtn{min-height:0;border:1px solid #999;border-radius:6px;padding:5px 6px;background:#fff;color:#111}
+  .cellbtn.empty{visibility:hidden}
+  .cellbtn .own{background:#fff;color:#111;border:1px solid #111}
+  .cellbtn ol,.cellbtn .tg{font-size:11px}
+}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const keyOf = d => Suite.dateKey(d);
+  const parse = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d, 12); };
+  const monday = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); const wd = x.getDay(); x.setDate(x.getDate() - (wd === 0 ? 6 : wd - 1)); return x; };
+  let week = monday(new Date());
+  { const m = location.hash.match(/date=(\d{4}-\d{2}-\d{2})/); if (m) week = monday(parse(m[1])); }
+
+  // Rows: each course, then any class that isn't in a course.
+  function rows(){
+    const cl = Suite.classes(), co = Suite.courses();
+    const inCourse = new Set(co.flatMap(c => c.classIds || []));
+    return co.map(c => ({ kind: 'course', id: c.id, key: Suite.courseKey(c.id), name: c.name, classes: cl.filter(k => (c.classIds || []).includes(k.id)) }))
+      .concat(cl.filter(k => !inCourse.has(k.id)).map(k => ({ kind: 'class', id: k.id, key: k.id, name: k.name, classes: [k] })));
+  }
+  const days = () => DAYS.map((n, i) => { const d = new Date(week); d.setDate(week.getDate() + i); return d; });
+  const summary = e => e ? `${e.target ? `<span class="tg">${esc(e.target)}</span>` : ''}${e.items && e.items.length ? `<ol>${e.items.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}${e.homework ? `<span class="hw">Homework: ${esc(e.homework)}</span>` : ''}` : '';
+
+  function render(){
+    const R = rows(), D = days(), A = Suite.agendaAll(), today = keyOf(new Date());
+    const fri = D[4], label = D[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' to ' + fri.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const head = D.map(d => { const sc = Suite.scheduleFor(d), k = keyOf(d); return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<span>${esc(sc.periods.length ? sc.scheduleName || sc.label : sc.label)}</span></th>`; }).join('');
+    const body = R.map(r => `<tr><th class="rowh" scope="row"><span class="nm">${esc(r.name)}</span>
+        ${r.kind === 'course' ? `<span class="secs">${r.classes.map(c => esc(c.name)).join(', ') || 'No sections yet'}</span>` : ''}
+        <button class="btn quiet noprint" data-a="shift" data-row="${esc(r.key)}">Shift plans…</button></th>
+      ${D.map(d => {
+        const k = keyOf(d), sc = Suite.scheduleFor(d), day = A[k] || {};
+        if (!sc.periods.length) return `<td class="cell"><div class="cellbtn off">${esc(sc.label)}</div></td>`;
+        const e = day[r.key], own = r.kind === 'course' ? r.classes.filter(c => day[c.id]) : [];
+        return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn${e || own.length ? '' : ' empty'}" data-a="edit" data-row="${esc(r.key)}" data-date="${k}" aria-label="Plan for ${esc(r.name)} on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">
+          ${e ? summary(e) : own.length ? '' : '+ Plan'}${own.length ? `<span class="own">${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))} changed</span>` : ''}</button></td>`;
+      }).join('')}</tr>`).join('');
+    $('#app').innerHTML = `
+      <div class="toolbar noprint"><h1>Planner</h1>
+        <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
+        <div class="bar"><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
+      <div class="printonly">Plans for ${esc(label)}</div>
+      ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
+      ${R.length ? `<div class="gridwrap"><table class="plan"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>`
+        : '<div class="banner"><span>Add your classes in Classes and rosters first.</span><a class="btn primary" href="settings.html#classes">Classes and rosters</a></div>'}
+      <p class="hint noprint" style="margin-top:12px">Click any day to plan it. Plans show on the dashboard for the class in session and print on the substitute page.</p>`;
+  }
+
+  /* ---------- editing a day ---------- */
+  function openEditor(rowKey, dateKey, classOnly){
+    const R = rows(), r = R.find(x => x.key === rowKey); if (!r) return;
+    const A = Suite.agendaAll(), day = A[dateKey] || {};
+    const target = classOnly || r.key;                // what we're editing: the course, or one period
+    const one = classOnly ? r.classes.find(c => c.id === classOnly) : null;
+    const e = day[target] || (classOnly ? day[r.key] : null) || { target: '', items: [], homework: '' };
+    const when = parse(dateKey).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="ed-t">
+      <h2 id="ed-t">${esc(one ? one.name : r.name)} · ${esc(when)}</h2>
+      ${r.kind === 'course' ? `<div class="scope">${one
+          ? `Just <b>${esc(one.name)}</b>. The rest of ${esc(r.name)} keeps the course plan.<div class="bar"><button class="btn quiet small" data-e="course">Back to the course plan</button>${day[one.id] ? `<button class="btn quiet danger small" data-e="unown">Use the course plan for ${esc(one.name)} again</button>` : ''}</div>`
+          : `For every section: ${r.classes.map(c => esc(c.name) + (day[c.id] ? ' (changed)' : '')).join(', ') || 'none yet'}.<div class="bar"><label class="small" for="ed-one">Change one period only:</label><select id="ed-one"><option value="">Choose…</option>${r.classes.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></div>`}</div>` : ''}
+      <label class="lb" for="ed-target">Learning target</label><input class="field" id="ed-target" value="${esc(e.target || '')}" placeholder="I can explain why the Nile mattered to Egyptian farmers.">
+      <label class="lb" for="ed-items">Agenda <span class="muted small">(one step per line)</span></label><textarea id="ed-items" rows="6">${esc((e.items || []).join('\n'))}</textarea>
+      <label class="lb" for="ed-hw">Homework</label><input class="field" id="ed-hw" value="${esc(e.homework || '')}" placeholder="Optional">
+      <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
+        <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
+        <span class="bar"><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
+    document.body.appendChild(back);
+    const close = () => { back.remove(); document.removeEventListener('keydown', onKey, true); };
+    const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); close(); } };
+    document.addEventListener('keydown', onKey, true);
+    const q = id => back.querySelector('#' + id);
+    q('ed-target').focus();
+    const one2 = back.querySelector('#ed-one'); if (one2) one2.addEventListener('change', () => { if (one2.value) { close(); openEditor(rowKey, dateKey, one2.value); } });
+    back.addEventListener('click', ev => {
+      if (ev.target === back) return close();
+      const b = ev.target.closest('[data-e]'); if (!b) return;
+      const k = b.dataset.e;
+      if (k === 'cancel') close();
+      else if (k === 'course') { close(); openEditor(rowKey, dateKey, null); }
+      else if (k === 'unown') { Suite.saveAgenda(dateKey, [one.id], null); close(); render(); Suite.toast(one.name + ' uses the course plan again'); }
+      else if (k === 'clear') { Suite.saveAgenda(dateKey, [target], null); close(); render(); }
+      else if (k === 'prev') {
+        const A2 = Suite.agendaAll(), before = Object.keys(A2).filter(d => d < dateKey && (A2[d][target] || (classOnly && A2[d][r.key]))).sort().pop();
+        if (!before) { Suite.toast('No earlier plan to copy'); return; }
+        const p = A2[before][target] || A2[before][r.key];
+        q('ed-target').value = p.target || ''; q('ed-items').value = (p.items || []).join('\n'); q('ed-hw').value = p.homework || '';
+      }
+      else if (k === 'save') {
+        const entry = { target: q('ed-target').value.trim(), items: q('ed-items').value.split('\n').map(x => x.trim()).filter(Boolean), homework: q('ed-hw').value.trim() };
+        Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework ? entry : null);
+        close(); render(); Suite.toast('Plan saved');
+      }
+    });
+  }
+
+  /* ---------- courses ---------- */
+  function openCourses(){
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const draw = () => {
+      const co = Suite.courses(), cl = Suite.classes();
+      back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="co-t">
+        <h2 id="co-t">Courses</h2>
+        <p>A course is a group of periods that get the same lesson, like all your 6th grade sections. You plan once for the course, and each period can still be changed on its own.</p>
+        <div class="courses">${co.length ? `<ul>${co.map(c => `<li><span class="nm">${esc(c.name)}</span><span class="muted small">${cl.filter(k => (c.classIds || []).includes(k.id)).map(k => esc(k.name)).join(', ')}</span>
+          <button class="btn quiet small" data-c="edit" data-id="${esc(c.id)}">Edit</button><button class="btn quiet danger small" data-c="del" data-id="${esc(c.id)}" aria-label="Remove ${esc(c.name)}">×</button></li>`).join('')}</ul>` : '<p class="muted">No courses yet.</p>'}</div>
+        <div class="suite-dialog-actions" style="justify-content:space-between"><button class="btn" data-c="add">Add a course</button><button class="btn primary" data-c="done">Done</button></div></div>`;
+    };
+    const edit = id => {
+      const co = Suite.courses(), cl = Suite.classes(), c = co.find(x => x.id === id) || { id: Suite.uid(), name: '', classIds: [] };
+      const taken = new Set(co.filter(x => x.id !== c.id).flatMap(x => x.classIds || []));
+      back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="co-t">
+        <h2 id="co-t">${c.name ? 'Edit ' + esc(c.name) : 'New course'}</h2>
+        <label class="lb" for="co-name">Name</label><input class="field" id="co-name" value="${esc(c.name)}" placeholder="6th grade World History">
+        <span class="lb">Periods in this course</span>
+        <div class="checks">${cl.map(k => `<label${taken.has(k.id) ? ' title="Already in another course"' : ''}><input type="checkbox" value="${esc(k.id)}"${(c.classIds || []).includes(k.id) ? ' checked' : ''}${taken.has(k.id) ? ' disabled' : ''}> ${esc(k.name)}</label>`).join('')}</div>
+        <div class="suite-dialog-actions"><button class="btn" data-c="back">Cancel</button><button class="btn primary" data-c="save" data-id="${esc(c.id)}">Save course</button></div></div>`;
+      back.querySelector('#co-name').focus();
+    };
+    document.body.appendChild(back); draw();
+    const close = () => { back.remove(); document.removeEventListener('keydown', onKey, true); render(); };
+    const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); close(); } };
+    document.addEventListener('keydown', onKey, true);
+    back.addEventListener('click', async ev => {
+      if (ev.target === back) return close();
+      const b = ev.target.closest('[data-c]'); if (!b) return;
+      const k = b.dataset.c;
+      if (k === 'done') close();
+      else if (k === 'add') edit(null);
+      else if (k === 'edit') edit(b.dataset.id);
+      else if (k === 'back') draw();
+      else if (k === 'del') { Suite.saveCourses(Suite.courses().filter(x => x.id !== b.dataset.id)); draw(); Suite.toast('Course removed. Its periods keep any plans made just for them.'); }
+      else if (k === 'save') {
+        const name = back.querySelector('#co-name').value.trim(), ids = [...back.querySelectorAll('.checks input:checked')].map(x => x.value);
+        if (!name) { Suite.toast('Give the course a name'); return; }
+        const co = Suite.courses(), i = co.findIndex(x => x.id === b.dataset.id), c = { id: b.dataset.id, name, classIds: ids };
+        if (i > -1) co[i] = c; else co.push(c);
+        Suite.saveCourses(co); draw();
+      }
+    });
+  }
+
+  /* ---------- snow days: shift a row's plans ---------- */
+  async function openShift(rowKey){
+    const r = rows().find(x => x.key === rowKey); if (!r) return;
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const first = days().find(d => Suite.scheduleFor(d).periods.length) || days()[0];
+    back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="sh-t">
+      <h2 id="sh-t">Shift ${esc(r.name)} plans</h2>
+      <p>Moves every plan from a day onward, skipping weekends and days with no school. Use it when a snow day or assembly takes a class day away.</p>
+      <label class="lb" for="sh-from">Starting with</label><input type="date" class="field" id="sh-from" value="${keyOf(first)}">
+      <label class="lb" for="sh-n">Move them</label><select id="sh-n">${[1, 2, 3].map(n => `<option value="${n}">${n} school day${n > 1 ? 's' : ''} later</option>`).join('')}<option value="-1">1 school day earlier</option></select>
+      <label class="checks" style="margin-top:12px"><input type="checkbox" id="sh-off"> Also mark the starting day as <b>no school</b> on the bell schedule</label>
+      <div class="suite-dialog-actions"><button class="btn" data-s="cancel">Cancel</button><button class="btn primary" data-s="go">Shift plans</button></div></div>`;
+    document.body.appendChild(back);
+    const close = () => back.remove();
+    back.addEventListener('click', ev => {
+      if (ev.target === back) return close();
+      const b = ev.target.closest('[data-s]'); if (!b) return;
+      if (b.dataset.s === 'cancel') return close();
+      const from = back.querySelector('#sh-from').value, n = +back.querySelector('#sh-n').value;
+      if (!from) return;
+      if (back.querySelector('#sh-off').checked) { const S = Suite.getSchedule(); if (!S.special.some(d => d.date === from)) S.special.push({ date: from, label: 'No school', scheduleId: 'none' }); Suite.saveSchedule(S); }
+      const keys = [r.key].concat(r.kind === 'course' ? r.classes.map(c => c.id) : []);
+      const moved = Suite.shiftPlans(keys, from, n);
+      close(); render(); Suite.toast(moved ? 'Moved ' + moved + ' plan' + (moved === 1 ? '' : 's') : 'No plans to move from that day on');
+    });
+  }
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a;
+    if (a === 'prev' || a === 'next') { week.setDate(week.getDate() + (a === 'next' ? 7 : -7)); week = new Date(week); render(); }
+    else if (a === 'now') { week = monday(new Date()); render(); }
+    else if (a === 'edit') openEditor(el.dataset.row, el.dataset.date, null);
+    else if (a === 'courses') openCourses();
+    else if (a === 'shift') openShift(el.dataset.row);
+    else if (a === 'print') window.print();
+  });
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) render(); });
+  Suite.mountNav('planner');
+  render();
+  // arriving from the dashboard with a class and date: open that day
+  { const m = location.hash.match(/date=(\d{4}-\d{2}-\d{2})/), c = location.hash.match(/class=([\w-]+)/);
+    if (m && c) { const r = rows().find(x => x.classes.some(k => k.id === c[1])); if (r) openEditor(r.key, m[1], null); } }
+})();
+</script>
+</body>
+</html>
