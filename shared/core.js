@@ -9,20 +9,33 @@
   // [id, name, seats, row, spot] — spot = position from the left, matching the room
   const DEFAULT_TABLES = [['sequoyah', 'Sequoyah', 8, 1, 1], ['delmarva', 'Delmarva', 6, 1, 2], ['franklin', 'Franklin', 6, 1, 3], ['jefferson', 'Jefferson', 6, 2, 2], ['metropotamia', 'Metropotamia', 6, 2, 3]];
   // Flip "soon" to false as each page is added to the site.
+  // Menu: a few everyday links, a Tools menu, and setup under the gear.
   const NAV = [
-    { id: 'dashboard', label: 'Dashboard', href: 'index.html', soon: false },
-    { id: 'tracker', label: 'Table points', href: 'tracker.html', soon: false },
-    { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: false },
-    { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: false },
-    { id: 'activities', label: 'Activities', href: 'activities.html', soon: false },
-    { id: 'noise', label: 'Noise meter', href: 'noise.html', soon: false },
-    { id: 'present', label: 'Present', href: 'present.html', soon: false }
+    { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
+    { id: 'tracker', label: 'Table points', href: 'tracker.html' },
+    { id: 'seating', label: 'Seating', href: 'seating.html' },
+    { id: 'tools', label: 'Tools', menu: [
+      { id: 'spinner', label: 'Name spinner', href: 'spinner.html' },
+      { id: 'topics', label: 'Topic picker', href: 'topics.html' },
+      { id: 'act-game', label: 'Review game', href: 'activities.html#tool=game' },
+      { id: 'act-stations', label: 'Stations', href: 'activities.html#tool=stations' },
+      { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally' },
+      { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups' },
+      { id: 'noise', label: 'Noise meter', href: 'noise.html' }
+    ] },
+    { id: 'present', label: 'Present', href: 'present.html' }
   ];
+  const GEAR_MENU = [
+    { id: 'settings', label: 'Classes and rosters', href: 'settings.html#classes' },
+    { id: 'sub', label: 'Substitute page', href: 'sub.html' },
+    { id: 'general', label: 'General settings', href: 'settings.html#general' }
+  ];
+  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise'];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-01a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-01b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -75,6 +88,27 @@
     const lum = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
     const L = .2126 * lum[0] + .7152 * lum[1] + .0722 * lum[2];
     return L > .3 ? '#1C2B3A' : '#FFFFFF';
+  };
+  // How a table's seats are arranged: a number of columns, with as many rows as the seats need.
+  // Two columns face each other across the table (surface down the middle); two rows face across it (surface across the middle).
+  S.seatLayout = t => {
+    const n = Math.max(1, t.seats || 1);
+    const cols = Math.max(1, Math.min(n, t.seatCols || Math.ceil(n / 2))), rows = Math.ceil(n / cols);
+    const surface = rows === 2 && cols > 1 ? 'h' : cols === 2 && rows > 1 ? 'v' : null;
+    const pos = i => surface === 'v' ? { r: i % rows, c: Math.floor(i / rows) } : { r: Math.floor(i / cols), c: i % cols };
+    return { cols, rows, surface, pos };
+  };
+  S.seatOptions = n => {
+    n = Math.max(1, n || 1);
+    const seen = new Set(), out = [];
+    [2, Math.ceil(n / 2), 3, 4, 1, n].forEach(c => {
+      if (c < 1 || c > n || seen.has(c)) return;
+      const r = Math.ceil(n / c);
+      if (c * r - n >= Math.min(c, r) || r > 12) return;
+      seen.add(c);
+      out.push({ cols: c, label: c === 1 ? 'One column' : r === 1 ? 'One row' : c + ' columns, ' + r + ' rows' });
+    });
+    return out;
   };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
@@ -630,6 +664,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   const THEMES = ['auto', 'light', 'dark'];
   function applyTheme() { const t = S.get('theme', 'auto'); if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
   applyTheme();
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.key === 'theme' || e.detail.key === '*')) applyTheme(); });
 
   /* ---------- navigation bar ---------- */
   S.mountNav = current => {
@@ -637,17 +672,23 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     if (!el) return;
     const draw = () => {
       const b = S.backupStatus();
-      const theme = S.get('theme', 'auto');
+      const actTool = current === 'activities' ? 'act-' + ((location.hash.match(/tool=(\w+)/) || [])[1] || 'game') : null;
+      const isHere = id => id === current || id === actTool;
+      const link = n => `<a href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`;
+      const menu = (key, items, title) => `<div class="ddmenu" data-ddm="${key}" hidden role="menu"${title ? ` aria-label="${S.esc(title)}"` : ''}>${items.map(n => n.pop
+        ? `<button role="menuitem" data-pop="${n.pop}">${S.esc(n.label)}</button>`
+        : `<a role="menuitem" href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`).join('')}${key === 'pop' ? '<span class="ddnote">Floats on top of Google Slides in Chrome or Edge.</span>' : ''}</div>`;
       el.innerHTML = `<div class="nav-inner">
         <a class="wordmark" href="index.html">${S.esc(S.suiteName())} <span class="speed" aria-hidden="true"><i></i><i></i><i></i></span></a>
-        <nav aria-label="Tools"><ul>${NAV.map(n => `<li>${n.soon
-          ? `<span class="soon" title="Coming soon">${S.esc(n.label)}</span>`
-          : `<a href="${n.href}"${n.id === current ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`}</li>`).join('')}</ul></nav>
+        <nav aria-label="Main"><ul>${NAV.map(n => n.menu
+          ? `<li><button class="ddbtn${TOOL_PAGES.includes(current) ? ' here' : ''}" data-dd="${n.id}" aria-expanded="false" aria-haspopup="true">${S.esc(n.label)}<i class="caret" aria-hidden="true"></i></button></li>`
+          : `<li>${link(n)}</li>`).join('')}</ul></nav>
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
-        <span class="popwrap"><button class="gear popbtn" data-suite="popmenu" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
-          <span class="popmenu" hidden><b>Pop out a mini window</b><button data-pop="timer">Timer</button><button data-pop="points">Table points</button><button data-pop="name">Name picker</button><span>Floats on top of Google Slides in Chrome or Edge.</span></span></span>
-        <button class="btn quiet theme-btn" data-suite="theme">Theme: ${theme[0].toUpperCase() + theme.slice(1)}</button>
-        <a class="gear${current === 'settings' || current === 'sub' ? ' on' : ''}" href="settings.html" aria-label="Classes and settings" title="Classes and settings"${current === 'settings' ? ' aria-current="page"' : ''}>${GEAR}</a>
+        <button class="gear" data-dd="pop" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false" aria-haspopup="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
+        <button class="gear${current === 'settings' || current === 'sub' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
+        ${menu('tools', NAV.find(n => n.menu).menu, 'Tools')}
+        ${menu('pop', [{ pop: 'timer', label: 'Timer' }, { pop: 'points', label: 'Table points' }, { pop: 'name', label: 'Name picker' }], 'Pop out a mini window')}
+        ${menu('gear', GEAR_MENU, 'Setup')}
       </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw(); timerDraw();
@@ -657,15 +698,28 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     const onScroll = () => el.classList.toggle('slim', window.scrollY > 24);
     window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
     window.addEventListener('suite:change', e => { if (!e.detail || e.detail.key !== 'timer') { draw(); timerDraw(); } });
+    const closeMenus = () => { el.querySelectorAll('.ddmenu').forEach(m => { m.hidden = true; }); el.querySelectorAll('[data-dd]').forEach(b => b.setAttribute('aria-expanded', 'false')); };
     el.addEventListener('click', e => {
-      const pm = e.target.closest('[data-suite="popmenu"]'), po = e.target.closest('[data-pop]');
-      if (pm) { const m = el.querySelector('.popmenu'); m.hidden = !m.hidden; pm.setAttribute('aria-expanded', String(!m.hidden)); return; }
-      if (po) { el.querySelector('.popmenu').hidden = true; S.popOut(po.dataset.pop); return; }
-      if (!e.target.closest('[data-suite="theme"]')) return;
-      const t = S.get('theme', 'auto');
-      S.set('theme', THEMES[(THEMES.indexOf(t) + 1) % THEMES.length]);
-      applyTheme();
+      const dd = e.target.closest('[data-dd]'), po = e.target.closest('[data-pop]');
+      if (dd) {
+        const m = el.querySelector(`[data-ddm="${dd.dataset.dd}"]`), open = m.hidden;
+        closeMenus();
+        if (open) {
+          m.hidden = false; dd.setAttribute('aria-expanded', 'true');
+          const r = dd.getBoundingClientRect(), w = m.offsetWidth;
+          m.style.top = (r.bottom + 6) + 'px';
+          m.style.left = Math.max(8, Math.min(dd.dataset.dd === 'tools' ? r.left : r.right - w, window.innerWidth - w - 8)) + 'px';
+          const first = m.querySelector('a,button'); if (first) first.focus();
+        }
+        return;
+      }
+      if (po) { closeMenus(); S.popOut(po.dataset.pop); return; }
+      if (e.target.closest('.ddmenu a')) closeMenus();
     });
+    document.addEventListener('click', e => { if (!e.target.closest('#suite-nav')) closeMenus(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && el.querySelector('.ddmenu:not([hidden])')) { closeMenus(); e.stopPropagation(); } }, true);
+    window.addEventListener('scroll', closeMenus, { passive: true });
+    window.addEventListener('resize', closeMenus);
   };
 
   window.Suite = S;

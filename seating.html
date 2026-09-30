@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
-<script src="shared/core.js?v=2026-10-01a"></script>
-<script>window.PAGE_VERSION = '2026-10-01a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01b">
+<script src="shared/core.js?v=2026-10-01b"></script>
+<script>window.PAGE_VERSION = '2026-10-01b';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -27,7 +27,8 @@
 .tbl h2{background:var(--tc);color:var(--tx);font-size:22px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .tbl h2 span{font:600 13px var(--sans);opacity:.85}
 .seats{display:grid;gap:6px;padding:10px 12px 12px}
-.surface{grid-column:1 / -1;height:14px;border-radius:999px;background:var(--wash);border:1.5px solid var(--rule)}
+.surface{height:14px;border-radius:999px;background:var(--wash);border:1.5px solid var(--rule);align-self:center}
+.surface.v{height:auto;width:14px;justify-self:center;align-self:stretch}
 .seat{font:inherit;min-height:48px;border:2px solid var(--rule);border-radius:12px;background:var(--paper);color:var(--ink);font-size:15px;font-weight:600;padding:4px 6px;cursor:pointer;line-height:1.15;overflow-wrap:anywhere}
 .seat.empty{color:var(--ink-2);font-weight:400;font-size:13px;border-style:dashed}
 .seat:hover{border-color:var(--edge)}
@@ -100,12 +101,19 @@ body.proj .tbl h2{font-size:28px}
     const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId)).sort((a, b) => a.name.localeCompare(b.name));
     const btn = (s, cls) => `<button class="${cls}${sel === s.id ? ' sel' : ''}${caps[s.tableId] === s.name && cls === 'seat' ? ' cap' : ''}" data-a="stu" data-id="${esc(s.id)}">${esc(s.name)}</button>`;
     const tables = c.tables.map(t => {
-      const m = seatMap(c, t), top = Math.ceil(t.seats / 2);
-      const seatBtn = (s, i) => s ? btn(s, 'seat') : `<button class="seat empty${sel ? ' target' : ''}" data-a="seat" data-t="${esc(t.id)}" data-i="${i}" aria-label="Empty seat ${i + 1} at ${esc(t.name)}">Seat ${i + 1}</button>`;
-      const seatsHtml = m.seats.map((s, i) => (i === top ? '<div class="surface" aria-hidden="true"></div>' : '') + seatBtn(s, i)).join('');
+      const m = seatMap(c, t), L = Suite.seatLayout(t);
+      // grid lines: seats, plus a narrow track for the table surface when seats face each other
+      const colOf = c2 => L.surface === 'v' && c2 >= 1 ? c2 + 2 : c2 + 1;
+      const rowOf2 = r2 => L.surface === 'h' && r2 >= 1 ? r2 + 2 : r2 + 1;
+      const where = i => { const p = L.pos(i); return `grid-row:${rowOf2(p.r)};grid-column:${colOf(p.c)}`; };
+      const seatBtn = (s, i) => s ? btn(s, 'seat').replace('<button ', `<button style="${where(i)}" `) : `<button class="seat empty${sel ? ' target' : ''}" style="${where(i)}" data-a="seat" data-t="${esc(t.id)}" data-i="${i}" aria-label="Empty seat ${i + 1} at ${esc(t.name)}">Seat ${i + 1}</button>`;
+      const surface = L.surface === 'h' ? '<div class="surface" style="grid-row:2;grid-column:1 / -1" aria-hidden="true"></div>'
+        : L.surface === 'v' ? `<div class="surface v" style="grid-column:2;grid-row:1 / span ${L.rows}" aria-hidden="true"></div>` : '';
+      const tracks = L.surface === 'v' ? 'minmax(0,1fr) 16px minmax(0,1fr)' : `repeat(${L.cols},minmax(0,1fr))`;
+      const seatsHtml = surface + m.seats.map((s, i) => seatBtn(s, i)).join('');
       return `<div class="tbl${t.open ? '' : ' off'}" style="grid-row:${rowOf(t)};grid-column:${lay.at[t.id].col};--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)}">
         <h2>${esc(t.name)}<span>${m.seats.filter(Boolean).length + m.loose.length} of ${t.seats}${t.open ? '' : ', not in use'}</span></h2>
-        <div class="seats" style="grid-template-columns:repeat(${Math.max(1, top)},minmax(0,1fr))">${seatsHtml}</div>
+        <div class="seats${L.surface === 'v' ? ' cols2' : ''}" style="grid-template-columns:${tracks}">${seatsHtml}</div>
         <div class="loose ctl">${m.loose.map(s => btn(s, 'chip')).join('')}</div>
       </div>`;
     }).join('');
@@ -115,7 +123,7 @@ body.proj .tbl h2{font-size:28px}
       <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} seating chart</div>
         <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>
           <button class="btn" data-a="print">Print</button><button class="btn" data-a="proj">Projector view</button></div></div>
-      <p class="help ctl">${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
+      <p class="help ctl">${!sel && c.tables.some(t => !t.seatCols) ? 'Seats not arranged the way your tables are? Change each table\'s seat arrangement under <a href="settings.html#classes">Classes and rosters</a>, in "Tables and room layout." ' : ''}${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
         : 'Tap a student, then tap a seat to move them. Tap a student in another seat to trade places. Moving someone to a different table changes their table too.'}</p>
       <div class="printhead">${esc(c.name)} seating chart</div>
       ${UI.front === 'top' ? front : ''}

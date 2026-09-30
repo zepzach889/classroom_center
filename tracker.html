@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
-<script src="shared/core.js?v=2026-10-01a"></script>
-<script>window.PAGE_VERSION = '2026-10-01a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01b">
+<script src="shared/core.js?v=2026-10-01b"></script>
+<script>window.PAGE_VERSION = '2026-10-01b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -18,6 +18,12 @@
 .classes button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
 .statusbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
 .when{font-family:var(--serif);font-size:30px}
+.more{position:relative;display:inline-flex}
+.more .caret{width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);margin-left:4px}
+.moremenu{position:absolute;right:0;top:calc(100% + 6px);z-index:25;min-width:210px;background:var(--sheet);border:2px solid var(--edge);border-radius:16px;padding:6px;display:flex;flex-direction:column;box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.moremenu[hidden]{display:none}
+.moremenu button{font:inherit;font-size:15px;font-weight:600;text-align:left;background:none;border:0;border-radius:10px;padding:8px 12px;color:var(--ink);cursor:pointer}
+.moremenu button:hover{background:var(--wash)}
 .double-on{background:var(--land)!important;border-color:var(--land)!important;color:var(--on-land)!important}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
 .cards.room-grid{grid-template-columns:repeat(var(--cols),minmax(0,1fr))}
@@ -119,7 +125,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     'Zero reminders needed to transition between activities'
   ].join('\n');
   const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null, rotateEvery: 1, captainLog: [], prizes: [] };
-  let T, proj = Suite.startInProjector, picked = null, bump = null;
+  let T, proj = Suite.startInProjector, picked = null, bump = null, moreOpen = false;
 
   function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; T.captainLog = T.captainLog || []; T.prizes = T.prizes || []; if (T.rotateEvery == null) T.rotateEvery = 1; }
   function save(){ Suite.set('tracker', T); }
@@ -240,11 +246,14 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       <div class="statusbar">
         <div class="when">Quarter ${T.quarter}, week ${T.week}</div>
         <div class="bar">
-          <button class="btn${T.double ? ' double-on' : ''}" data-a="double" aria-pressed="${T.double}">${T.double ? 'Double points on' : 'Double points'}</button>
+          ${T.double ? '<button class="btn double-on" data-a="double" aria-pressed="true" title="Turn double points off">Double points on</button>' : ''}
           <button class="btn" data-a="undo">Undo last</button>
-          <button class="btn" data-a="endweek">End week</button>
-          <a class="btn" href="seating.html#class=${esc(c.id)}">Seating chart</a>
           <button class="btn" data-a="proj">Projector view</button>
+          <span class="more"><button class="btn" data-a="more" aria-expanded="${moreOpen}" aria-haspopup="true">More<i class="caret" aria-hidden="true"></i></button>
+            <span class="moremenu"${moreOpen ? '' : ' hidden'} role="menu">
+              <button role="menuitem" data-a="double">${T.double ? 'Turn off double points' : 'Turn on double points'}</button>
+              <button role="menuitem" data-a="endweek">End week ${T.week}</button>
+            </span></span>
         </div>
       </div>
       <div class="keys hint">Keyboard: press a table's number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean +2, <kbd>M</kbd> mostly clean +1, <kbd>P</kbd> 3-point challenge. <kbd>U</kbd> undo, <kbd>D</kbd> double points, <kbd>Esc</kbd> deselect.${picked ? ` <b>Picked: ${esc(tname(c, picked))}</b>` : ''}</div>
@@ -446,7 +455,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   }, true);
 
   document.addEventListener('click', async e => {
-    const el = e.target.closest('[data-a]'); if (!el) return;
+    const el = e.target.closest('[data-a]');
+    if (moreOpen && (!el || el.dataset.a !== 'more')) { moreOpen = false; if (!el) { render(); return; } }
+    if (!el) return;
+    if (el.dataset.a === 'more') { moreOpen = !moreOpen; render(); return; }
     const a = el.dataset.a, id = el.dataset.id;
     const c = curClass(classes());
     if (a === 'pick') { T.cur = id; save(); render(); }

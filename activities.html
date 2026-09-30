@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
-<script src="shared/core.js?v=2026-10-01a"></script>
-<script>window.PAGE_VERSION = '2026-10-01a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01b">
+<script src="shared/core.js?v=2026-10-01b"></script>
+<script>window.PAGE_VERSION = '2026-10-01b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -374,7 +374,7 @@ body.proj .group li{font-size:24px}
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, id = el.dataset.id, c = curClass(), g = curGame();
-    if (a === 'tool') { A.tool = id; openQ = null; save(); render(); }
+    if (a === 'tool') { A.tool = id; openQ = null; render(); save(); }
     else if (a === 'pickc') { A.cur = id; openQ = null; save(); render(); }
     else if (a === 'proj') { proj = !proj; render(); }
     // review game
@@ -455,6 +455,11 @@ body.proj .group li{font-size:24px}
   });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*' || e.detail.key === 'classes')) { if (e.detail.external || e.detail.key === '*') load(); render(); } });
 
+  window.addEventListener('hashchange', () => {
+    const m = location.hash.match(/tool=(\w+)/);
+    if (m && m[1] === 'noise') { location.replace('noise.html'); return; }
+    if (m && TOOLS.some(t => t[0] === m[1]) && m[1] !== A.tool) { A.tool = m[1]; openQ = null; save(); render(); }
+  });
   Suite.mountNav('activities');
   render();
 })();

@@ -123,11 +123,16 @@ textarea{width:100%;resize:vertical}
 }
 
 html.embed #suite-nav{display:none}
-.popwrap{position:relative;display:inline-flex}
-.popbtn{background:none;cursor:pointer}
-.popmenu{position:absolute;right:0;top:44px;z-index:60;background:var(--sheet);color:var(--ink);border:2px solid var(--edge);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:6px;width:230px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-.popmenu[hidden]{display:none}
-.popmenu b{font-size:14px}
-.popmenu button{font:inherit;font-weight:600;text-align:left;background:var(--paper);color:var(--ink);border:1.5px solid var(--rule);border-radius:10px;padding:7px 10px;cursor:pointer}
-.popmenu button:hover{border-color:var(--edge)}
-.popmenu span{font-size:12px;color:var(--ink-2)}
+
+/* menu buttons with drop-downs */
+button.gear{background:none;cursor:pointer;font:inherit}
+.ddbtn{font:inherit;display:flex;align-items:center;gap:7px;padding:5px 11px;white-space:nowrap;color:var(--bar-ink);font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;background:none;border:2px solid transparent;border-radius:999px;cursor:pointer}
+.ddbtn:hover,.ddbtn[aria-expanded="true"]{color:#FFFFFF}
+.ddbtn.here{color:#FFFFFF;border-color:var(--land)}
+.caret{width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px)}
+.ddmenu{position:fixed;z-index:80;min-width:210px;background:var(--sheet);color:var(--ink);border:2px solid var(--edge);border-radius:16px;padding:6px;display:flex;flex-direction:column;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+.ddmenu[hidden]{display:none}
+.ddmenu a,.ddmenu button{font:inherit;font-size:15px;font-weight:600;text-align:left;color:var(--ink);text-decoration:none;background:none;border:0;border-radius:10px;padding:8px 12px;cursor:pointer}
+.ddmenu a:hover,.ddmenu button:hover,.ddmenu a:focus-visible,.ddmenu button:focus-visible{background:var(--wash)}
+.ddmenu a[aria-current="page"]{box-shadow:inset 3px 0 0 var(--land)}
+.ddnote{font-size:12px;color:var(--ink-2);padding:4px 12px 6px}
