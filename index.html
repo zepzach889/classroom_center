@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02a">
-<script src="shared/core.js?v=2026-10-02a"></script>
-<script>window.PAGE_VERSION = '2026-10-02a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02b">
+<script src="shared/core.js?v=2026-10-02b"></script>
+<script>window.PAGE_VERSION = '2026-10-02b';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
 @media (min-width:861px){
@@ -17,11 +17,11 @@
   .dash>section{display:flex;flex-direction:column;min-height:0;overflow:hidden}
   .fill{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;margin-top:min(16px,1.8vh)}
   /* the plan takes what's left and scrolls inside if it's long; the cards below keep their size */
-  .fill>#agenda{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  .fill>#agenda{flex:0 1 auto;min-height:0;display:flex;flex-direction:column}
   .fill>#agenda:empty{flex:0 0 auto}
   .fill>#agenda .agendabox{margin-top:0;min-height:0;max-height:100%;overflow:auto}
   .fill>#agenda .agadd{margin-top:0}
-  .fill>.cards-row{flex:0 0 auto;margin-top:0;align-items:stretch}
+  .fill>.cards-row{flex:1 0 auto;margin-top:0;align-items:stretch}
   .cards-row>div{display:flex;flex-direction:column}
   .cards-row .classbox,.cards-row .comingbox{flex:1 1 auto}
   .dash .today{position:static;max-height:none;min-height:0}
@@ -51,6 +51,15 @@
 .ag-steps li{display:flex;align-items:center;gap:7px;border:1.5px solid var(--rule);border-radius:999px;padding:2px 12px 2px 3px;font-size:15px;background:var(--paper)}
 .ag-steps li b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--sea);color:var(--on-sea);font-size:12px}
 .ag-hw{font-size:15px;margin-top:8px}
+.ag-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lchip{font:inherit;font-size:14px;font-weight:600;color:var(--sea);background:var(--paper);border:1.5px solid var(--edge);border-radius:999px;padding:3px 12px;text-decoration:none;cursor:pointer}
+.lchip:hover{background:var(--wash)}
+.evtoday{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0}
+.evtoday:empty{display:none}
+.evtoday .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin-right:2px}
+.evc{background:var(--land);color:var(--on-land);border-radius:999px;padding:3px 12px;font-size:15px;font-weight:600}
+.evc span{font-weight:400;margin-left:6px;opacity:.9}
+.coming .evli .day{font-family:var(--sans);font-weight:700;font-size:17px}
 .agadd{margin-top:min(18px,2vh)}
 .ag-dialog{max-width:620px}
 .ag-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -106,7 +115,7 @@
   <section>
     <div class="hero">
       <div><div class="clock" aria-live="off"><span id="hm"></span><span class="sec" id="sec"></span><span class="ap" id="ap"></span></div>
-        <div class="date" id="date"></div></div>
+        <div class="date" id="date"></div><div class="evtoday" id="evtoday"></div></div>
       <div class="status" id="status" aria-live="polite"></div>
     </div>
     <div class="fill">
@@ -149,6 +158,11 @@
     const p = st.cur >= 0 && !Suite.isPassing(day.periods[st.cur]) ? day.periods[st.cur] : st.next >= 0 ? day.periods.slice(st.next).find(x => !Suite.isPassing(x) && !x.isBreak) : null;
     return Suite.classForPeriod(p, Suite.classes());
   }
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-file]'); if (!b) return;
+    const r = await Suite.files.get(b.dataset.file);
+    if (r && r.blob) window.open(URL.createObjectURL(r.blob), '_blank'); else Suite.toast("Couldn't find that file");
+  });
   function renderAgenda(cls, now){
     const el = $('#agenda');
     if (!cls) { el.innerHTML = ''; return; }
@@ -160,6 +174,9 @@
       ${a.target ? `<div class="ag-target"><span class="k">Target</span>${esc(a.target)}</div>` : ''}
       ${a.items && a.items.length ? `<ol class="ag-steps">${a.items.map((x, i) => `<li><b>${i + 1}</b>${esc(x)}</li>`).join('')}</ol>` : ''}
       ${a.homework ? `<div class="ag-hw"><span class="k">Homework</span>${esc(a.homework)}</div>` : ''}
+      ${(a.materials || []).length ? `<div class="ag-links">${a.materials.map(m => m.kind === 'link'
+        ? `<a class="lchip" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.title || (m.url || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0])}</a>`
+        : `<button class="lchip" data-file="${esc(m.file.id)}">${esc(m.title || m.file.name)}</button>`).join('')}</div>` : ''}
     </div>`;
   }
 
@@ -178,9 +195,16 @@
 
   function renderComing(){
     const now = new Date(), today = Suite.dateKey(now);
+    const evToday = Suite.eventsOn(today);
+    $('#evtoday').innerHTML = evToday.length ? `<span class="k">Today</span>${evToday.map(e => `<span class="evc">${esc(e.title)}${e.note ? `<span>${esc(e.note)}</span>` : ''}</span>`).join('')}` : '';
+    const soon = [];
+    for (let i = 1; i <= 7; i++) { const d = new Date(now); d.setDate(d.getDate() + i); const k = Suite.dateKey(d);
+      Suite.eventsOn(k).forEach(e => { if (!soon.some(x => x.e.id === e.id) && !evToday.some(x => x.id === e.id)) soon.push({ e, d }); }); }
     const all = Suite.countdowns().filter(cd => Suite.countdownLive(cd, now)).sort((a, b) => Suite.countdownEnd(a) - Suite.countdownEnd(b));
-    const list = all.slice(0, 3), more = all.length - list.length;
-    $('#coming').innerHTML = list.length ? `<div class="comingbox"><h2>Coming up</h2><ul class="coming">${list.map(cd => {
+    const list = all.slice(0, soon.length ? 2 : 3), more = all.length - list.length;
+    const dayName = k => { const [y, m, dd] = k.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: 'short' }); };
+    const evHtml = soon.slice(0, 3).map(({ e, d }) => `<li class="evli"><span class="what">${esc(e.title)}${e.note ? `<span class="at">${esc(e.note)}</span>` : ''}</span><span class="when"><b class="day">${d.toLocaleDateString(undefined, { weekday: 'short' })}</b>${e.end && e.end !== e.start ? `<span>to ${esc(dayName(e.end))}</span>` : ''}</span></li>`).join('');
+    $('#coming').innerHTML = list.length || evHtml ? `<div class="comingbox"><h2>Coming up</h2><ul class="coming">${evHtml}${list.map(cd => {
       const end = Suite.countdownEnd(cd), ms = end - now;
       let when;
       if (cd.time && ms < 86400000) when = `<b class="cdlive" data-end="${end.getTime()}">${Suite.fmtDuration(ms)}</b>`;
@@ -196,6 +220,7 @@
       const at = cd.time ? `<span class="at">${cd.date === today ? '' : end.toLocaleDateString(undefined, { weekday: 'short' }) + ' '}${Suite.fmt12(cd.time)}</span>` : '';
       return `<li><span class="what">${esc(cd.label)}${at}</span><span class="when">${when}</span></li>`; }).join('')}</ul>
       ${more ? `<a class="small more" href="settings.html#countdowns">+${more} more</a>` : ''}</div>` : '';
+    $('#coming').hidden = !$('#coming').innerHTML;
   }
   // live hours:minutes:seconds for timed countdowns in their last day
   function tickCountdowns(){

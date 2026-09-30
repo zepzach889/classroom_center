@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02a">
-<script src="shared/core.js?v=2026-10-02a"></script>
-<script>window.PAGE_VERSION = '2026-10-02a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02b">
+<script src="shared/core.js?v=2026-10-02b"></script>
+<script>window.PAGE_VERSION = '2026-10-02b';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -35,6 +35,15 @@ td.cell{vertical-align:top;padding:0}
 .cellbtn .tg{font-weight:700;font-size:14px;line-height:1.25}
 .cellbtn ol{margin:0;padding-left:18px;font-size:13px;line-height:1.3}
 .cellbtn .hw{font-size:12px;color:var(--ink-2)}
+.cellbtn.ev{min-height:52px;flex-direction:row;flex-wrap:wrap;align-items:flex-start;gap:4px}
+.cellbtn.ev.empty{min-height:52px}
+.evrow th.rowh{padding:8px 12px}
+.evchip{background:var(--sea);color:var(--on-sea);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600}
+.evlist{list-style:none;margin:0;padding:0}.evlist li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--rule)}.evlist li:first-child{border-top:0}
+.evgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.evgrid label{display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:700}
+.mrow{display:grid;grid-template-columns:1fr 1.4fr auto;gap:6px;align-items:center;margin-top:6px}
+.mrow .fname{font-size:14px;color:var(--ink-2);overflow-wrap:anywhere}
+.own{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--land);color:var(--on-land);border-radius:999px;padding:1px 8px}
 .cellbtn .own{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--land);color:var(--on-land);border-radius:999px;padding:1px 8px}
 td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
 /* editor */
@@ -63,6 +72,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   .cellbtn{min-height:0;border:1px solid #999;border-radius:6px;padding:5px 6px;background:#fff;color:#111}
   .cellbtn.empty{visibility:hidden}
   .cellbtn .own{background:#fff;color:#111;border:1px solid #111}
+  .evchip{background:#fff;color:#111;border:1px solid #111}
   .cellbtn ol,.cellbtn .tg{font-size:11px}
 }
 </style>
@@ -89,13 +99,21 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       .concat(cl.filter(k => !inCourse.has(k.id)).map(k => ({ kind: 'class', id: k.id, key: k.id, name: k.name, classes: [k] })));
   }
   const days = () => DAYS.map((n, i) => { const d = new Date(week); d.setDate(week.getDate() + i); return d; });
-  const summary = e => e ? `${e.target ? `<span class="tg">${esc(e.target)}</span>` : ''}${e.items && e.items.length ? `<ol>${e.items.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}${e.homework ? `<span class="hw">Homework: ${esc(e.homework)}</span>` : ''}` : '';
+  function mergeable(){
+    const A = Suite.agendaAll(), same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+    return Suite.courses().some(co => Object.values(A).some(day => { const ck = Suite.courseKey(co.id), ids = (co.classIds || []).filter(id => day[id]); return ids.length && (!day[ck] || ids.some(id => same(day[id], day[ck]))); }));
+  }
+  const matText = e => { const m = e && e.materials || []; if (!m.length) return ''; const l = m.filter(x => x.kind === 'link').length, f = m.length - l; return [l ? l + ' link' + (l > 1 ? 's' : '') : '', f ? f + ' file' + (f > 1 ? 's' : '') : ''].filter(Boolean).join(', '); };
+  const summary = e => e ? `${e.target ? `<span class="tg">${esc(e.target)}</span>` : ''}${e.items && e.items.length ? `<ol>${e.items.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}${e.homework ? `<span class="hw">Homework: ${esc(e.homework)}</span>` : ''}${matText(e) ? `<span class="hw">${matText(e)}</span>` : ''}` : '';
 
   function render(){
     const R = rows(), D = days(), A = Suite.agendaAll(), today = keyOf(new Date());
     const fri = D[4], label = D[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' to ' + fri.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const head = D.map(d => { const sc = Suite.scheduleFor(d), k = keyOf(d); return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<span>${esc(sc.periods.length ? sc.scheduleName || sc.label : sc.label)}</span></th>`; }).join('');
-    const body = R.map(r => `<tr><th class="rowh" scope="row"><span class="nm">${esc(r.name)}</span>
+    const evRow = `<tr class="evrow"><th class="rowh" scope="row"><span class="nm">School events</span><span class="secs">Dress-up days, testing, field trips</span></th>${D.map(d => {
+        const k = keyOf(d), ev = Suite.eventsOn(k);
+        return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn ev${ev.length ? '' : ' empty'}" data-a="events" data-date="${k}" aria-label="School events on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">${ev.length ? ev.map(x => `<span class="evchip">${esc(x.title)}</span>`).join('') : '+ Event'}</button></td>`; }).join('')}</tr>`;
+    const body = evRow + R.map(r => `<tr><th class="rowh" scope="row"><span class="nm">${esc(r.name)}</span>
         ${r.kind === 'course' ? `<span class="secs">${r.classes.map(c => esc(c.name)).join(', ') || 'No sections yet'}</span>` : ''}
         <button class="btn quiet noprint" data-a="shift" data-row="${esc(r.key)}">Shift plans…</button></th>
       ${D.map(d => {
@@ -103,17 +121,18 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         if (!sc.periods.length) return `<td class="cell"><div class="cellbtn off">${esc(sc.label)}</div></td>`;
         const e = day[r.key], own = r.kind === 'course' ? r.classes.filter(c => day[c.id]) : [];
         return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn${e || own.length ? '' : ' empty'}" data-a="edit" data-row="${esc(r.key)}" data-date="${k}" aria-label="Plan for ${esc(r.name)} on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">
-          ${e ? summary(e) : own.length ? '' : '+ Plan'}${own.length ? `<span class="own">${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))} changed</span>` : ''}</button></td>`;
+          ${e ? summary(e) : own.length ? '' : '+ Plan'}${own.length ? `<span class="own" title="These periods have their own plan this day instead of the course plan">Own plan: ${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))}</span>` : ''}</button></td>`;
       }).join('')}</tr>`).join('');
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
         <div class="bar"><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
       <div class="printonly">Plans for ${esc(label)}</div>
+      ${mergeable() ? `<div class="banner noprint"><span><b>Some days still have a separate plan for each period</b>, saved before you set up courses. Combine the ones that match into the course plan? Periods with a different plan keep their own.</span><button class="btn primary" data-a="merge">Combine them</button></div>` : ''}
       ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
       ${R.length ? `<div class="gridwrap"><table class="plan"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>`
         : '<div class="banner"><span>Add your classes in Classes and rosters first.</span><a class="btn primary" href="settings.html#classes">Classes and rosters</a></div>'}
-      <p class="hint noprint" style="margin-top:12px">Click any day to plan it. Plans show on the dashboard for the class in session and print on the substitute page.</p>`;
+      <p class="hint noprint" style="margin-top:12px">Click any day to plan it. Plans show on the dashboard for the class in session and print on the substitute page. An <span class="own" style="display:inline-block">Own plan</span> tag means those periods have their own plan that day instead of the course plan; open the day to see it or switch them back.</p>`;
   }
 
   /* ---------- editing a day ---------- */
@@ -133,6 +152,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       <label class="lb" for="ed-target">Learning target</label><input class="field" id="ed-target" value="${esc(e.target || '')}" placeholder="I can explain why the Nile mattered to Egyptian farmers.">
       <label class="lb" for="ed-items">Agenda <span class="muted small">(one step per line)</span></label><textarea id="ed-items" rows="6">${esc((e.items || []).join('\n'))}</textarea>
       <label class="lb" for="ed-hw">Homework</label><input class="field" id="ed-hw" value="${esc(e.homework || '')}" placeholder="Optional">
+      <span class="lb">Links and files <span class="muted small">(slides, docs, handouts; they show on the dashboard and the sub packet)</span></span>
+      <div id="ed-mats"></div>
+      <div class="bar" style="margin-top:6px"><button class="btn small" data-e="addlink">Add a link</button><label class="btn small">Attach a file<input type="file" id="ed-file" multiple hidden></label></div>
       <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
         <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
         <span class="bar"><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
@@ -141,26 +163,86 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); close(); } };
     document.addEventListener('keydown', onKey, true);
     const q = id => back.querySelector('#' + id);
+    let mats = JSON.parse(JSON.stringify(e.materials || []));
+    const added = [], removed = [];
+    const drawMats = () => {
+      q('ed-mats').innerHTML = mats.map((m, i) => m.kind === 'link'
+        ? `<div class="mrow"><input class="field" data-m="${i}" data-k="title" value="${esc(m.title || '')}" placeholder="Title, e.g. Today's slides" aria-label="Link title"><input class="field" data-m="${i}" data-k="url" value="${esc(m.url || '')}" placeholder="https://docs.google.com/..." aria-label="Link address"><button class="btn quiet danger small" data-e="mrm" data-i="${i}" aria-label="Remove">×</button></div>`
+        : `<div class="mrow"><input class="field" data-m="${i}" data-k="title" value="${esc(m.title || '')}" placeholder="${esc(m.file.name)}" aria-label="File title"><span class="fname">${esc(m.file.name)}</span><button class="btn quiet danger small" data-e="mrm" data-i="${i}" aria-label="Remove">×</button></div>`).join('') || '<p class="muted small" style="margin:2px 0">None yet.</p>';
+    };
+    drawMats();
+    back.addEventListener('input', ev => { const t = ev.target; if (t.dataset.m != null) mats[+t.dataset.m][t.dataset.k] = t.value; });
+    q('ed-file').addEventListener('change', async () => {
+      for (const f of [...q('ed-file').files]) {
+        try { const meta = await Suite.files.put(f); added.push(meta.id); mats.push({ id: Suite.uid(), kind: 'file', title: '', file: meta }); }
+        catch (err) { Suite.toast(err.message || "Couldn't attach " + f.name); }
+      }
+      q('ed-file').value = ''; drawMats();
+    });
+    const dropUnused = ids => ids.forEach(id => { if (!Suite.fileInUse(id)) Suite.files.del(id).catch(() => {}); });
     q('ed-target').focus();
     const one2 = back.querySelector('#ed-one'); if (one2) one2.addEventListener('change', () => { if (one2.value) { close(); openEditor(rowKey, dateKey, one2.value); } });
     back.addEventListener('click', ev => {
       if (ev.target === back) return close();
       const b = ev.target.closest('[data-e]'); if (!b) return;
       const k = b.dataset.e;
-      if (k === 'cancel') close();
+      if (k === 'cancel') { close(); dropUnused(added); }
+      else if (k === 'addlink') { mats.push({ id: Suite.uid(), kind: 'link', title: '', url: '' }); drawMats(); const f = back.querySelector('.mrow:last-child input'); if (f) f.focus(); }
+      else if (k === 'mrm') { const m = mats.splice(+b.dataset.i, 1)[0]; if (m && m.kind === 'file') removed.push(m.file.id); drawMats(); }
       else if (k === 'course') { close(); openEditor(rowKey, dateKey, null); }
       else if (k === 'unown') { Suite.saveAgenda(dateKey, [one.id], null); close(); render(); Suite.toast(one.name + ' uses the course plan again'); }
-      else if (k === 'clear') { Suite.saveAgenda(dateKey, [target], null); close(); render(); }
+      else if (k === 'clear') { const had = ((Suite.agendaAll()[dateKey] || {})[target] || {}).materials || []; Suite.saveAgenda(dateKey, [target], null); close(); dropUnused(had.filter(m => m.kind === 'file').map(m => m.file.id).concat(added)); render(); }
       else if (k === 'prev') {
         const A2 = Suite.agendaAll(), before = Object.keys(A2).filter(d => d < dateKey && (A2[d][target] || (classOnly && A2[d][r.key]))).sort().pop();
         if (!before) { Suite.toast('No earlier plan to copy'); return; }
         const p = A2[before][target] || A2[before][r.key];
         q('ed-target').value = p.target || ''; q('ed-items').value = (p.items || []).join('\n'); q('ed-hw').value = p.homework || '';
+        mats = JSON.parse(JSON.stringify(p.materials || [])); drawMats();
       }
       else if (k === 'save') {
-        const entry = { target: q('ed-target').value.trim(), items: q('ed-items').value.split('\n').map(x => x.trim()).filter(Boolean), homework: q('ed-hw').value.trim() };
-        Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework ? entry : null);
-        close(); render(); Suite.toast('Plan saved');
+        const links = mats.filter(m => m.kind === 'file' || (m.url || '').trim()).map(m => m.kind === 'link' ? Object.assign(m, { url: /^https?:\/\//i.test(m.url.trim()) ? m.url.trim() : 'https://' + m.url.trim() }) : m);
+        const entry = { target: q('ed-target').value.trim(), items: q('ed-items').value.split('\n').map(x => x.trim()).filter(Boolean), homework: q('ed-hw').value.trim(), materials: links };
+        Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework || links.length ? entry : null);
+        close(); dropUnused(removed); render(); Suite.toast('Plan saved');
+      }
+    });
+  }
+
+  /* ---------- school events ---------- */
+  function openEvents(dateKey, editId){
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const when = parse(dateKey).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    const draw = (id) => {
+      const list = Suite.eventsOn(dateKey), ev = id ? Suite.events().find(x => x.id === id) : null;
+      back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="ev-t">
+        <h2 id="ev-t">School events · ${esc(when)}</h2>
+        ${list.length ? `<ul class="evlist">${list.map(x => `<li><span><b>${esc(x.title)}</b>${x.end && x.end !== x.start ? ` <span class="muted small">(${esc(parse(x.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))} to ${esc(parse(x.end).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))})</span>` : ''}${x.note ? `<br><span class="muted small">${esc(x.note)}</span>` : ''}</span>
+          <span class="bar"><button class="btn quiet small" data-v="edit" data-id="${esc(x.id)}">Edit</button><button class="btn quiet danger small" data-v="del" data-id="${esc(x.id)}" aria-label="Remove ${esc(x.title)}">×</button></span></li>`).join('')}</ul>` : '<p class="muted">Nothing yet on this day.</p>'}
+        <h3 style="margin-top:14px">${ev ? 'Edit event' : 'Add an event'}</h3>
+        <label class="lb" for="ev-title">What's happening</label><input class="field" id="ev-title" value="${esc(ev ? ev.title : '')}" placeholder="Spirit day, state testing, field trip...">
+        <div class="evgrid"><label>Starts<input type="date" class="field" id="ev-start" value="${esc(ev ? ev.start : dateKey)}"></label><label>Ends <span class="muted small">(for events longer than a day)</span><input type="date" class="field" id="ev-end" value="${esc(ev ? (ev.end || ev.start) : dateKey)}"></label></div>
+        <label class="lb" for="ev-note">Note <span class="muted small">(optional)</span></label><input class="field" id="ev-note" value="${esc(ev ? ev.note || '' : '')}" placeholder="Wear green and gold">
+        <div class="suite-dialog-actions"><button class="btn" data-v="close">Done</button><button class="btn primary" data-v="save" data-id="${ev ? esc(ev.id) : ''}">${ev ? 'Save changes' : 'Add event'}</button></div></div>`;
+      back.querySelector('#ev-title').focus();
+    };
+    document.body.appendChild(back); draw(editId);
+    const close = () => { back.remove(); document.removeEventListener('keydown', key, true); render(); };
+    const key = e => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
+    document.addEventListener('keydown', key, true);
+    back.addEventListener('click', e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('[data-v]'); if (!b) return;
+      const v = b.dataset.v;
+      if (v === 'close') close();
+      else if (v === 'edit') draw(b.dataset.id);
+      else if (v === 'del') { Suite.saveEvents(Suite.events().filter(x => x.id !== b.dataset.id)); draw(); }
+      else if (v === 'save') {
+        const title = back.querySelector('#ev-title').value.trim(); if (!title) { Suite.toast('Add a name for the event'); return; }
+        let start = back.querySelector('#ev-start').value || dateKey, end = back.querySelector('#ev-end').value || start;
+        if (end < start) [start, end] = [end, start];
+        const list = Suite.events(), id = b.dataset.id, item = { id: id || Suite.uid(), title, start, end, note: back.querySelector('#ev-note').value.trim() };
+        const i = list.findIndex(x => x.id === id); if (i > -1) list[i] = item; else list.push(item);
+        Suite.saveEvents(list); draw();
       }
     });
   }
@@ -206,7 +288,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         if (!name) { Suite.toast('Give the course a name'); return; }
         const co = Suite.courses(), i = co.findIndex(x => x.id === b.dataset.id), c = { id: b.dataset.id, name, classIds: ids };
         if (i > -1) co[i] = c; else co.push(c);
-        Suite.saveCourses(co); draw();
+        Suite.saveCourses(co); Suite.mergeIntoCourses(); draw();
       }
     });
   }
@@ -245,6 +327,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     else if (a === 'now') { week = monday(new Date()); render(); }
     else if (a === 'edit') openEditor(el.dataset.row, el.dataset.date, null);
     else if (a === 'courses') openCourses();
+    else if (a === 'events') openEvents(el.dataset.date);
+    else if (a === 'merge') { const n = Suite.mergeIntoCourses(); render(); Suite.toast(n ? 'Combined ' + n + ' matching plan' + (n === 1 ? '' : 's') : 'Nothing to combine'); }
     else if (a === 'shift') openShift(el.dataset.row);
     else if (a === 'print') window.print();
   });

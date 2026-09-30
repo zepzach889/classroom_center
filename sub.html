@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02a">
-<script src="shared/core.js?v=2026-10-02a"></script>
-<script>window.PAGE_VERSION = '2026-10-02a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02b">
+<script src="shared/core.js?v=2026-10-02b"></script>
+<script>window.PAGE_VERSION = '2026-10-02b';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -147,7 +147,8 @@
     const chosen = list.filter(c => !S0.skip.includes(c.id));
     const periodFor = c => day.periods.find(p => Suite.classForPeriod(p, [c]));
     const M = S0.materials[date] || [];
-    const matFor = c => M.filter(m => !m.classes || m.classes.includes(c.id));
+    const matFor = c => { const a = Suite.agendaFor(date, c.id); return ((a && a.materials) || []).concat(M.filter(m => !m.classes || m.classes.includes(c.id))); };
+    const ev = Suite.eventsOn(date);
     const matHtml = items => `<ul class="mlist">${items.map(m => {
       if (m.kind === 'note') return `<li>${m.title ? `<span class="k">${esc(m.title)}</span><br>` : ''}<span class="pre">${esc(m.text || '')}</span></li>`;
       if (m.kind === 'link') return `<li><span class="k">${esc(m.title || 'Link')}</span><br><span class="url">${esc(m.url || '')}</span></li>`;
@@ -158,6 +159,7 @@
     const block = (title, text) => text && text.trim() ? `<h3>${title}</h3><div class="pre">${esc(text.trim())}</div>` : '';
     const overview = `<section class="sheet">
       <h2>Substitute plans</h2><div class="sub">${esc(when)} · ${esc(day.label)}</div>
+      ${ev.length ? `<h3>Happening today</h3><ul class="mlist">${ev.map(e => `<li><span class="k">${esc(e.title)}</span>${e.note ? ': ' + esc(e.note) : ''}</li>`).join('')}</ul>` : ''}
       ${block('Notes', S0.notes)}${block('Emergency procedures', S0.emergency)}${block('Where to find things', S0.where)}
       <h3>Schedule</h3>
       ${day.periods.length ? `<table><thead><tr><th>Time</th><th>Period</th><th>Class</th></tr></thead><tbody>${day.periods.filter(p => !Suite.isPassing(p)).map(p => {

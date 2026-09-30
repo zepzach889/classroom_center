@@ -37,7 +37,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-02a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-02b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -558,6 +558,35 @@
     const co = S.courseOf(classId);
     return co ? day[CK(co.id)] || null : null;
   };
+  // School-wide events (dress-up days, testing, field trips). Each has a start and end date.
+  S.events = () => S.get('events', []);
+  S.saveEvents = list => S.set('events', list);
+  S.eventsOn = dateKey => S.events().filter(e => e.start <= dateKey && dateKey <= (e.end || e.start)).sort((a, b) => a.title.localeCompare(b.title));
+  // Is an attached file still used by any plan or the sub page? (Checked before deleting it.)
+  S.fileInUse = (id, except) => {
+    const hit = m => m && m.file && m.file.id === id && m !== except;
+    const A = S.agendaAll();
+    if (Object.values(A).some(day => Object.values(day).some(e => (e.materials || []).some(hit)))) return true;
+    const sub = S.get('sub', {});
+    return Object.values((sub && sub.materials) || {}).some(list => (list || []).some(hit));
+  };
+  // Older plans saved per period before courses existed: merge the ones that match into the course plan.
+  S.mergeIntoCourses = () => {
+    const A = S.agendaAll(), cos = S.courses(), same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+    let merged = 0;
+    Object.keys(A).forEach(d => cos.forEach(co => {
+      const day = A[d], ids = (co.classIds || []).filter(id => day[id]); if (!ids.length) return;
+      const ck = CK(co.id);
+      if (!day[ck]) {   // pick the plan most periods share as the course plan
+        const counts = {}; ids.forEach(id => { const k = JSON.stringify(day[id]); counts[k] = (counts[k] || 0) + 1; });
+        day[ck] = JSON.parse(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
+      }
+      ids.forEach(id => { if (same(day[id], day[ck])) { delete day[id]; merged++; } });
+    }));
+    S.set('agenda', A);
+    return merged;
+  };
+  S.unmergedDays = () => { const A = S.agendaAll(), cos = S.courses(); return Object.keys(A).filter(d => cos.some(co => (co.classIds || []).some(id => A[d][id]))).length; };
   // true when a period has its own plan on that day, different from its course
   S.agendaIsOwn = (dateKey, classId) => !!((S.agendaAll()[dateKey] || {})[classId]) && !!S.courseOf(classId);
   // Move a row's plans (a course with its sections' own plans, or one class) forward by n school days, from a date on.
