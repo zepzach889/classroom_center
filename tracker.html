@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Table points · Classroom Suite</title>
+<title>Points · Classroom Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01b">
-<script src="shared/core.js?v=2026-10-01b"></script>
-<script>window.PAGE_VERSION = '2026-10-01b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
+<script src="shared/core.js?v=2026-10-01c"></script>
+<script>window.PAGE_VERSION = '2026-10-01c';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -38,6 +38,8 @@
 .card.picked{outline:4px solid var(--land);outline-offset:4px}
 @media (prefers-reduced-motion:no-preference){.card.bump .score{animation:bump .6s ease-out}@keyframes bump{30%{transform:scale(1.18);color:var(--land)}}}
 .keys{margin:-6px 0 14px}
+body.nocaps .cap,body.nocaps .capspanel,body.nocaps .nextcap{display:none!important}
+body.nogoals .goalspanel{display:none!important}
 .nextcap{min-height:0!important;padding:2px 10px!important;font-size:13px!important}
 body.proj .nextcap{display:none}
 .caprow{padding:8px 0;border-top:1px solid var(--rule)}
@@ -150,7 +152,11 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   const tname = (c, id) => (c.tables.find(t => t.id === id) || { name: 'Removed table' }).name;
   const names = (c, ids) => ids && ids.length ? ids.map(i => esc(tname(c, i))).join(', ') : '<span class="muted">None yet</span>';
 
+  const W = (k, o) => Suite.word(k, o);
   function render(){
+    const useCaps = Suite.feature('captains'), useGoals = Suite.feature('goals');
+    document.body.classList.toggle('nocaps', !useCaps);
+    document.body.classList.toggle('nogoals', !useGoals);
     document.body.classList.toggle('proj', proj);
     const list = classes();
     const c = curClass(list);
@@ -189,7 +195,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           <div class="card-top">
             <div class="facts">
               <div class="sub">This quarter: ${pts(c.id, t.id)}</div>
-              <div class="cap${capName ? '' : ' nocap'}"><span>Captain${proj && capName ? ': ' + esc(capName) : ''}</span>
+              <div class="cap${capName ? '' : ' nocap'}"><span>${esc(W('lead', { cap: true }))}${proj && capName ? ': ' + esc(capName) : ''}</span>
                 <select data-c="cap" data-id="${esc(t.id)}" aria-label="${esc(t.name)} captain">
                   <option value="">None</option>
                   ${members.map(s => `<option${s.name === capName ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}
@@ -276,7 +282,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           <p class="hint" style="margin-top:8px">Ties share the prize. Short week? Don't end it, and its points roll into the next week.</p>
         </section>
 
-        <section class="panel" aria-labelledby="h-goals"><h2 id="h-goals">Weekly goals</h2>
+        <section class="panel goalspanel" aria-labelledby="h-goals"><h2 id="h-goals">Weekly goals</h2>
           <p class="hint">Pick each table's goal on Monday. Checking "Met" adds 2 points.</p>
           ${act.map(t => { const g = goals[gkey(t.id)] || {}; return `<div class="goalrow">
             <span><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}</span>
@@ -293,7 +299,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           </table></div>
         </section>
 
-        <section class="panel" aria-labelledby="h-caps"><h2 id="h-caps">Captains</h2>
+        <section class="panel capspanel" aria-labelledby="h-caps"><h2 id="h-caps">${esc(W('lead', { plural: true, cap: true }))}</h2>
           <p class="hint">${T.rotateEvery ? 'Captains change automatically every ' + (T.rotateEvery === 1 ? 'week' : T.rotateEvery + ' weeks') + ' when you end the week. The next captain is whoever has had the fewest turns.' : 'Captains only change when you pick them.'} Numbers are weeks as captain this year.</p>
           ${capPanel}
         </section>

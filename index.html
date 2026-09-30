@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01b">
-<script src="shared/core.js?v=2026-10-01b"></script>
-<script>window.PAGE_VERSION = '2026-10-01b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
+<script src="shared/core.js?v=2026-10-01c"></script>
+<script>window.PAGE_VERSION = '2026-10-01c';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(28px,3vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:40px;align-items:start}
 .clock{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:clamp(64px,min(11vw,17vh),156px);line-height:1}
@@ -58,6 +58,10 @@
 .today li{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:7px 8px;border-left:3px solid transparent;font-size:16px;font-variant-numeric:tabular-nums}
 .today li .t{color:var(--ink-2)}
 .today li.brk .n{font-style:italic;color:var(--ink-2)}
+.why{font-size:13px;color:var(--ink-2);margin:-2px 0 6px}
+.today h2+.why:empty{display:none}
+.today li.staff{font-size:14px;color:var(--ink-2)}
+.today li.staff .n{font-style:italic}
 .today li.pass{font-size:14px;padding:2px 8px;color:var(--ink-2)}
 .today li.past{opacity:.45}
 .today li.now{background:var(--wash);border-left-color:var(--land);font-weight:700}
@@ -92,6 +96,7 @@
   </section>
   <aside class="today" aria-labelledby="day-label">
     <h2 id="day-label"></h2>
+    <div class="why" id="day-why"></div>
     <ol id="sched"></ol>
     <div class="edit small"><a href="settings.html#schedule">Edit the bell schedule</a> · <a href="#" data-a="agedit">Plan a day</a> · <a href="sub.html">Sub page</a></div>
   </aside>
@@ -239,9 +244,10 @@
     const st = Suite.periodStatus(day.periods, now);
     const P = day.periods;
     $('#day-label').textContent = day.label;
+    $('#day-why').textContent = [day.why, day.offset ? 'Bells shifted ' + (day.offset > 0 ? '+' : '') + day.offset + ' min' : ''].filter(Boolean).join(' · ');
     $('#sched').innerHTML = P.length ? P.map((p, i) => {
       const cls = i === st.cur ? 'now' : secOf(p.end) <= st.sec ? 'past' : '';
-      return `<li class="${cls}${Suite.isPassing(p) ? ' pass' : p.isBreak ? ' brk' : ''}"${i === st.cur ? ' aria-current="true"' : ''}><span class="t">${Suite.fmt12(p.start)}</span><span class="n">${esc(p.name)}</span></li>`;
+      return `<li class="${cls}${Suite.isPassing(p) ? ' pass' : p.staff ? ' staff' : p.isBreak ? ' brk' : ''}"${i === st.cur ? ' aria-current="true"' : ''}><span class="t">${Suite.fmt12(p.start)}</span><span class="n">${esc(p.name)}</span></li>`;
     }).join('') : `<li class="none">No bells today.</li>`;
 
     let html = '', focus = null;

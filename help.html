@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
+<script src="shared/core.js?v=2026-10-01c"></script>
+<script>window.PAGE_VERSION = '2026-10-01c';</script>
+<style>
+.wrap{max-width:900px;margin:0 auto;padding:22px 20px 60px}
+.wrap h1{font-size:36px;margin-bottom:6px}
+.top{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin:12px 0 22px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.top p{margin:0}
+details.h{background:var(--sheet);border:2px solid var(--edge);border-radius:18px;padding:12px 18px;margin-bottom:12px}
+details.h summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+details.h summary::-webkit-details-marker{display:none}
+details.h summary h2{font-size:22px}
+details.h summary span{font-size:14px;color:var(--ink-2)}
+details.h[open] summary{margin-bottom:8px}
+details.h ul{margin:4px 0 6px;padding-left:22px}
+details.h li{margin-bottom:5px}
+kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;padding:0 6px;background:var(--paper)}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="wrap">
+  <h1>Help and tour</h1>
+  <p class="hint">How each part of the suite works. Everything you enter is saved in this browser on this computer, so download a backup now and then (gear menu, General settings, Backup and data).</p>
+  <div class="top"><p><b>New here, or showing a colleague?</b> The tour points out each part of the menu.</p><button class="btn primary" id="tour">Take the tour</button></div>
+  <div id="topics"></div>
+</div>
+<script>
+(function(){
+  const esc = Suite.esc, team = esc(Suite.word('team')), teams = esc(Suite.word('team', { plural: true })), lead = esc(Suite.word('lead')), leads = esc(Suite.word('lead', { plural: true }));
+  const T = [
+    ['Dashboard', 'The home page', [
+      'Shows the clock, the day\'s schedule, the class in session with a countdown, and passing time between classes.',
+      'The schedule card says which schedule is running and why, for example "Set for Wednesdays" or "Special day."',
+      'Add a daily plan (learning target, agenda, homework) with "+ Add today\'s plan," or "Plan a day" under the schedule.',
+      'Countdowns to tests and events appear under "Coming up." Add them in General settings.']],
+    ['Points', 'Team points for each ' + team, [
+      'Tap +1, −1, the clean-up buttons, or the 3-point challenge on a ' + team + '\'s card.',
+      'Keyboard: press a ' + team + '\'s number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean, <kbd>M</kbd> mostly clean, <kbd>P</kbd> 3-point challenge, <kbd>U</kbd> undo.',
+      'At the end of the week, open More and choose End week. Winners, most improved, and streaks are recorded in the prize record, and ' + leads + ' rotate if you turned that on.',
+      'Tracker settings (at the bottom) has the weekly goal menu, ' + lead + ' rotation, the quarter report, and starting a new quarter.']],
+    ['Seating', 'Seating charts', [
+      'Drag a name onto a seat to move a student, or onto another student to trade places. You can also tap a name, then tap a seat.',
+      '"Fill empty seats" seats everyone at their ' + team + ' automatically.',
+      'Print fits the whole room on one landscape page. Projector view shows it large.',
+      'Set how many seats each ' + team + ' has, and how they\'re arranged, in Classes and rosters.']],
+    ['Tools', 'Spinner, topics, games, and more', [
+      'Name spinner: spin students, ' + teams + ', or a custom list. Deselect all, then check a few names, for a prize drawing.',
+      'Topic picker: list project topics with a number of spots each; students who have a topic drop out of the choices. Report shows who picked what.',
+      'Review game: a quiz board of categories. Paste "Category | Question | Answer" lines to build one.',
+      'Stations, Tally, Partners and groups, and the Noise meter (press Calibrate while the room is quiet).']],
+    ['Present', 'Your Google Slides with tools on top', [
+      'In Google Slides, choose File, Share, Publish to the web, and copy the link. Paste it on the Present page.',
+      'The toolbar in the corner opens the timer, spinner, points, or groups over your slides. Esc goes back to the slides.',
+      'Or use the pop-out button (next to Timer) for a small window that floats on top of Slides in Chrome or Edge.']],
+    ['Timer', 'A countdown for the class', [
+      'Pick a preset or type a time like 7, 1:30, or 90s. It keeps running as you move between pages and chimes when time is up.',
+      '<kbd>Space</kbd> starts or pauses, <kbd>R</kbd> resets, <kbd>Esc</kbd> hides it.']],
+    ['Setup', 'The gear menu', [
+      'Classes and rosters: classes, ' + teams + ', seat arrangements, room layout, rosters, and the seat shuffle.',
+      'Substitute page: a printable packet with the schedule, plans, materials, helpers, and seating.',
+      'General settings: bell schedule (including the bell offset and presets), countdowns, words and tools, appearance, and backups.']]
+  ];
+  document.getElementById('topics').innerHTML = T.map(([t, sub, items], i) => `<details class="h"${i === 0 ? ' open' : ''}><summary><h2>${esc(t)}</h2><span>${esc(sub)}</span></summary><ul>${items.map(x => `<li>${x}</li>`).join('')}</ul></details>`).join('');
+  document.getElementById('tour').addEventListener('click', () => Suite.loadGuide().then(g => g && g.tour()));
+  Suite.mountNav('help');
+})();
+</script>
+</body>
+</html>

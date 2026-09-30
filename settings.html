@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01b">
-<script src="shared/core.js?v=2026-10-01b"></script>
-<script>window.PAGE_VERSION = '2026-10-01b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
+<script src="shared/core.js?v=2026-10-01c"></script>
+<script>window.PAGE_VERSION = '2026-10-01c';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -23,6 +23,8 @@
 .lookgrid label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700}
 .lookgrid .field,.lookgrid select{width:100%}
 .lookgrid input[type=color]{width:52px;height:36px;border:1.5px solid var(--rule);border-radius:8px;background:none;padding:2px;cursor:pointer}
+.toolchecks{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 18px;margin-top:14px}
+.toolchecks label{display:flex;gap:7px;align-items:center;font-size:15px}
 .lookpreview{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:16px 0 6px;padding:12px;border:2px dashed var(--rule);border-radius:16px}
 .lp-bar{background:var(--bar);color:#fff;font-family:var(--serif);font-size:20px;padding:6px 14px;border-radius:10px}
 .lp-h{font-family:var(--serif);font-size:24px}
@@ -50,6 +52,7 @@ main{min-width:0;max-width:820px}
 .grid-table input[type=checkbox]{width:18px;height:18px}
 .grid-table .field:not(.num){width:100%;min-width:140px}
 .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:18px}
+@media (max-width:900px){.roster.room-like{grid-template-columns:1fr!important}.roster.room-like .group{grid-row:auto!important;grid-column:auto!important}}
 .group{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:10px 12px}
 .group h3{font-size:17px;display:flex;align-items:center;margin-bottom:6px}
 .group h3 .fill{margin-left:auto;font-family:var(--sans);font-weight:500;font-size:14px;color:var(--ink-2)}
@@ -104,6 +107,7 @@ main{min-width:0;max-width:820px}
 .row-actions{white-space:nowrap}
 .special{margin-bottom:8px}
 .roomh{margin:18px 0 2px}
+.offsetrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--wash);border-radius:14px;padding:10px 14px;margin:4px 0 8px}
 .room{display:grid;gap:8px;margin:8px 0 14px;max-width:560px}
 .spot{background:var(--sheet);border:1.5px solid var(--edge);border-top:6px solid var(--tc);border-radius:14px;padding:8px 10px;font-size:14px;font-weight:700;text-align:center}
 .spot.off{opacity:.45;font-weight:400}
@@ -171,6 +175,13 @@ main{min-width:0;max-width:820px}
         <div id="cd-area"></div>
       </details>
     </section>
+    <section class="block" id="words" aria-labelledby="h-words">
+      <details class="fold" data-fold="words">
+        <summary><h2 id="h-words">Words and tools</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">What your groups are called, and which tools appear in the menu. Turning a tool off only hides it; nothing is deleted.</p>
+        <div id="words-area"></div>
+      </details>
+    </section>
     <section class="block" id="appearance" aria-labelledby="h-look">
       <details class="fold" data-fold="appearance">
         <summary><h2 id="h-look">Appearance</h2><span class="fold-hint">Show</span></summary>
@@ -230,9 +241,9 @@ main{min-width:0;max-width:820px}
       const idx = list.indexOf(c);
       const lay = Suite.roomLayout(c.tables);
       const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId));
-      const group = (t, members) => {
+      const group = (t, members, at) => {
         const over = t && members.length > t.seats;
-        return `<div class="group${t && !t.open ? ' off' : ''}">
+        return `<div class="group${t && !t.open ? ' off' : ''}" style="${at ? `grid-row:${at.row};grid-column:${at.col}` : 'grid-column:1 / -1'}">
           <h3>${t ? `<span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}` : 'Unassigned'}
           ${t ? `<span class="fill${over ? ' over' : ''}">${members.length} of ${t.seats}${t.open ? '' : ', not in use'}</span>` : ''}</h3>
           ${members.length ? `<ul>${members.map(s => `<li><input class="nm" data-c="stname" data-id="${esc(s.id)}" value="${esc(s.name)}" aria-label="Student name" title="Click to edit the name">
@@ -253,7 +264,7 @@ main{min-width:0;max-width:820px}
       </div>
 
       <section class="block" aria-labelledby="h-tables"><details class="fold" data-fold="tables"${folds.has('tables') ? ' open' : ''}>
-        <summary><h2 id="h-tables">Tables and room layout</h2><span class="fold-hint">${folds.has('tables') ? 'Hide' : 'Show'}</span></summary>
+        <summary><h2 id="h-tables">${esc(Suite.word('team', { plural: true, cap: true }))} and room layout</h2><span class="fold-hint">${folds.has('tables') ? 'Hide' : 'Show'}</span></summary>
         <p class="hint">Turn off "In use" for a table you're leaving empty in this class. It disappears from the tools but keeps its points. "Seat arrangement" sets how the seats are drawn on the seating chart.</p>
         <div class="scroll"><table class="grid-table">
           <thead><tr><th>Color</th><th>Name</th><th>Seats</th><th>Seat arrangement</th><th>Row</th><th>Spot</th><th>In use</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
@@ -280,9 +291,9 @@ main{min-width:0;max-width:820px}
       <section class="block" aria-labelledby="h-roster"><details class="fold" data-fold="roster"${folds.has('roster') ? ' open' : ''}>
         <summary><h2 id="h-roster">Roster</h2><span class="fold-hint">${folds.has('roster') ? 'Hide' : 'Show'}</span></summary>
         <p class="hint">Student names stay in this browser (and your backup file). They are never part of the website's files.</p>
-        <div class="roster">
-          ${c.tables.map(t => group(t, c.students.filter(s => s.tableId === t.id))).join('')}
-          ${unassigned.length ? group(null, unassigned) : ''}
+        <div class="roster room-like" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">
+          ${c.tables.map(t => group(t, c.students.filter(s => s.tableId === t.id), lay.at[t.id])).join('')}
+          ${unassigned.length ? group(null, unassigned, null) : ''}
         </div>
         <div class="bar" style="margin:-4px 0 16px"><button class="btn" data-a="shopen">${shuffleOpen ? 'Close seat shuffle' : 'Shuffle seats'}</button>
           ${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="shundo">Undo last shuffle</button>' : ''}</div>
@@ -303,6 +314,7 @@ main{min-width:0;max-width:820px}
     renderSchedule();
     renderCountdowns();
     renderLook();
+    renderWords();
   }
 
   function renderBackup(){
@@ -326,6 +338,12 @@ main{min-width:0;max-width:820px}
     const classOpts = v => `<option value=""${!v ? ' selected' : ''}>By name</option><option value="none"${v === 'none' ? ' selected' : ''}>No class</option>`
       + list.map(k => `<option value="${esc(k.id)}"${k.id === v ? ' selected' : ''}>${esc(k.name)}</option>`).join('');
     $('#schedule-area').innerHTML = `
+      <div class="offsetrow">
+        <label for="boff"><b>Bells ring</b></label>
+        <select id="boff" data-s="offset">${[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(n => `<option value="${n}"${(S.offset || 0) === n ? ' selected' : ''}>${n === 0 ? 'right on time' : Math.abs(n) + ' minute' + (Math.abs(n) === 1 ? '' : 's') + (n < 0 ? ' early' : ' late')}</option>`).join('')}</select>
+        <span class="hint" style="margin:0">Shifts every bell on the dashboard to match your school's actual bells, so the times below can stay as printed.</span>
+      </div>
+      <div class="bar" style="margin:4px 0 6px"><button class="btn" data-a="spreset">Load a preset schedule</button></div>
       <h3>Which schedule runs each day</h3>
       <div class="days">${days.map(([n, l]) => `<label>${l}<select data-s="weekday" data-i="${n}">${schedOpts(S.weekdays[n] || 'none')}</select></label>`).join('')}</div>
       <h3>Edit a schedule</h3>
@@ -386,17 +404,38 @@ main{min-width:0;max-width:820px}
     else if (a === 'snew') {
       const name = await Suite.dialog({ title: 'New schedule name', body: 'It starts as a copy of the schedule you are viewing.', input: 'Early release', ok: 'Create schedule' });
       if (!name) return;
-      withSched((S, cur) => { const n = { id: Suite.uid(), name, periods: JSON.parse(JSON.stringify(cur ? cur.periods : [])) }; S.schedules.push(n); editSched = n.id; });
+      let newId = null;
+      withSched((S, cur) => { const n = { id: Suite.uid(), name, periods: JSON.parse(JSON.stringify(cur ? cur.periods : [])) }; S.schedules.push(n); editSched = n.id; newId = n.id; });
+      // a schedule named after a weekday usually runs on that day
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], hit = days.findIndex(d => name.toLowerCase().includes(d));
+      if (hit > -1 && await Suite.dialog({ title: 'Run it every ' + days[hit][0].toUpperCase() + days[hit].slice(1) + '?', body: 'The dashboard uses this schedule on that weekday. You can change it anytime under "Which schedule runs each day."', ok: 'Yes, use it', cancel: 'Not now' }))
+        withSched(S => { S.weekdays[hit + 1] = newId; });
+    }
+    else if (a === 'spreset') {
+      const P = Suite.PRESETS.school2627;
+      const track = await Suite.dialog({ title: 'Load ' + P.name + '?', body: 'This replaces your bell schedules with the official ones. Which lunch does your day follow?', select: Object.entries(P.tracks).map(([k, l]) => ({ value: k, label: l })), ok: 'Next' });
+      if (!track) return;
+      const staff = await Suite.dialog({ title: 'Include staff time?', body: 'Adds contract time before and after the student day (7:45 to 3:45), shown in a lighter style on the dashboard.', ok: 'Include it', cancel: 'Leave it out' });
+      const off = await Suite.dialog({ title: 'Match the bells?', body: P.note, ok: 'Bells ring 1 minute early', cancel: 'Use printed times' });
+      const cur = Suite.getSchedule(), next = P.build(track, staff);
+      next.offset = off ? P.suggestedOffset : 0;
+      next.special = cur.special.filter(d => d.scheduleId === 'none' || next.schedules.some(x => x.id === d.scheduleId));
+      Suite.saveSchedule(next); editSched = 'regular'; renderSchedule(); Suite.toast(P.name + ' loaded');
     }
     else if (a === 'sdel') {
       const S = Suite.getSchedule(), cur = S.schedules.find(x => x.id === editSched);
-      if (!cur || !await Suite.dialog({ title: 'Delete ' + cur.name + '?', body: 'Days that used it will switch to ' + (S.schedules.find(x => x !== cur) || {}).name + '.', ok: 'Delete schedule', danger: true })) return;
+      if (!cur) return;
+      const others = S.schedules.filter(x => x !== cur);
+      const usedOn = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].filter((d, i) => S.weekdays[i + 1] === cur.id);
+      const pick = await Suite.dialog({ title: 'Delete ' + cur.name + '?', body: usedOn.length ? 'It runs on ' + usedOn.join(', ') + '. Which schedule should run on those days instead?' : 'Which schedule should replace it on any special days that use it?',
+        select: others.map(x => ({ value: x.id, label: x.name })).concat([{ value: 'none', label: 'No school' }]), ok: 'Delete schedule', danger: true });
+      if (!pick) return;
       withSched(S => {
         S.schedules = S.schedules.filter(x => x.id !== cur.id);
-        const fallback = S.schedules[0].id;
+        const fallback = pick;
         Object.keys(S.weekdays).forEach(k => { if (S.weekdays[k] === cur.id) S.weekdays[k] = fallback; });
         S.special.forEach(d => { if (d.scheduleId === cur.id) d.scheduleId = fallback; });
-        editSched = fallback;
+        editSched = fallback === 'none' ? (S.schedules[0] || {}).id : fallback;
       });
     }
     else if (a === 'pins') withSched((S, cur) => { const ref = cur.periods[i]; cur.periods.splice(i + 1, 0, { name: 'New period', start: ref.end, end: ref.end, isBreak: false, classId: '' }); });
@@ -430,6 +469,7 @@ main{min-width:0;max-width:820px}
     withSched((S, cur) => {
       if (k === 'weekday') S.weekdays[i] = el.value;
       else if (k === 'plen') S.passingMinutes = Math.max(1, Math.min(15, parseInt(el.value, 10) || 4));
+      else if (k === 'offset') S.offset = parseInt(el.value, 10) || 0;
       else if (k === 'sname') cur.name = el.value.trim() || cur.name;
       else if (['pname', 'pclass', 'pbreak'].includes(k)) {
         const p = cur.periods[i]; if (!p) return false;
@@ -514,8 +554,9 @@ main{min-width:0;max-width:820px}
         ${proposal ? '<button class="btn primary" data-a="shapply">Apply these seats</button><button class="btn quiet" data-a="shcancel">Cancel</button>' : ''}</div>
       ${proposal ? `${proposal.conflicts ? `<p class="warn">${proposal.conflicts} keep-apart pair${proposal.conflicts === 1 ? ' is' : 's are'} still together; there wasn't room to separate ${proposal.conflicts === 1 ? 'it' : 'them'}. Try again or open another table.</p>` : ''}
         ${proposal.over ? '<p class="warn">There are more students than seats, so some tables are over their seat count.</p>' : ''}
-        <div class="roster preview">${tables.map(t => { const m = kids.filter(s => proposal.assign[s.id] === t.id);
-          return `<div class="group"><h3><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}<span class="fill${m.length > t.seats ? ' over' : ''}">${m.length} of ${t.seats}</span></h3>
+        <div class="roster preview room-like" style="grid-template-columns:repeat(${Suite.roomLayout(c.tables).cols},minmax(0,1fr))">${tables.map(t => { const m = kids.filter(s => proposal.assign[s.id] === t.id);
+          const at = Suite.roomLayout(c.tables).at[t.id];
+          return `<div class="group" style="grid-row:${at.row};grid-column:${at.col}"><h3><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}<span class="fill${m.length > t.seats ? ' over' : ''}">${m.length} of ${t.seats}</span></h3>
             <ul>${m.map(s => `<li><span class="nm-static">${esc(s.name)}${pinned.has(s.id) ? ' <span class="muted small">(stays)</span>' : s.tableId === t.id ? ' <span class="muted small">(same table)</span>' : ''}</span></li>`).join('') || '<li class="none">Empty</li>'}</ul></div>`; }).join('')}</div>` : ''}
     </div>`;
   }
@@ -542,6 +583,25 @@ main{min-width:0;max-width:820px}
     else if (a === 'aprm') { (c.apart || []).splice(+el.dataset.i, 1); Suite.saveClasses(list); render(); }
   }
 
+
+
+  /* ---------- words and tools ---------- */
+  const TOOL_LIST = [['points', 'Team points (and weekly prizes)'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['seating', 'Seating charts'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
+  function renderWords(){
+    const P = Suite.prefs();
+    const sel = (k, opts) => `<select data-word="${k}">${opts.map(o => `<option${P.words[k] === o ? ' selected' : ''}>${o}</option>`).join('')}${opts.includes(P.words[k]) ? '' : `<option selected>${esc(P.words[k])}</option>`}</select>`;
+    $('#words-area').innerHTML = `<div class="lookgrid">
+        <label>Each group is called a${sel('team', ['table', 'team', 'group', 'pod', 'crew'])}</label>
+        <label>The person in charge is the${sel('lead', ['captain', 'leader', 'manager', 'chair'])}</label>
+      </div>
+      <div class="toolchecks">${TOOL_LIST.map(([k, l]) => `<label><input type="checkbox" data-feature="${k}"${P.features[k] ? ' checked' : ''}> ${esc(l)}</label>`).join('')}</div>`;
+  }
+  function wordsChange(el){
+    const p = Suite.get('prefs', {}); p.words = p.words || {}; p.features = p.features || {};
+    if (el.dataset.word) p.words[el.dataset.word] = el.value;
+    if (el.dataset.feature) p.features[el.dataset.feature] = el.checked;
+    Suite.set('prefs', p);
+  }
 
   /* ---------- appearance ---------- */
   function renderLook(){
@@ -579,7 +639,7 @@ main{min-width:0;max-width:820px}
     if (['shopen','shgo','shcancel','shapply','shundo','apadd','aprm'].includes(a)) return shuffleClick(a, el);
     if (a === 'cdadd') { const l = Suite.countdowns(); const d = new Date(); d.setDate(d.getDate() + 7); l.push({ id: Suite.uid(), date: Suite.dateKey(d), label: '', school: false }); Suite.set('countdowns', l); renderCountdowns(); const f = document.querySelector('.cdrow:last-of-type [data-cd="label"]'); if (f) f.focus(); return; }
     if (a === 'cdrm') { Suite.set('countdowns', Suite.countdowns().filter(x => x.id !== id)); renderCountdowns(); return; }
-    if (['spick','snew','sdel','pins','prm','padd','dadd','drm','pfill','ppass'].includes(a)) {
+    if (['spick','snew','sdel','pins','prm','padd','dadd','drm','pfill','ppass','spreset'].includes(a)) {
       const f = document.activeElement;
       if (f && f.dataset && f.dataset.s && f !== el) scheduleChange(f, true);
       return scheduleClick(a, el);
@@ -670,6 +730,7 @@ main{min-width:0;max-width:820px}
   }
   document.addEventListener('change', async e => {
     const el = e.target, c = el.dataset.c, id = el.dataset.id;
+    if (el.dataset.word || el.dataset.feature) return wordsChange(el);
     if (el.dataset.look) return lookChange(el);
     if (el.dataset.cd) return cdChange(el);
     if (el.dataset.s) return scheduleChange(el);
@@ -740,7 +801,7 @@ main{min-width:0;max-width:820px}
   }
   function route(){
     const h = location.hash.replace('#', '');
-    if (['schedule', 'countdowns', 'backup', 'appearance', 'general'].includes(h)) { showTab('general'); if (h !== 'general') openSection(h); }
+    if (['schedule', 'countdowns', 'backup', 'appearance', 'words', 'general'].includes(h)) { showTab('general'); if (h !== 'general') openSection(h); }
     else showTab('classes');
   }
   window.addEventListener('hashchange', route);

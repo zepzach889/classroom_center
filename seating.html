@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-01b">
-<script src="shared/core.js?v=2026-10-01b"></script>
-<script>window.PAGE_VERSION = '2026-10-01b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01c">
+<script src="shared/core.js?v=2026-10-01c"></script>
+<script>window.PAGE_VERSION = '2026-10-01c';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -36,6 +36,12 @@
 .seat.cap::after{content:" (captain)";font-weight:400;font-size:12px;color:var(--ink-2)}
 .seat.sel,.chip.sel{outline:3px solid var(--land);outline-offset:2px;border-color:var(--land)}
 .seat.target{border-color:var(--sea);border-style:solid}
+.seat:not(.empty),.chip{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+body.dragging,body.dragging *{cursor:grabbing!important}
+.lifted{opacity:.35}
+.over{outline:3px dashed var(--land);outline-offset:2px;background:var(--wash)}
+.ghost{position:fixed;z-index:90;pointer-events:none;transform:translate(-50%,-60%);background:var(--sea);color:var(--on-sea);font-weight:700;font-size:16px;padding:8px 16px;border-radius:999px;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+body.printing #printarea{width:1100px}
 .loose{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:6px}
 .loose:empty{display:none}
 .chip{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--rule);border-radius:999px;background:var(--paper);color:var(--ink);padding:3px 12px;cursor:pointer}
@@ -58,6 +64,9 @@ body.proj .tbl h2{font-size:28px}
   body{background:#fff}
   #suite-nav,.ctl,.backup-banner,#exit-proj{display:none!important}
   .wrap{max-width:none;padding:0}
+  #printarea{width:1100px}
+  .room{gap:12px}
+  .front{margin-bottom:8px}.front.bottom{margin-top:8px}
   .printhead{display:block;font-family:var(--serif);font-size:26px;margin-bottom:8px}
   .tbl{break-inside:avoid;border-color:#111}
   .tbl h2{background:none!important;color:#111!important;border-bottom:2px solid #111}
@@ -124,14 +133,83 @@ body.proj .tbl h2{font-size:28px}
         <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>
           <button class="btn" data-a="print">Print</button><button class="btn" data-a="proj">Projector view</button></div></div>
       <p class="help ctl">${!sel && c.tables.some(t => !t.seatCols) ? 'Seats not arranged the way your tables are? Change each table\'s seat arrangement under <a href="settings.html#classes">Classes and rosters</a>, in "Tables and room layout." ' : ''}${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
-        : 'Tap a student, then tap a seat to move them. Tap a student in another seat to trade places. Moving someone to a different table changes their table too.'}</p>
-      <div class="printhead">${esc(c.name)} seating chart</div>
+        : 'Drag a name onto a seat to move them, or onto another student to trade places. Moving someone to a different table changes their table too. (You can also tap a name, then tap a seat.)'}</p>
+      <div id="printarea"><div class="printhead">${esc(c.name)} seating chart</div>
       ${UI.front === 'top' ? front : ''}
       <div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${tables}</div>
-      ${UI.front === 'bottom' ? front : ''}
+      ${UI.front === 'bottom' ? front : ''}</div>
       <div class="tray ctl${sel ? ' drop' : ''}" data-a="tray"><h3>Not at a table</h3>
         <div class="list">${unassigned.map(s => btn(s, 'chip')).join('') || `<span class="muted small">${sel ? 'Tap here to take the selected student out of their seat.' : 'Everyone has a table.'}</span>`}</div></div>`;
   }
+
+  /* ---------- drag and drop, for mouse and touch ---------- */
+  let drag = null, justDragged = false;
+  function dropTarget(x, y){
+    const el = document.elementFromPoint(x, y); if (!el) return null;
+    return el.closest('[data-a="seat"], [data-a="stu"], [data-a="tray"]');
+  }
+  document.addEventListener('pointerdown', e => {
+    const el = e.target.closest('[data-a="stu"]'); if (!el || e.button > 0) return;
+    drag = { id: el.dataset.id, x: e.clientX, y: e.clientY, el, on: false, ghost: null, over: null };
+    try { el.setPointerCapture(e.pointerId); } catch (x) {}
+  });
+  document.addEventListener('pointermove', e => {
+    if (!drag) return;
+    if (!drag.on) {
+      if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+      drag.on = true; sel = null;
+      drag.ghost = document.createElement('div'); drag.ghost.className = 'ghost'; drag.ghost.textContent = drag.el.textContent.replace(' (captain)', '');
+      document.body.appendChild(drag.ghost); document.body.classList.add('dragging'); drag.el.classList.add('lifted');
+    }
+    drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+    drag.lastX = e.clientX; drag.lastY = e.clientY;
+    // near the top or bottom edge: scroll so you can reach tables (or the tray) that are off screen
+    const top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 70) + 30;
+    drag.edge = e.clientY > window.innerHeight - 50 ? 1 : e.clientY < top ? -1 : 0;
+    if (drag.edge && !drag.timer) drag.timer = setInterval(() => {
+      if (!drag || !drag.edge) return;
+      window.scrollBy(0, drag.edge * 14);
+      const t = dropTarget(drag.lastX, drag.lastY);
+      if (t !== drag.over) { if (drag.over) drag.over.classList.remove('over'); drag.over = t && t !== drag.el ? t : null; if (drag.over) drag.over.classList.add('over'); }
+    }, 30);
+    const t = dropTarget(e.clientX, e.clientY);
+    if (t !== drag.over) { if (drag.over) drag.over.classList.remove('over'); drag.over = t && t !== drag.el ? t : null; if (drag.over) drag.over.classList.add('over'); }
+    e.preventDefault();
+  }, { passive: false });
+  function endDrag(e, cancel){
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (d.timer) clearInterval(d.timer);
+    if (!d.on) return;                       // it was a tap: the click handler takes over
+    justDragged = true; setTimeout(() => { justDragged = false; }, 50);
+    d.ghost.remove(); document.body.classList.remove('dragging');
+    if (cancel) { render(); return; }
+    const t = dropTarget(e.clientX, e.clientY), list = classes(), c = curClass(list);
+    if (!t || !c || t === d.el) { render(); return; }
+    const A = c.students.find(x => x.id === d.id); if (!A) { render(); return; }
+    if (t.dataset.a === 'seat') place(c, A.id, t.dataset.t, +t.dataset.i);
+    else if (t.dataset.a === 'stu') {
+      const B = c.students.find(x => x.id === t.dataset.id);
+      const at = { t: A.tableId, s: A.seat }; A.tableId = B.tableId; if (Number.isInteger(B.seat)) A.seat = B.seat; else delete A.seat;
+      B.tableId = at.t; if (Number.isInteger(at.s)) B.seat = at.s; else delete B.seat;
+    }
+    else if (t.dataset.a === 'tray') { A.tableId = ''; delete A.seat; }
+    Suite.saveClasses(list); render();
+  }
+  document.addEventListener('pointerup', e => endDrag(e, false));
+  document.addEventListener('pointercancel', e => endDrag(e, true));
+
+  /* ---------- print the whole room on one landscape page ---------- */
+  function fitForPrint(){
+    const area = document.getElementById('printarea'); if (!area) return;
+    document.body.classList.add('printing');
+    area.style.zoom = '';
+    const pageW = (11 - 0.8) * 96, pageH = (8.5 - 0.8) * 96 - 8;   // letter, landscape, 0.4in margins
+    const z = Math.min(1, pageW / area.scrollWidth, pageH / area.scrollHeight);
+    area.style.zoom = z.toFixed(3);
+  }
+  window.addEventListener('beforeprint', fitForPrint);
+  window.addEventListener('afterprint', () => { document.body.classList.remove('printing'); const a = document.getElementById('printarea'); if (a) a.style.zoom = ''; });
 
   function place(c, sid, tid, seat){
     const s = c.students.find(x => x.id === sid); if (!s) return;
@@ -140,11 +218,12 @@ body.proj .tbl h2{font-size:28px}
     s.tableId = tid; s.seat = seat;
   }
   document.addEventListener('click', e => {
+    if (justDragged) return;
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, list = classes(), c = curClass(list);
     if (a === 'pick') { UI.cur = el.dataset.id; sel = null; saveUI(); render(); return; }
     if (a === 'proj') { proj = !proj; sel = null; render(); return; }
-    if (a === 'print') { sel = null; render(); window.print(); return; }
+    if (a === 'print') { sel = null; render(); fitForPrint(); window.print(); return; }
     if (a === 'flip') { UI.front = UI.front === 'top' ? 'bottom' : 'top'; saveUI(); render(); return; }
     if (!c) return;
     if (a === 'stu') {

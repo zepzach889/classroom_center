@@ -13,6 +13,8 @@ activities.html   Review game, station rotations, tally, partners and groups
 noise.html        Noise meter
 seating.html      Seating charts: whole room and assigned seats
 present.html      Show published Google Slides with tools on top
+help.html         Help and the menu tour
+shared/guide.js   First-visit setup guide and tour
 settings.html     Classes, tables, rosters, seat shuffle, bell schedule, countdowns, backups
 sub.html          Printable substitute packet
 shared/style.css  Shared look

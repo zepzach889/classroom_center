@@ -12,30 +12,31 @@
   // Menu: a few everyday links, a Tools menu, and setup under the gear.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
-    { id: 'tracker', label: 'Table points', href: 'tracker.html' },
-    { id: 'seating', label: 'Seating', href: 'seating.html' },
+    { id: 'tracker', label: 'Table points', href: 'tracker.html', feature: 'points' },
+    { id: 'seating', label: 'Seating', href: 'seating.html', feature: 'seating' },
     { id: 'tools', label: 'Tools', menu: [
-      { id: 'spinner', label: 'Name spinner', href: 'spinner.html' },
-      { id: 'topics', label: 'Topic picker', href: 'topics.html' },
-      { id: 'act-game', label: 'Review game', href: 'activities.html#tool=game' },
-      { id: 'act-stations', label: 'Stations', href: 'activities.html#tool=stations' },
-      { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally' },
-      { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups' },
-      { id: 'noise', label: 'Noise meter', href: 'noise.html' }
+      { id: 'spinner', label: 'Name spinner', href: 'spinner.html', feature: 'spinner' },
+      { id: 'topics', label: 'Topic picker', href: 'topics.html', feature: 'topics' },
+      { id: 'act-game', label: 'Review game', href: 'activities.html#tool=game', feature: 'game' },
+      { id: 'act-stations', label: 'Stations', href: 'activities.html#tool=stations', feature: 'stations' },
+      { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally', feature: 'tally' },
+      { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups', feature: 'groups' },
+      { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' }
     ] },
-    { id: 'present', label: 'Present', href: 'present.html' }
+    { id: 'present', label: 'Present', href: 'present.html', feature: 'present' }
   ];
   const GEAR_MENU = [
     { id: 'settings', label: 'Classes and rosters', href: 'settings.html#classes' },
     { id: 'sub', label: 'Substitute page', href: 'sub.html' },
-    { id: 'general', label: 'General settings', href: 'settings.html#general' }
+    { id: 'general', label: 'General settings', href: 'settings.html#general' },
+    { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
   const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise'];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-01b';   // bump with every build; pages check they match
+  const VERSION = '2026-10-01c';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -59,6 +60,18 @@
   window.addEventListener('storage', e => {
     if (e.key && e.key.startsWith(PREFIX)) emit({ key: e.key.slice(PREFIX.length), external: true });
   });
+
+
+  /* ---------- this user's words and tools ---------- */
+  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true };
+  S.prefs = () => { const p = S.get('prefs', {}); return { words: Object.assign({ team: 'table', lead: 'captain' }, p.words || {}), features: Object.assign({}, FEATURE_DEFAULTS, p.features || {}) }; };
+  S.feature = f => S.prefs().features[f] !== false;
+  // S.word('team') -> "table"; S.word('team', { plural: true, cap: true }) -> "Tables"
+  S.word = (k, o) => {
+    o = o || {}; let w = S.prefs().words[k] || k;
+    if (o.plural) w = /s$/.test(w) ? w : w + 's';
+    return o.cap ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+  };
 
   /* ---------- classes & tables ---------- */
   S.defaultTables = () => DEFAULT_TABLES.map(([id, name, seats, row, col], i) => ({ id, name, seats, open: true, color: PALETTE[i % PALETTE.length], row, col }));
@@ -163,22 +176,66 @@
   };
   S.fmt12 = t => { let [h, m] = String(t).split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + String(m).padStart(2, '0') + ' ' + ap; };
   S.dateKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+  /* ---------- school bell-schedule presets (official printed times) ---------- */
+  const R = (name, start, end, kind) => ({ name, start, end, isBreak: kind === 'break' || kind === 'pass' || kind === 'staff', passing: kind === 'pass', staff: kind === 'staff', classId: '' });
+  const LUNCH = {
+    regular:  { six: [R('Lunch (6th grade)', '10:53', '11:25', 'break'), R('Period 4', '11:29', '12:01')], upper: [R('Period 4', '10:57', '11:29'), R('Lunch (7th/8th grade)', '11:29', '12:01', 'break')] },
+    early:    { six: [R('Lunch (6th grade)', '10:50', '11:22', 'break'), R('Period 4', '11:26', '11:58')], upper: [R('Period 4', '10:54', '11:26'), R('Lunch (7th/8th grade)', '11:26', '11:58', 'break')] },
+    delayed:  { six: [R('Lunch (6th grade)', '11:20', '11:52', 'break'), R('Period 4', '11:56', '12:28')], upper: [R('Period 4', '11:24', '11:56'), R('Lunch (7th/8th grade)', '11:56', '12:28', 'break')] }
+  };
+  S.PRESETS = {
+    school2627: {
+      name: 'Our school: 2026–27',
+      note: 'Official printed times. The bells currently ring 1 minute early; use the offset to match them.',
+      suggestedOffset: -1,
+      tracks: { six: '6th grade lunch', upper: '7th/8th grade lunch' },
+      build(track, staff){
+        const L = k => LUNCH[k][track];
+        const withStaff = (rows, before, after) => (staff ? (before ? [R('Before school (staff)', before[0], before[1], 'staff')] : []) : []).concat(rows, staff && after ? [R('After school (staff)', after[0], after[1], 'staff')] : []);
+        const regular = withStaff([R('Passing', '08:15', '08:20', 'pass'), R('Period 1', '08:20', '09:09'), R('Period 2', '09:13', '09:57'), R('Break', '09:57', '10:05', 'break'), R('Period 3', '10:09', '10:53')]
+          .concat(L('regular'), [R('Period 5', '12:05', '12:49'), R('Period 6', '12:53', '13:37'), R('Period 7', '13:41', '14:25'), R('Period 8', '14:29', '15:20')]), ['07:45', '08:15'], ['15:20', '15:45']);
+        const early = withStaff([R('Passing', '08:15', '08:20', 'pass'), R('Period 1', '08:20', '08:55'), R('Period 2', '08:59', '09:30'), R('Break', '09:30', '09:38', 'break'), R('Period 3', '09:42', '10:14'), R('Period 5', '10:18', '10:50')]
+          .concat(L('early'), [R('Period 6', '12:02', '12:34'), R('Period 7', '12:38', '13:10'), R('Period 8', '13:14', '13:50')]), ['07:45', '08:15'], ['13:50', '15:45']);
+        const delayed = withStaff([R('Passing', '10:15', '10:20', 'pass'), R('Period 1', '10:20', '10:48'), R('Period 2', '10:52', '11:20')]
+          .concat(L('delayed'), [R('Period 3', '12:32', '13:00'), R('Period 5', '13:04', '13:32'), R('Period 6', '13:36', '14:04'), R('Break', '14:04', '14:12', 'break'), R('Period 7', '14:16', '14:44'), R('Period 8', '14:48', '15:20')]), null, ['15:20', '15:45']);
+        const out = {
+          schedules: [
+            { id: 'regular', name: 'Regular day', periods: regular },
+            { id: 'wednesday', name: 'Early release (Wednesday)', periods: early },
+            { id: 'delayed', name: 'Delayed start (snow day)', periods: delayed }
+          ],
+          weekdays: { 1: 'regular', 2: 'regular', 3: 'wednesday', 4: 'regular', 5: 'regular' },
+          special: [], passingMinutes: 4, offset: 0
+        };
+        out.schedules.forEach(sc => S.fillPassing(sc.periods));
+        return out;
+      }
+    }
+  };
+
   S.getSchedule = () => {
-    const s = S.get('schedule', null) || clone(DEFAULT_SCHEDULE);
+    const s = S.get('schedule', null) || S.PRESETS.school2627.build('six', false);
     s.schedules = s.schedules || []; s.weekdays = s.weekdays || {}; s.special = s.special || [];
-    s.passingMinutes = s.passingMinutes || 4;
+    s.passingMinutes = s.passingMinutes || 4; s.offset = Number(s.offset) || 0;
     return s;
   };
   S.saveSchedule = s => S.set('schedule', s);
+  const DAY_NAMES = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'];
   S.scheduleFor = date => {
     const s = S.getSchedule();
     const sp = s.special.find(x => x.date === S.dateKey(date));
     const wd = date.getDay();
     const id = sp ? sp.scheduleId : (wd === 0 || wd === 6 ? 'none' : (s.weekdays[wd] || 'none'));
-    if (id === 'none') return { periods: [], label: sp ? (sp.label || 'No school') : (wd === 0 || wd === 6 ? 'Weekend' : 'No school'), special: !!sp };
+    const why = sp ? 'Special day' + (sp.label ? '' : '') : wd === 0 || wd === 6 ? '' : 'Set for ' + DAY_NAMES[wd];
+    if (id === 'none') return { periods: [], label: sp ? (sp.label || 'No school') : (wd === 0 || wd === 6 ? 'Weekend' : 'No school'), special: !!sp, why };
     const sc = s.schedules.find(x => x.id === id) || s.schedules[0];
-    if (!sc) return { periods: [], label: 'No schedule set up', special: false };
-    return { periods: sc.periods.slice().sort((a, b) => toMin(a.start) - toMin(b.start)), label: (sp && sp.label) || sc.name, special: !!sp };
+    if (!sc) return { periods: [], label: 'No schedule set up', special: false, why: '' };
+    // the offset shifts every bell (e.g. -1 when the bells ring a minute early)
+    const off = s.offset || 0;
+    const shift = t => S.fromMin(toMin(t) + off);
+    const periods = sc.periods.map(p => off ? Object.assign({}, p, { start: shift(p.start), end: shift(p.end) }) : p).sort((a, b) => toMin(a.start) - toMin(b.start));
+    return { periods, label: (sp && sp.label) || sc.name, scheduleName: sc.name, special: !!sp, why: sp ? 'Special day: ' + sc.name : why, offset: off };
   };
   S.periodStatus = (periods, now) => {
     const sec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
@@ -667,6 +724,14 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.key === 'theme' || e.detail.key === '*')) applyTheme(); });
 
   /* ---------- navigation bar ---------- */
+  S.loadGuide = () => new Promise(res => {
+    if (window.SuiteGuide) return res(window.SuiteGuide);
+    const sc = document.createElement('script');
+    const me = [...document.scripts].find(x => /shared\/core\.js/.test(x.src));
+    sc.src = me ? me.src.replace(/core\.js/, 'guide.js') : 'shared/guide.js?v=' + VERSION;
+    sc.onload = () => res(window.SuiteGuide || null); sc.onerror = () => res(null);
+    document.head.appendChild(sc);
+  });
   S.mountNav = current => {
     const el = document.getElementById('suite-nav');
     if (!el) return;
@@ -674,24 +739,30 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
       const b = S.backupStatus();
       const actTool = current === 'activities' ? 'act-' + ((location.hash.match(/tool=(\w+)/) || [])[1] || 'game') : null;
       const isHere = id => id === current || id === actTool;
-      const link = n => `<a href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`;
+      const on = n => !n.feature || S.feature(n.feature);
+      const label = n => n.id === 'tracker' ? S.word('team', { cap: true }) + ' points' : n.label;
+      const link = n => `<a href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(label(n))}</a>`;
+      const toolItems = NAV.find(n => n.menu).menu.filter(on);
       const menu = (key, items, title) => `<div class="ddmenu" data-ddm="${key}" hidden role="menu"${title ? ` aria-label="${S.esc(title)}"` : ''}>${items.map(n => n.pop
         ? `<button role="menuitem" data-pop="${n.pop}">${S.esc(n.label)}</button>`
         : `<a role="menuitem" href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`).join('')}${key === 'pop' ? '<span class="ddnote">Floats on top of Google Slides in Chrome or Edge.</span>' : ''}</div>`;
       el.innerHTML = `<div class="nav-inner">
         <a class="wordmark" href="index.html">${S.esc(S.suiteName())} <span class="speed" aria-hidden="true"><i></i><i></i><i></i></span></a>
-        <nav aria-label="Main"><ul>${NAV.map(n => n.menu
+        <nav aria-label="Main"><ul>${NAV.filter(n => n.menu ? toolItems.length : on(n)).map(n => n.menu
           ? `<li><button class="ddbtn${TOOL_PAGES.includes(current) ? ' here' : ''}" data-dd="${n.id}" aria-expanded="false" aria-haspopup="true">${S.esc(n.label)}<i class="caret" aria-hidden="true"></i></button></li>`
           : `<li>${link(n)}</li>`).join('')}</ul></nav>
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
         <button class="gear" data-dd="pop" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false" aria-haspopup="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
-        <button class="gear${current === 'settings' || current === 'sub' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
-        ${menu('tools', NAV.find(n => n.menu).menu, 'Tools')}
-        ${menu('pop', [{ pop: 'timer', label: 'Timer' }, { pop: 'points', label: 'Table points' }, { pop: 'name', label: 'Name picker' }], 'Pop out a mini window')}
+        <button class="gear${current === 'settings' || current === 'sub' || current === 'help' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
+        ${menu('tools', toolItems, 'Tools')}
+        ${menu('pop', [{ pop: 'timer', label: 'Timer' }].concat(S.feature('points') ? [{ pop: 'points', label: S.word('team', { cap: true }) + ' points' }] : [], [{ pop: 'name', label: 'Name picker' }]), 'Pop out a mini window')}
         ${menu('gear', GEAR_MENU, 'Setup')}
       </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw(); timerDraw();
+    // First visit in this browser (no classes yet): open the welcome and setup guide.
+    if (!S.embedded && !S.get('welcomed', false) && !S.classes().length && current !== 'help') S.loadGuide().then(g => g && g.welcome());
+    else if (!S.embedded && sessionStorage.getItem('suite:tour')) S.loadGuide();   // the tour picks up after setup
     // keep the page's pinned pieces clear of the menu, and slim the menu once you scroll
     const setH = () => document.documentElement.style.setProperty('--navh', el.offsetHeight + 'px');
     if (window.ResizeObserver) new ResizeObserver(setH).observe(el); setH();

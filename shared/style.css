@@ -136,3 +136,5 @@ button.gear{background:none;cursor:pointer;font:inherit}
 .ddmenu a:hover,.ddmenu button:hover,.ddmenu a:focus-visible,.ddmenu button:focus-visible{background:var(--wash)}
 .ddmenu a[aria-current="page"]{box-shadow:inset 3px 0 0 var(--land)}
 .ddnote{font-size:12px;color:var(--ink-2);padding:4px 12px 6px}
+
+@media print{.suite-toast,.ddmenu,#suite-timer{display:none!important}}
