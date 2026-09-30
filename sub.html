@@ -7,21 +7,37 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30e">
-<script src="shared/core.js?v=2026-09-30e"></script>
-<script>window.PAGE_VERSION = '2026-09-30e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
+<script src="shared/core.js?v=2026-10-01a"></script>
+<script>window.PAGE_VERSION = '2026-10-01a';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
-.controls{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin-bottom:24px}
-.controls h1{font-size:30px;margin-bottom:4px}
-.cgrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;margin-top:12px}
-.cgrid label.lb{display:block;font-weight:700;font-size:14px;margin-bottom:4px}
+.controls h1{font-size:32px;margin-bottom:4px}
+.cbox{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:14px 18px;margin-bottom:14px}
+.cbox>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cbox>summary::-webkit-details-marker{display:none}
+.cbox>summary h2{font-size:22px}
+.cbox>summary .hintx{font-size:14px;font-weight:600;color:var(--ink-2)}
+.cbox[open]>summary{margin-bottom:10px}
+.cgrid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px}
+.lb{display:block;font-weight:700;font-size:14px;margin:10px 0 4px}
+.cgrid .lb{margin-top:0}
 .classpick{display:flex;flex-wrap:wrap;gap:4px 14px}
-.classpick label{display:flex;gap:5px;align-items:center;font-size:15px}
-.texts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:14px}
-.texts label.lb{display:block;font-weight:700;font-size:14px;margin-bottom:4px}
-@media (max-width:760px){.cgrid,.texts{grid-template-columns:1fr}}
-/* the printed packet */
+.classpick label,.helpers label{display:flex;gap:5px;align-items:center;font-size:15px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.helpers{display:flex;flex-wrap:wrap;gap:4px 14px;max-height:150px;overflow:auto;padding:2px}
+.classnote{border-top:1px solid var(--rule);padding-top:10px;margin-top:10px}
+.classnote:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.classnote h3{font-size:19px;margin-bottom:4px}
+.mat{border:1.5px solid var(--rule);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:var(--paper)}
+.mat .mhead{display:flex;gap:8px;align-items:center}
+.mat .mhead .field{flex:1;min-width:0}
+.mat .kind{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);min-width:42px}
+.mat textarea,.mat .url{width:100%;margin-top:6px}
+.mat .file{margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px}
+.mat .for{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:14px;align-items:center}
+.mat .for label{display:flex;gap:4px;align-items:center}
+@media (max-width:760px){.cgrid,.two{grid-template-columns:1fr}}
 .sheet{background:#FFFFFF;color:#111;border:1px solid var(--rule);border-radius:6px;padding:28px 32px;margin-bottom:24px;font-size:15px}
 .sheet h2{font-size:28px;color:#111;margin-bottom:2px}
 .sheet .sub{color:#444;margin-bottom:14px}
@@ -30,6 +46,10 @@
 .sheet td,.sheet th{border-bottom:1px solid #ccc;padding:4px 6px;text-align:left;vertical-align:top}
 .sheet th{font-weight:600;color:#444;font-size:13px}
 .sheet .pre{white-space:pre-wrap}
+.sheet .mimg{max-width:100%;max-height:520px;display:block;margin:6px 0;border:1px solid #ccc}
+.sheet .mlist{margin:4px 0;padding-left:20px}
+.sheet .mlist li{margin-bottom:6px}
+.sheet .url{font-size:12px;color:#444;overflow-wrap:anywhere}
 .room{display:grid;gap:10px;margin-top:6px}
 .tbl{border:1.5px solid #111;border-radius:8px;overflow:hidden;break-inside:avoid}
 .tbl .tn{color:#111;border-bottom:1.5px solid #111;padding:4px 10px;font-weight:700;font-size:16px;display:flex;justify-content:space-between}
@@ -38,7 +58,6 @@
 .tbl li{padding:1px 0}
 .tbl li.cap{font-weight:700}
 .tbl.off{border-style:dashed;opacity:.6}
-.tbl.off .tn{color:#666}
 .noroster{color:#666;font-style:italic}
 .agenda ol{margin:4px 0;padding-left:22px}
 .k{font-weight:700}
@@ -46,7 +65,6 @@
   .sheet{padding:16px 14px;font-size:14px}
   .sheet table{font-size:13px;table-layout:fixed}
   .sheet th,.sheet td{overflow-wrap:anywhere}
-  .sheet td,.sheet th{padding:4px 3px}
   .room{grid-template-columns:1fr!important}
   .room .tbl{grid-row:auto!important;grid-column:auto!important}
 }
@@ -63,21 +81,40 @@
 <body>
 <header id="suite-nav"></header>
 <div class="wrap">
-  <section class="controls" aria-labelledby="h-sub">
-    <h1 id="h-sub">Substitute page</h1>
-    <p class="hint">A packet for a substitute: the day's schedule, your notes, how table points work, and a page for each class with its room map, captains, and plan. Choose what to include, then print.</p>
-    <div class="cgrid">
-      <div><label class="lb" for="sdate">Date</label><input type="date" class="field" id="sdate"></div>
-      <div><span class="lb" style="display:block;font-weight:700;font-size:14px;margin-bottom:4px">Classes</span><div class="classpick" id="classpick"></div></div>
+  <div class="controls">
+    <h1>Substitute page</h1>
+    <p class="hint">A packet for a substitute: the day's schedule, your notes, and a page for each class with its plan, materials, helpers, and seating. Everything here saves automatically.</p>
+    <div class="cbox">
+      <div class="cgrid">
+        <div><label class="lb" for="sdate">Date</label><input type="date" class="field" id="sdate"></div>
+        <div><span class="lb">Classes to include</span><div class="classpick" id="classpick"></div></div>
+      </div>
+      <div class="bar" style="margin-top:14px"><button class="btn primary" id="print">Print the packet</button><span class="muted small">Attached PDFs print separately; use their Open buttons below.</span></div>
     </div>
-    <div class="texts">
-      <div><label class="lb" for="snotes">Notes for the sub</label>
-        <textarea id="snotes" rows="7" placeholder="Where to find things, who to call for help, emergency procedures, students who can help..."></textarea></div>
-      <div><label class="lb" for="srules">How table points work</label>
-        <textarea id="srules" rows="7"></textarea></div>
-    </div>
-    <div class="bar" style="margin-top:14px"><button class="btn primary" id="print">Print</button><span class="muted small">Notes save automatically for next time.</span></div>
-  </section>
+    <details class="cbox" open>
+      <summary><h2>Lesson materials for <span id="mdate"></span></h2><span class="hintx">Hide</span></summary>
+      <p class="hint" style="margin-top:0">Notes, links, and files for this day. Each one can go to all your classes or just some. Images print in the packet; other files are listed so the sub knows to print them.</p>
+      <div id="materials"></div>
+      <div class="bar">
+        <button class="btn" data-a="addnote">Add a note</button>
+        <button class="btn" data-a="addlink">Add a link</button>
+        <label class="btn">Attach files<input type="file" id="addfiles" multiple hidden></label>
+      </div>
+    </details>
+    <details class="cbox">
+      <summary><h2>General notes</h2><span class="hintx">Show</span></summary>
+      <div class="two">
+        <div><label class="lb" for="snotes">Notes for the sub</label><textarea id="snotes" rows="6" data-t="notes" placeholder="Welcome, the day at a glance, who to call with questions..."></textarea></div>
+        <div><label class="lb" for="semerg">Emergency procedures</label><textarea id="semerg" rows="6" data-t="emergency" placeholder="Fire and lockdown routes, where the emergency folder is, the office extension..."></textarea></div>
+        <div><label class="lb" for="swhere">Where to find things</label><textarea id="swhere" rows="5" data-t="where" placeholder="Copies on the front table, extra pencils in the bin by the door..."></textarea></div>
+        <div><label class="lb" for="srules">How table points work</label><textarea id="srules" rows="5" data-t="rules"></textarea></div>
+      </div>
+    </details>
+    <details class="cbox">
+      <summary><h2>Class notes and helpers</h2><span class="hintx">Show</span></summary>
+      <div id="classnotes"></div>
+    </details>
+  </div>
   <div id="packet"></div>
 </div>
 <script>
@@ -91,44 +128,64 @@
     'Each table has a captain who makes sure the area is cleaned up, chairs are pushed in, and papers are passed out and collected.',
     'Please leave a note with any points you gave, and I will add them.'
   ].join('\n');
-  const S0 = Object.assign({ notes: '', rules: RULES, skip: [] }, Suite.get('sub', {}));
+  const S0 = Object.assign({ notes: '', rules: RULES, emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {} }, Suite.get('sub', {}));
+  ['helpers', 'classNotes', 'materials'].forEach(k => { S0[k] = S0[k] || {}; });
   let date = Suite.dateKey(new Date());
   const save = () => Suite.set('sub', S0);
+  const mats = () => (S0.materials[date] = S0.materials[date] || []);
+  const urls = {};
 
   function parseDate(k){ const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d, 12); }
+  const size = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  const isImage = f => /^image\//.test(f.type || '');
+  async function fileUrl(id){ if (urls[id]) return urls[id]; const r = await Suite.files.get(id); if (!r || !r.blob) return null; return (urls[id] = URL.createObjectURL(r.blob)); }
+
   function render(){
     const list = Suite.classes(), day = Suite.scheduleFor(parseDate(date));
     const when = parseDate(date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const T = Suite.get('tracker', {}), caps = (T && T.captains) || {};
     const chosen = list.filter(c => !S0.skip.includes(c.id));
     const periodFor = c => day.periods.find(p => Suite.classForPeriod(p, [c]));
-
+    const M = S0.materials[date] || [];
+    const matFor = c => M.filter(m => !m.classes || m.classes.includes(c.id));
+    const matHtml = items => `<ul class="mlist">${items.map(m => {
+      if (m.kind === 'note') return `<li>${m.title ? `<span class="k">${esc(m.title)}</span><br>` : ''}<span class="pre">${esc(m.text || '')}</span></li>`;
+      if (m.kind === 'link') return `<li><span class="k">${esc(m.title || 'Link')}</span><br><span class="url">${esc(m.url || '')}</span></li>`;
+      const f = m.file || {};
+      return isImage(f) ? `<li><span class="k">${esc(m.title || f.name)}</span><img class="mimg" data-fid="${esc(f.id)}" alt="${esc(m.title || f.name)}"></li>`
+        : `<li><span class="k">${esc(m.title || f.name)}</span><br><span class="url">Attached file: ${esc(f.name)}. Printed separately.</span></li>`;
+    }).join('')}</ul>`;
+    const block = (title, text) => text && text.trim() ? `<h3>${title}</h3><div class="pre">${esc(text.trim())}</div>` : '';
     const overview = `<section class="sheet">
       <h2>Substitute plans</h2><div class="sub">${esc(when)} · ${esc(day.label)}</div>
-      ${S0.notes.trim() ? `<h3>Notes</h3><div class="pre">${esc(S0.notes.trim())}</div>` : ''}
+      ${block('Notes', S0.notes)}${block('Emergency procedures', S0.emergency)}${block('Where to find things', S0.where)}
       <h3>Schedule</h3>
       ${day.periods.length ? `<table><thead><tr><th>Time</th><th>Period</th><th>Class</th></tr></thead><tbody>${day.periods.filter(p => !Suite.isPassing(p)).map(p => {
         const c = Suite.classForPeriod(p, list);
         return `<tr><td>${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)}</td><td>${esc(p.name)}</td><td>${c ? esc(c.name) : p.isBreak ? '' : '<span style="color:#666">No class</span>'}</td></tr>`; }).join('')}</tbody></table>`
         : '<p>No bells on this day.</p>'}
-      ${S0.rules.trim() ? `<h3>How table points work</h3><div class="pre">${esc(S0.rules.trim())}</div>` : ''}
+      ${block('How table points work', S0.rules)}
     </section>`;
-
     const pages = chosen.map(c => {
       const lay = Suite.roomLayout(c.tables), p = periodFor(c), a = Suite.agendaFor(date, c.id), cp = caps[c.id] || {};
       const tables = c.tables.slice().sort((x, y) => lay.at[x.id].row - lay.at[y.id].row || lay.at[x.id].col - lay.at[y.id].col);
       const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId));
+      const bySeat = (x, y) => (Number.isInteger(x.seat) ? x.seat : 99) - (Number.isInteger(y.seat) ? y.seat : 99) || x.name.localeCompare(y.name);
       const room = `<div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${tables.map(t => {
-        const m = c.students.filter(s => s.tableId === t.id).sort((x, y) => (x.name === cp[t.id] ? -1 : y.name === cp[t.id] ? 1 : x.name.localeCompare(y.name)));
+        const m = c.students.filter(s => s.tableId === t.id).sort(bySeat);
         return `<div class="tbl${t.open ? '' : ' off'}" style="grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col}">
           <div class="tn">${esc(t.name)}<span>${t.open ? m.length + ' students' : 'not in use'}</span></div>
           <ul>${m.map(s => `<li${s.name === cp[t.id] ? ' class="cap"' : ''}>${esc(s.name)}${s.name === cp[t.id] ? ' (captain)' : ''}</li>`).join('') || '<li class="noroster">Empty</li>'}</ul></div>`; }).join('')}</div>`;
+      const helpers = (S0.helpers[c.id] || []).map(id => c.students.find(s => s.id === id)).filter(Boolean);
       return `<section class="sheet">
         <h2>${esc(c.name)}</h2><div class="sub">${p ? Suite.fmt12(p.start) + ' to ' + Suite.fmt12(p.end) + ' · ' : ''}${esc(when)}</div>
         ${a ? `<h3>Today's plan</h3><div class="agenda">
           ${a.target ? `<div><span class="k">Learning target:</span> ${esc(a.target)}</div>` : ''}
           ${a.items && a.items.length ? `<ol>${a.items.map(i => `<li>${esc(i)}</li>`).join('')}</ol>` : ''}
           ${a.homework ? `<div><span class="k">Homework:</span> ${esc(a.homework)}</div>` : ''}</div>` : ''}
+        ${matFor(c).length ? '<h3>Lesson materials</h3>' + matHtml(matFor(c)) : ''}
+        ${helpers.length ? `<h3>Students you can rely on</h3><p>${helpers.map(s => esc(s.name)).join(', ')}</p>` : ''}
+        ${block('Notes about this class', S0.classNotes[c.id])}
         <h3>Seating chart</h3>
         ${c.students.length ? room : '<p class="noroster">No roster entered for this class.</p>'}
         ${unassigned.length ? `<p style="margin-top:8px"><span class="k">Not at a table:</span> ${unassigned.map(s => esc(s.name)).join(', ')}</p>` : ''}
@@ -137,24 +194,81 @@
           <tbody><tr>${c.tables.filter(t => t.open).map(() => '<td style="height:54px"></td>').join('')}</tr></tbody></table>
       </section>`;
     }).join('');
-    $('#packet').innerHTML = list.length ? overview + pages
-      : '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>';
+    $('#packet').innerHTML = list.length ? overview + pages : '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>';
+    document.querySelectorAll('img[data-fid]').forEach(async img => { const u = await fileUrl(img.dataset.fid); if (u) img.src = u; });
   }
+
   function renderControls(){
     const list = Suite.classes();
     $('#sdate').value = date;
     $('#classpick').innerHTML = list.map(c => `<label><input type="checkbox" value="${esc(c.id)}"${S0.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="muted small">No classes yet.</span>';
-    $('#snotes').value = S0.notes; $('#srules').value = S0.rules;
+    document.querySelectorAll('textarea[data-t]').forEach(t => { t.value = S0[t.dataset.t] || ''; });
+    $('#classnotes').innerHTML = list.map(c => `<div class="classnote"><h3>${esc(c.name)}</h3>
+        <span class="lb">Students the sub can rely on</span>
+        <div class="helpers">${c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => `<label><input type="checkbox" data-help="${esc(c.id)}" value="${esc(s.id)}"${(S0.helpers[c.id] || []).includes(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">No roster yet.</span>'}</div>
+        <label class="lb" for="cn-${esc(c.id)}">Notes about this class</label>
+        <textarea id="cn-${esc(c.id)}" rows="3" data-cnote="${esc(c.id)}" placeholder="Routines, reminders, anything the sub should know">${esc(S0.classNotes[c.id] || '')}</textarea></div>`).join('') || '<p class="muted">Add classes in Classes & settings first.</p>';
+    renderMaterials();
   }
-  document.addEventListener('change', e => {
-    if (e.target.id === 'sdate' && e.target.value) { date = e.target.value; render(); }
-    else if (e.target.closest('#classpick')) {
-      const id = e.target.value; S0.skip = S0.skip.filter(x => x !== id); if (!e.target.checked) S0.skip.push(id); save(); render();
+  function renderMaterials(){
+    const list = Suite.classes(), M = mats();
+    $('#mdate').textContent = parseDate(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    $('#materials').innerHTML = M.map(m => {
+      const f = m.file || {};
+      const forWho = `<div class="for"><span class="muted">For:</span>${list.map(c => `<label><input type="checkbox" data-mfor="${esc(m.id)}" value="${esc(c.id)}"${!m.classes || m.classes.includes(c.id) ? ' checked' : ''}> ${esc(c.name)}</label>`).join('')}</div>`;
+      return `<div class="mat">
+        <div class="mhead"><span class="kind">${m.kind === 'file' ? 'File' : m.kind === 'link' ? 'Link' : 'Note'}</span>
+          <input class="field" data-m="${esc(m.id)}" data-k="title" value="${esc(m.title || '')}" placeholder="${m.kind === 'file' ? esc(f.name) : 'Title'}" aria-label="Title">
+          <button class="btn quiet danger" data-a="mdel" data-id="${esc(m.id)}" aria-label="Remove">×</button></div>
+        ${m.kind === 'note' ? `<textarea rows="3" data-m="${esc(m.id)}" data-k="text" placeholder="Directions, answer keys, anything to share">${esc(m.text || '')}</textarea>` : ''}
+        ${m.kind === 'link' ? `<input class="field url" data-m="${esc(m.id)}" data-k="url" value="${esc(m.url || '')}" placeholder="https://drive.google.com/..." aria-label="Link">` : ''}
+        ${m.kind === 'file' ? `<div class="file"><span>${esc(f.name)} <span class="muted small">(${size(f.size || 0)})</span></span><button class="btn quiet small" data-a="mopen" data-id="${esc(f.id)}">Open${isImage(f) ? '' : ' to print'}</button></div>` : ''}
+        ${list.length > 1 ? forWho : ''}
+      </div>`;
+    }).join('') || '<p class="muted small">Nothing added for this day yet.</p>';
+  }
+
+  document.addEventListener('change', async e => {
+    const el = e.target;
+    if (el.id === 'sdate' && el.value) { date = el.value; renderMaterials(); render(); }
+    else if (el.closest('#classpick')) { const id = el.value; S0.skip = S0.skip.filter(x => x !== id); if (!el.checked) S0.skip.push(id); save(); render(); }
+    else if (el.dataset.help) { const cid = el.dataset.help, set = new Set(S0.helpers[cid] || []); if (el.checked) set.add(el.value); else set.delete(el.value); S0.helpers[cid] = [...set]; save(); render(); }
+    else if (el.dataset.mfor) {
+      const m = mats().find(x => x.id === el.dataset.mfor); if (!m) return;
+      const all = Suite.classes().map(c => c.id), cur = new Set(m.classes || all);
+      if (el.checked) cur.add(el.value); else cur.delete(el.value);
+      m.classes = cur.size === all.length ? null : [...cur]; save(); render();
+    }
+    else if (el.id === 'addfiles') {
+      const files = [...el.files]; el.value = '';
+      let added = 0;
+      for (const f of files) {
+        try { const meta = await Suite.files.put(f); mats().push({ id: Suite.uid(), kind: 'file', title: '', file: meta, classes: null }); added++; }
+        catch (err) { Suite.toast(err.message || ("Couldn't attach " + f.name)); }
+      }
+      if (added) { save(); renderMaterials(); render(); Suite.toast('Attached ' + added + ' file' + (added === 1 ? '' : 's')); }
     }
   });
   document.addEventListener('input', e => {
-    if (e.target.id === 'snotes') { S0.notes = e.target.value; save(); render(); }
-    else if (e.target.id === 'srules') { S0.rules = e.target.value; save(); render(); }
+    const el = e.target;
+    if (el.dataset.t) { S0[el.dataset.t] = el.value; save(); render(); }
+    else if (el.dataset.cnote) { S0.classNotes[el.dataset.cnote] = el.value; save(); render(); }
+    else if (el.dataset.m) { const m = mats().find(x => x.id === el.dataset.m); if (m) { m[el.dataset.k] = el.value; save(); render(); } }
+  });
+  document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.cbox')) { const h = e.target.querySelector('.hintx'); if (h) h.textContent = e.target.open ? 'Hide' : 'Show'; } }, true);
+  document.addEventListener('click', async e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a;
+    if (a === 'addnote' || a === 'addlink') { mats().push({ id: Suite.uid(), kind: a === 'addnote' ? 'note' : 'link', title: '', text: '', url: '', classes: null }); save(); renderMaterials(); render(); const f = document.querySelector('.mat:last-child [data-k="title"]'); if (f) f.focus(); }
+    else if (a === 'mdel') {
+      const M = mats(), i = M.findIndex(x => x.id === el.dataset.id); if (i < 0) return;
+      const m = M[i];
+      if (m.kind === 'file' && !await Suite.dialog({ title: 'Remove ' + ((m.file && m.file.name) || 'this file') + '?', body: 'The attached file will be deleted from this browser.', ok: 'Remove', danger: true })) return;
+      M.splice(i, 1);
+      if (m.kind === 'file' && m.file) { Suite.files.del(m.file.id).catch(() => {}); if (urls[m.file.id]) { URL.revokeObjectURL(urls[m.file.id]); delete urls[m.file.id]; } }
+      save(); renderMaterials(); render();
+    }
+    else if (a === 'mopen') { const u = await fileUrl(el.dataset.id); if (u) window.open(u, '_blank'); else Suite.toast("Couldn't find that file. It may have been removed."); }
   });
   $('#print').addEventListener('click', () => window.print());
   window.addEventListener('suite:change', e => { if (e.detail && e.detail.external) { renderControls(); render(); } });

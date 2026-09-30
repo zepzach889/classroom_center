@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30e">
-<script src="shared/core.js?v=2026-09-30e"></script>
-<script>window.PAGE_VERSION = '2026-09-30e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
+<script src="shared/core.js?v=2026-10-01a"></script>
+<script>window.PAGE_VERSION = '2026-10-01a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
 .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -49,10 +49,18 @@ canvas{display:block;max-width:100%}
 .empty{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
 .empty h2{margin-bottom:8px}
 @media (max-width:860px){.stage{grid-template-columns:1fr}}
+.selall{margin:-2px 0 6px}
+#exit-proj{display:none}
+body.proj #suite-nav,body.proj .tabs,body.proj .topbar,body.proj .below{display:none!important}
+body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
+body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
+body.proj .wrap{max-width:none;padding:16px 24px}
+body.proj .result .who{font-size:clamp(48px,7vw,96px)}
 </style>
 </head>
 <body>
 <header id="suite-nav"></header>
+<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
@@ -60,7 +68,7 @@ canvas{display:block;max-width:100%}
   const esc = Suite.esc;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const NEUTRAL = '#8A9491';
-  let SP, rot = 0, spinning = false, result = null, spunList = null;
+  let SP, rot = 0, spinning = false, result = null, spunList = null, proj = Suite.startInProjector;
 
   function load(){ SP = Object.assign({ cur: null, mode: 'students', picked: {}, absent: {}, custom: '', removeAfter: true, hidePanel: false, last: null }, Suite.get('spinner', {})); }
   function save(){ Suite.set('spinner', SP); }
@@ -100,7 +108,7 @@ canvas{display:block;max-width:100%}
   function draw(list){
     const cv = $('#wheel'); if (!cv) return;
     const box = cv.parentElement;
-    const css = Math.max(220, Math.min(box.clientWidth, window.innerHeight - 400, SP.hidePanel ? 760 : 600));
+    const css = proj ? Math.max(260, Math.min(box.clientWidth, window.innerHeight - 230, 900)) : Math.max(220, Math.min(box.clientWidth, window.innerHeight - 400, SP.hidePanel ? 760 : 600));
     const dpr = window.devicePixelRatio || 1;
     cv.width = css * dpr; cv.height = css * dpr; cv.style.width = css + 'px'; cv.style.height = css + 'px';
     const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -167,7 +175,8 @@ canvas{display:block;max-width:100%}
 
   /* ---------- page ---------- */
   function render(keepWheel){
-    document.body.classList.toggle('nopanel', !!SP.hidePanel);
+    document.body.classList.toggle('nopanel', !!SP.hidePanel || proj);
+    document.body.classList.toggle('proj', proj);
     const list = classes(), c = curClass();
     if (!c && SP.mode !== 'custom') {
       $('#app').innerHTML = `<div class="empty"><h2>Add your classes first</h2><p>The spinner uses the rosters from Classes & settings. You can also spin a custom list without any classes.</p>
@@ -189,12 +198,13 @@ canvas{display:block;max-width:100%}
     } else {
       const order = c.tables.map(t => t.id);
       const everyone = c.students.slice().sort((a, b) => (order.indexOf(a.tableId) + 99) % 99 - (order.indexOf(b.tableId) + 99) % 99 || a.name.localeCompare(b.name));
-      panel = `<h2>Students</h2><div class="count">${left} of ${all.length} left this round${away.size ? `, ${away.size} absent` : ''}</div>
+      panel = `<h2>Students</h2><div class="count">${left} of ${all.length} left this round${away.size ? `, ${away.size} off the wheel` : ''}</div>
+        ${everyone.length ? `<div class="bar selall"><button class="btn quiet small" data-a="allon">Select all</button><button class="btn quiet small" data-a="alloff">Deselect all</button></div>` : ''}
         ${everyone.length ? `<ul class="plist">${everyone.map(s => { const t = c.tables.find(x => x.id === s.tableId);
           return `<li class="${away.has(s.id) ? 'away' : done.has(s.id) ? 'picked' : ''}"><span class="swatch" style="background:${esc(t ? t.color : NEUTRAL)}"></span>
-            <span class="nm">${esc(s.name)}</span><label><input type="checkbox" data-c="here" data-id="${esc(s.id)}"${away.has(s.id) ? '' : ' checked'}> Here</label></li>`; }).join('')}</ul>`
+            <span class="nm">${esc(s.name)}</span><label><input type="checkbox" data-c="here" data-id="${esc(s.id)}"${away.has(s.id) ? '' : ' checked'}> On wheel</label></li>`; }).join('')}</ul>`
           : `<p class="muted">No students in this class yet. <a href="settings.html#class=${esc(c.id)}">Add them in settings.</a></p>`}
-        <p class="hint" style="margin-top:8px">Unchecking "Here" leaves a student off the wheel for today only.</p>`;
+        <p class="hint" style="margin-top:8px">Unchecked students stay off the wheel for today only. For a prize drawing, press Deselect all, then check the students who earned a spot.</p>`;
     }
     panel += `<label class="opt"><input type="checkbox" data-c="remove"${SP.removeAfter ? ' checked' : ''}> Take picks off the wheel until everyone has had a turn</label>`;
 
@@ -204,7 +214,7 @@ canvas{display:block;max-width:100%}
         <div class="seg" role="group" aria-label="What to spin">
           ${[['students', 'Students'], ['tables', 'Tables'], ['custom', 'Custom list']].map(([m, l]) => `<button data-a="mode" data-m="${m}" aria-pressed="${SP.mode === m}">${l}</button>`).join('')}
         </div>
-        <button class="btn" data-a="panel">${SP.hidePanel ? 'Show list' : 'Hide list'}</button>
+        <span class="bar"><button class="btn" data-a="panel">${SP.hidePanel ? 'Show list' : 'Hide list'}</button><button class="btn" data-a="proj">Projector view</button></span>
       </div>
       <div class="stage">
         <div class="wheelcol">
@@ -228,6 +238,11 @@ canvas{display:block;max-width:100%}
     if (a === 'pick') { SP.cur = el.dataset.id; if (SP.mode === 'custom') SP.mode = 'students'; result = null; save(); render(); }
     else if (a === 'mode') { SP.mode = el.dataset.m; result = null; rot = 0; save(); render(); }
     else if (a === 'panel') { SP.hidePanel = !SP.hidePanel; save(); render(); }
+    else if (a === 'proj') { proj = !proj; render(); }
+    else if ((a === 'allon' || a === 'alloff') && c) {
+      SP.absent[c.id] = { date: Suite.dateKey(new Date()), ids: a === 'alloff' ? c.students.map(s => s.id) : [] };
+      result = null; save(); render();
+    }
     else if (a === 'spin') spin();
     else if (a === 'putback' && SP.last) {
       const arr = SP.picked[SP.last.key] || [], i = arr.lastIndexOf(SP.last.id);
@@ -249,6 +264,7 @@ canvas{display:block;max-width:100%}
     }
   });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog') && !document.body.classList.contains('timer-open')) { proj = false; render(); return; }
     if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName) && !document.querySelector('.suite-dialog')) { e.preventDefault(); spin(); }
   });
   window.addEventListener('resize', () => { if (!spinning) draw(spunList || available(curClass())); });

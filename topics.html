@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30e">
-<script src="shared/core.js?v=2026-09-30e"></script>
-<script>window.PAGE_VERSION = '2026-09-30e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
+<script src="shared/core.js?v=2026-10-01a"></script>
+<script>window.PAGE_VERSION = '2026-10-01a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -21,7 +21,12 @@
 .summary{color:var(--ink-2);font-size:15px;margin-top:2px}
 .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .topic{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.topic.full{background:var(--wash)}
+.topic{position:relative}
+.topic.full{background:repeating-linear-gradient(135deg,var(--wash) 0 12px,var(--paper) 12px 24px);border-color:var(--rule);border-style:dashed}
+.topic.full h2{color:var(--ink-2)}
+.topic.full .who li{color:var(--ink-2)}
+.fullbadge{position:absolute;top:10px;right:12px;background:var(--land);color:var(--on-land);border-radius:999px;padding:2px 12px;font:700 12px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.topic.full h2{padding-right:62px}
 .topic h2{font-size:20px}
 .slots{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--sea)}
@@ -35,7 +40,7 @@
 .who li .anon{color:var(--ink-2);font-style:italic}
 .who .x{font-size:17px;line-height:1;padding:1px 7px}
 .topic .add{margin-top:auto}
-.fulltag{margin-top:auto;font-size:14px;color:var(--ink-2)}
+.fulltag{margin-top:auto;font-size:14px;color:var(--ink-2);font-weight:600}
 .panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-top:30px}
 .panel>h2{font-size:22px;padding-bottom:6px;border-bottom:3px solid var(--land);margin-bottom:10px}
 .need{display:flex;flex-wrap:wrap;gap:6px}
@@ -44,6 +49,24 @@
 .empty{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
 .empty h2{margin-bottom:8px}
 #exit-proj{display:none}
+.report{position:fixed;inset:0;z-index:70;background:var(--paper);overflow:auto;padding:20px}
+.report-inner{max-width:1000px;margin:0 auto}
+.report-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
+.rep-class{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:14px 18px;margin-bottom:16px}
+.rep-class h3{margin-bottom:8px}
+.rep-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.rep-cols table{width:100%;border-collapse:collapse;font-size:15px}
+.rep-cols th{text-align:left;font-weight:600;color:var(--ink-2);font-size:13px;padding:4px 6px;border-bottom:2px solid var(--edge)}
+.rep-cols td{padding:4px 6px;border-bottom:1px solid var(--rule);vertical-align:top}
+.rep-cols tr.none td{color:var(--ink-2);font-style:italic}
+.printonly{display:none}
+@media (max-width:760px){.rep-cols{grid-template-columns:1fr}}
+@media print{
+  body.reporting > *:not(#report){display:none!important}
+  .report{position:static;padding:0;background:#fff}
+  .noprint{display:none!important}.printonly{display:block;font-size:26px;margin-bottom:10px}
+  .rep-class{border:0;padding:0;break-inside:avoid;margin-bottom:22px}
+}
 body.proj #suite-nav,body.proj .tabs,body.proj .topbar .bar,body.proj .panels,body.proj .add,body.proj .who .x{display:none!important}
 body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.5;z-index:5}
 body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
@@ -64,7 +87,7 @@ body.proj .dot{width:20px;height:20px}
 (function(){
   const $ = q => document.querySelector(q);
   const esc = Suite.esc;
-  let TP, proj = false;
+  let TP, proj = Suite.startInProjector;
 
   function load(){ TP = Object.assign({ lists: [], active: null, claims: {}, defaultCap: 3, cur: null }, Suite.get('topics', {})); }
   function save(){ Suite.set('topics', TP); }
@@ -113,13 +136,13 @@ body.proj .dot{width:20px;height:20px}
 
     const cards = list.topics.map(t => {
       const mine = claims.filter(x => x.topicId === t.id), full = mine.length >= t.cap;
-      return `<article class="topic${full ? ' full' : ''}">
+      return `<article class="topic${full ? ' full' : ''}">${full ? '<span class="fullbadge">Full</span>' : ''}
         <h2>${esc(t.name)}</h2>
         <div class="slots" aria-label="${mine.length} of ${t.cap} spots taken">${Array.from({ length: t.cap }, (_, i) => `<span class="dot${i < mine.length ? ' on' : ''}"></span>`).join('')}
           <span class="n"><b>${mine.length}</b> of ${t.cap}</span></div>
         ${mine.length ? `<ul class="who">${mine.map(x => `<li><span class="nm${x.studentId ? '' : ' anon'}">${x.studentId ? esc(x.name) : 'Spot taken'}</span>
           <button class="btn quiet x" data-a="unclaim" data-id="${esc(x.id)}" aria-label="Remove ${esc(x.name || 'this spot')} from ${esc(t.name)}">×</button></li>`).join('')}</ul>` : ''}
-        ${full ? '<div class="fulltag">Full</div>' : `<button class="btn add" data-a="claim" data-id="${esc(t.id)}">Add a student</button>`}
+        ${full ? '<div class="fulltag">No spots left</div>' : `<button class="btn add" data-a="claim" data-id="${esc(t.id)}">Add a student</button>`}
       </article>`;
     }).join('');
 
@@ -130,6 +153,7 @@ body.proj .dot{width:20px;height:20px}
         <div class="bar">
           ${TP.lists.length > 1 ? `<label class="visually-hidden" for="whichlist">Topic list</label><select id="whichlist" data-c="list">${TP.lists.map(l => `<option value="${esc(l.id)}"${l.id === list.id ? ' selected' : ''}>${esc(l.name)}</option>`).join('')}</select>` : ''}
           <button class="btn" data-a="newlist">New list</button>
+          <button class="btn" data-a="report">Report</button>
           <button class="btn" data-a="proj">Projector view</button>
         </div>
       </div>
@@ -155,11 +179,59 @@ body.proj .dot{width:20px;height:20px}
       </div>`;
   }
 
+
+  /* ---------- report: who picked what ---------- */
+  function reportRows(list){
+    const rows = [];
+    classes().forEach(c => {
+      const claims = claimsFor(list, c).filter(x => list.topics.some(t => t.id === x.topicId));
+      const topicOf = id => { const x = claims.find(y => y.studentId === id); return x ? list.topics.find(t => t.id === x.topicId).name : ''; };
+      c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(st => rows.push({ cls: c.name, student: st.name, topic: topicOf(st.id) }));
+      claims.filter(x => !x.studentId).forEach(x => rows.push({ cls: c.name, student: '(spot without a name)', topic: list.topics.find(t => t.id === x.topicId).name }));
+    });
+    return rows;
+  }
+  function openReport(){
+    const list = curList(); if (!list) return;
+    const rows = reportRows(list), byClass = {};
+    rows.forEach(r => (byClass[r.cls] = byClass[r.cls] || []).push(r));
+    const el = document.createElement('div'); el.id = 'report'; el.className = 'report';
+    el.innerHTML = `<div class="report-inner">
+      <div class="report-bar noprint"><h2>${esc(list.name)}: report</h2><span class="bar">
+        <button class="btn" data-r="csv">Download spreadsheet (CSV)</button><button class="btn primary" data-r="print">Print</button><button class="btn" data-r="close">Close</button></span></div>
+      <h1 class="printonly">${esc(list.name)}</h1>
+      ${Object.entries(byClass).map(([cls, rs]) => {
+        const picked = rs.filter(r => r.topic).length, total = rs.filter(r => r.student !== '(spot without a name)').length;
+        return `<section class="rep-class"><h3>${esc(cls)} <span class="muted small">${picked} of ${total} have a topic</span></h3>
+          <div class="rep-cols">
+            <table><thead><tr><th>Student</th><th>Topic</th></tr></thead><tbody>${rs.map(r => `<tr${r.topic ? '' : ' class="none"'}><td>${esc(r.student)}</td><td>${r.topic ? esc(r.topic) : 'Still choosing'}</td></tr>`).join('')}</tbody></table>
+            <table><thead><tr><th>Topic</th><th>Students</th></tr></thead><tbody>${list.topics.map(t => { const who = rs.filter(r => r.topic === t.name).map(r => esc(r.student)); return `<tr><td>${esc(t.name)}</td><td>${who.join(', ') || '<span class="muted">Nobody yet</span>'}</td></tr>`; }).join('')}</tbody></table>
+          </div></section>`; }).join('') || '<p>No classes yet.</p>'}
+    </div>`;
+    document.body.appendChild(el); document.body.classList.add('reporting');
+    const close = () => { el.remove(); document.body.classList.remove('reporting'); document.removeEventListener('keydown', onKey, true); };
+    const onKey = e => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
+    document.addEventListener('keydown', onKey, true);
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-r]'); if (!b) return;
+      if (b.dataset.r === 'close') close();
+      else if (b.dataset.r === 'print') window.print();
+      else if (b.dataset.r === 'csv') {
+        const cell = v => /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+        const csv = [['Class', 'Student', 'Topic']].concat(rows.map(r => [r.cls, r.student, r.topic])).map(r => r.map(cell).join(',')).join('\r\n');
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
+        a.download = list.name.replace(/[^\w -]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() + '-topics.csv';
+        document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      }
+    });
+  }
+
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, id = el.dataset.id, c = curClass(), list = curList();
     if (a === 'pickc') { TP.cur = id; save(); render(); }
     else if (a === 'proj') { proj = !proj; render(); }
+    else if (a === 'report') openReport();
     else if (a === 'newlist') {
       const name = await Suite.dialog({ title: 'Name the topic list', input: 'Unit project topics', ok: 'Create list' });
       if (!name) return;
@@ -184,6 +256,7 @@ body.proj .dot{width:20px;height:20px}
       }
       const s = c.students.find(x => x.id === studentId);
       const now = claimsFor(list, c);
+      if (studentId && now.some(x => x.studentId === studentId && list.topics.some(tt => tt.id === x.topicId))) { Suite.toast(s.name + ' already has a topic in this list'); render(); return; }
       if (now.filter(x => x.topicId === t.id).length >= t.cap) { Suite.toast(t.name + ' is already full'); render(); return; }
       now.push({ id: Suite.uid(), topicId: t.id, studentId, name: s ? s.name : '' });
       save(); render();

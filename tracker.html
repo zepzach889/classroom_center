@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30e">
-<script src="shared/core.js?v=2026-09-30e"></script>
-<script>window.PAGE_VERSION = '2026-09-30e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
+<script src="shared/core.js?v=2026-10-01a"></script>
+<script>window.PAGE_VERSION = '2026-10-01a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -119,7 +119,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     'Zero reminders needed to transition between activities'
   ].join('\n');
   const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null, rotateEvery: 1, captainLog: [], prizes: [] };
-  let T, proj = false, picked = null, bump = null;
+  let T, proj = Suite.startInProjector, picked = null, bump = null;
 
   function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; T.captainLog = T.captainLog || []; T.prizes = T.prizes || []; if (T.rotateEvery == null) T.rotateEvery = 1; }
   function save(){ Suite.set('tracker', T); }
@@ -243,6 +243,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           <button class="btn${T.double ? ' double-on' : ''}" data-a="double" aria-pressed="${T.double}">${T.double ? 'Double points on' : 'Double points'}</button>
           <button class="btn" data-a="undo">Undo last</button>
           <button class="btn" data-a="endweek">End week</button>
+          <a class="btn" href="seating.html#class=${esc(c.id)}">Seating chart</a>
           <button class="btn" data-a="proj">Projector view</button>
         </div>
       </div>

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30e">
-<script src="shared/core.js?v=2026-09-30e"></script>
-<script>window.PAGE_VERSION = '2026-09-30e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
+<script src="shared/core.js?v=2026-10-01a"></script>
+<script>window.PAGE_VERSION = '2026-10-01a';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(28px,3vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:40px;align-items:start}
 .clock{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:clamp(64px,min(11vw,17vh),156px);line-height:1}
@@ -70,6 +70,7 @@
 .coming .at{font-size:13px;color:var(--ink-2);font-weight:400}
 .comingbox .more{display:inline-block;margin-top:6px}
 .cdlive{font-variant-numeric:tabular-nums}
+.coming .when b.hrs{margin-left:6px}
 .coming .when{text-align:right;white-space:nowrap;display:flex;align-items:baseline;gap:5px}
 .coming .when b{font-family:var(--serif);font-weight:400;font-size:28px}
 .coming .when span{font-size:13px;color:var(--ink-2)}
@@ -213,6 +214,10 @@
       const end = Suite.countdownEnd(cd), ms = end - now;
       let when;
       if (cd.time && ms < 86400000) when = `<b class="cdlive" data-end="${end.getTime()}">${Suite.fmtDuration(ms)}</b>`;
+      else if (cd.time && !cd.school) {
+        const d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000);
+        when = `<b>${d}</b><span>day${d === 1 ? '' : 's'}</span><b class="hrs">${h}</b><span>hr${h === 1 ? '' : 's'}</span>`;
+      }
       else if (cd.date === today) when = '<b>Today</b>';
       else {
         const n = Suite.daysUntil(cd.date, cd.school);

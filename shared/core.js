@@ -15,13 +15,14 @@
     { id: 'spinner', label: 'Name spinner', href: 'spinner.html', soon: false },
     { id: 'topics', label: 'Topic picker', href: 'topics.html', soon: false },
     { id: 'activities', label: 'Activities', href: 'activities.html', soon: false },
-    { id: 'noise', label: 'Noise meter', href: 'noise.html', soon: false }
+    { id: 'noise', label: 'Noise meter', href: 'noise.html', soon: false },
+    { id: 'present', label: 'Present', href: 'present.html', soon: false }
   ];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-09-30e';   // bump with every build; pages check they match
+  const VERSION = '2026-10-01a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -158,6 +159,27 @@
     return classes.find(c => c.name.trim().toLowerCase() === n) || null;
   };
 
+
+  /* ---------- attached files (sub-page materials), stored in IndexedDB ---------- */
+  const FILE_DB = 'classroom-suite-files', MAX_FILE = 10 * 1024 * 1024;
+  function idb(){ return new Promise((res, rej) => { const r = indexedDB.open(FILE_DB, 1); r.onupgradeneeded = () => r.result.createObjectStore('files', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+  async function fstore(mode, fn){ const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('files', mode), st = t.objectStore('files'); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); }
+  S.MAX_FILE = MAX_FILE;
+  S.files = {
+    put: async file => {
+      if (file.size > MAX_FILE) throw new Error(file.name + ' is larger than 10 MB.');
+      const rec = { id: S.uid(), name: file.name, type: file.type || 'application/octet-stream', size: file.size, blob: file };
+      await fstore('readwrite', st => st.put(rec));
+      return { id: rec.id, name: rec.name, type: rec.type, size: rec.size };
+    },
+    get: id => fstore('readonly', st => st.get(id)),
+    del: id => fstore('readwrite', st => st.delete(id)),
+    all: () => fstore('readonly', st => st.getAll()),
+    clear: () => fstore('readwrite', st => st.clear())
+  };
+  const blobToDataUrl = b => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
+  const dataUrlToBlob = async u => (await fetch(u)).blob();
+
   /* ---------- backup ---------- */
   function allKeys(keepTheme) {
     const ks = [];
@@ -173,8 +195,9 @@
     delete data.meta; delete data.theme; delete data.timer;
     return data;
   };
-  S.exportBackup = () => {
+  S.exportBackup = async () => {
     const payload = { app: 'classroom-suite', version: 1, exported: new Date().toISOString(), data: S.allData() };
+    try { const all = await S.files.all(); if (all.length) payload.files = await Promise.all(all.map(async f => ({ id: f.id, name: f.name, type: f.type, size: f.size, data: await blobToDataUrl(f.blob) }))); } catch (e) {}
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -187,7 +210,7 @@
   S.parseBackup = text => {
     let d;
     try { d = JSON.parse(text); } catch (e) { throw new Error("That file isn't a backup file."); }
-    if (d && d.app === 'classroom-suite' && d.data) return { data: d.data, exported: d.exported || null };
+    if (d && d.app === 'classroom-suite' && d.data) return { data: d.data, exported: d.exported || null, files: d.files || [] };
     if (d && Array.isArray(d.classes) && d.classes.some(c => Array.isArray(c.tables))) return { data: fromTracker(d), exported: null };
     throw new Error("That file isn't a Classroom Suite backup.");
   };
@@ -200,13 +223,19 @@
     });
     return { classes, tracker };
   }
+  S.restoreFiles = async files => {
+    try {
+      await S.files.clear();
+      for (const f of files || []) { const blob = await dataUrlToBlob(f.data); await fstore('readwrite', st => st.put({ id: f.id, name: f.name, type: f.type, size: f.size, blob })); }
+    } catch (e) {}
+  };
   S.restore = data => {
     S.clearAll(true);
     Object.entries(data).forEach(([k, v]) => rawSet(k, v));
     rawSet('meta', { lastChange: Date.now(), lastBackup: Date.now() });
     emit({ key: '*' });
   };
-  S.clearAll = keepTheme => { allKeys(keepTheme).forEach(k => localStorage.removeItem(k)); emit({ key: '*' }); };
+  S.clearAll = (keepTheme, keepFiles) => { allKeys(keepTheme).forEach(k => localStorage.removeItem(k)); if (!keepFiles) S.files.clear().catch(() => {}); emit({ key: '*' }); };
   S.backupStatus = () => {
     const m = S.get('meta', {});
     const hasData = S.classes().length > 0;
@@ -420,6 +449,111 @@
     S.set('agenda', a);
   };
 
+
+  /* ---------- pop-out mini windows ---------- */
+  const POP_SIZES = { timer: [360, 300], points: [420, 460], name: [380, 300] };
+  S.popOut = async kind => {
+    const [w0, h0] = POP_SIZES[kind];
+    let w, onTop = true;
+    try {
+      if ('documentPictureInPicture' in window) w = await documentPictureInPicture.requestWindow({ width: w0, height: h0 });
+    } catch (e) { w = null; }
+    if (!w) {
+      onTop = false;
+      w = window.open('', 'suite-pop-' + kind, `popup,width=${w0},height=${h0}`);
+      if (!w) { S.toast('This browser blocked the pop-out window. Allow pop-ups for this site and try again.'); return; }
+      w.document.open(); w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + S.esc(S.suiteName()) + '</title></head><body></body></html>'); w.document.close();
+    }
+    const d = w.document;
+    document.querySelectorAll('link[rel="stylesheet"]').forEach(n => { const l = d.createElement('link'); l.rel = 'stylesheet'; l.href = n.href; d.head.appendChild(l); });
+    const th = document.documentElement.getAttribute('data-theme'); if (th) d.documentElement.setAttribute('data-theme', th);
+    S.applyAppearance(d);
+    d.body.className = 'pop pop-' + kind;
+    const st = d.createElement('style'); st.textContent = POP_CSS; d.head.appendChild(st);
+    const state = { cls: null, name: '', used: new Set() };
+    const draw = () => { try { POP_RENDER[kind](d, state); } catch (e) {} };
+    draw();
+    const iv = setInterval(draw, 400);
+    w.addEventListener('pagehide', () => clearInterval(iv));
+    d.addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (b) { POP_ACT[kind](b, state, d); draw(); } });
+    d.addEventListener('change', e => { if (e.target.dataset.p === 'cls') { state.cls = e.target.value; state.name = ''; state.used = new Set(); draw(); } });
+    if (!onTop) S.toast("This browser can't keep the window on top of other windows. Chrome or Edge can.");
+  };
+  const POP_CSS = `
+body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sans);color:var(--ink)}
+.pop .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.pop .ph b{font-family:var(--serif);font-weight:400;font-size:20px}
+.pop select{font:inherit;font-size:14px;padding:3px 6px;border-radius:8px;border:1.5px solid var(--rule);background:var(--sheet);color:var(--ink);max-width:170px}
+.pop .big{font-family:var(--serif);font-size:72px;line-height:1;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 10px}
+.pop .big.done{color:var(--land)}
+.pop .row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
+.pop button{font:inherit;font-weight:700;font-size:14px;border:2px solid var(--edge);border-radius:999px;background:var(--sheet);color:var(--ink);padding:5px 12px;cursor:pointer}
+.pop button.pri{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.pop button.neg{color:var(--plum);border-color:var(--plum)}
+.pop .tbl{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px;padding:5px 0;border-top:1px solid var(--rule)}
+.pop .tbl:first-of-type{border-top:0}
+.pop .tn{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+.pop .dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--ink);flex:none}
+.pop .pts{font-family:var(--serif);font-size:24px;min-width:40px;text-align:right}
+.pop .who{font-family:var(--serif);font-size:44px;text-align:center;min-height:56px;margin:10px 0}
+.pop .note{font-size:12px;color:var(--ink-2);text-align:center;margin-top:8px}`;
+  const tracker = () => Object.assign({ quarter: 1, week: 1, log: [], double: false }, S.get('tracker', {}));
+  const popClass = st => { const l = S.classes(); const T = tracker(); return l.find(c => c.id === (st.cls || T.cur)) || l[0] || null; };
+  const classSelect = (st, c) => { const l = S.classes(); return l.length > 1 ? `<select data-p="cls">${l.map(k => `<option value="${S.esc(k.id)}"${c && k.id === c.id ? ' selected' : ''}>${S.esc(k.name)}</option>`).join('')}</select>` : (c ? `<span class="small">${S.esc(c.name)}</span>` : ''); };
+  const POP_RENDER = {
+    timer(d){
+      const t = tget(), left = tleft(t);
+      const key = t.state + '|' + Math.ceil(left / 1000);
+      if (d.body.dataset.k === key) return; d.body.dataset.k = key;
+      d.body.innerHTML = `<div class="ph"><b>Timer</b></div>
+        <div class="big${t.state === 'done' ? ' done' : ''}">${t.state === 'done' ? "Time's up" : S.fmtDuration(left)}</div>
+        <div class="row"><button class="pri" data-p="go">${t.state === 'running' ? 'Pause' : t.state === 'paused' ? 'Resume' : 'Start'}</button><button data-p="reset">Reset</button><button data-p="add">+1 min</button></div>
+        <div class="row">${[1, 2, 3, 5, 10].map(n => `<button data-p="pre" data-ms="${n * 60000}">${n} min</button>`).join('')}</div>`;
+    },
+    points(d, st){
+      const c = popClass(st), T = tracker();
+      if (!c) { d.body.innerHTML = '<p>Add a class in settings first.</p>'; return; }
+      const lay = S.roomLayout(c.tables), act = S.activeTables(c).slice().sort((a, b) => lay.at[a.id].row - lay.at[b.id].row || lay.at[a.id].col - lay.at[b.id].col);
+      const pts = id => T.log.reduce((n, e) => n + (e.c === c.id && e.t === id && e.q === T.quarter && e.w === T.week ? e.d : 0), 0);
+      const key = c.id + '|' + T.log.length + '|' + T.week + '|' + T.double + '|' + S.classes().length;
+      if (d.body.dataset.k === key) return; d.body.dataset.k = key;
+      d.body.innerHTML = `<div class="ph"><b>Table points</b>${classSelect(st, c)}</div>
+        ${act.map(t => `<div class="tbl"><span class="tn"><span class="dot" style="background:${S.esc(t.color)}"></span>${S.esc(t.name)}</span><span class="pts">${pts(t.id)}</span>
+          <button class="pri" data-p="aw" data-t="${S.esc(t.id)}" data-d="1">+1</button><button class="neg" data-p="aw" data-t="${S.esc(t.id)}" data-d="-1">−1</button></div>`).join('')}
+        <div class="note">Week ${T.week}${T.double ? ' · Double points on' : ''}. Points save to the Table points page.</div>`;
+    },
+    name(d, st){
+      const c = popClass(st);
+      if (!c) { d.body.innerHTML = '<p>Add a class in settings first.</p>'; return; }
+      const key = c.id + '|' + st.name + '|' + st.used.size + '|' + c.students.length;
+      if (d.body.dataset.k === key) return; d.body.dataset.k = key;
+      d.body.innerHTML = `<div class="ph"><b>Name picker</b>${classSelect(st, c)}</div>
+        <div class="who">${st.name ? S.esc(st.name) : '&nbsp;'}</div>
+        <div class="row"><button class="pri" data-p="pick">Pick a name</button><button data-p="again">Start over</button></div>
+        <div class="note">${c.students.length ? `${Math.max(0, pickable(c).length - st.used.size)} of ${pickable(c).length} left before names repeat.` : 'No students in this class yet.'}</div>`;
+    }
+  };
+  const pickable = c => { const sp = S.get('spinner', {}), a = sp.absent && sp.absent[c.id]; const away = a && a.date === S.dateKey(new Date()) ? new Set(a.ids) : new Set(); return c.students.filter(s => !away.has(s.id)); };
+  const POP_ACT = {
+    timer(b){ const k = b.dataset.p; if (k === 'go') tToggle(); else if (k === 'reset') tReset(); else if (k === 'add') tAdd(60000); else if (k === 'pre') tStart(+b.dataset.ms); },
+    points(b, st){
+      if (b.dataset.p !== 'aw') return;
+      const c = popClass(st); if (!c) return;
+      const T = tracker(); let d = +b.dataset.d, note = 'Pop-out';
+      if (T.double && d > 0) { d *= 2; note = 'Pop-out, double'; }
+      T.log.push({ id: S.uid(), c: c.id, t: b.dataset.t, d, w: T.week, q: T.quarter, note });
+      S.set('tracker', T); emit({ key: 'tracker', external: true });
+    },
+    name(b, st){
+      const c = popClass(st); if (!c) return;
+      if (b.dataset.p === 'again') { st.used = new Set(); st.name = ''; return; }
+      let pool = pickable(c).filter(s => !st.used.has(s.id));
+      if (!pool.length) { st.used = new Set(); pool = pickable(c); }
+      if (!pool.length) return;
+      const s = pool[Math.floor(Math.random() * pool.length)]; st.used.add(s.id); st.name = s.name;
+    }
+  };
+
   /* ---------- countdowns ---------- */
   S.countdowns = () => S.get('countdowns', []);
   // Days from today to dateStr. schoolOnly counts only days with bells (skips weekends and "No school" days).
@@ -445,6 +579,53 @@
     return n;
   };
 
+
+  /* ---------- appearance (colors, fonts, name), per browser ---------- */
+  S.THEMES = {
+    streamline: { name: 'Streamline: navy and coral', main: '#1C2B3A', accent: '#B84A32', paper: '#EFEDE6', sheet: '#FAF8F3', display: 'Limelight', body: 'Jost' },
+    emerald:    { name: 'Emerald deco: green and gold', main: '#1F4536', accent: '#A87A24', paper: '#F1EEE4', sheet: '#FBF9F2', display: 'Limelight', body: 'Jost' },
+    seaside:    { name: 'Seaside: teal and sunset', main: '#1E4F5A', accent: '#C8602F', paper: '#EDF1EF', sheet: '#FAFBF9', display: 'Playfair Display', body: 'Jost' },
+    berry:      { name: 'Berry: plum and rose', main: '#3B2745', accent: '#B8436A', paper: '#F2EDF0', sheet: '#FBF8FA', display: 'Playfair Display', body: 'Jost' },
+    simple:     { name: 'Simple: slate and blue', main: '#233040', accent: '#2C68A8', paper: '#F1F3F5', sheet: '#FFFFFF', display: 'Poppins', body: 'Atkinson Hyperlegible' }
+  };
+  S.DISPLAY_FONTS = { 'Limelight': 'Deco (Limelight)', 'Playfair Display': 'Classic serif (Playfair)', 'Poppins': 'Modern (Poppins)', 'Jost': 'Clean (Jost)' };
+  S.BODY_FONTS = { 'Jost': 'Jost', 'Atkinson Hyperlegible': 'Atkinson Hyperlegible (extra readable)', 'system': "This computer's default" };
+  S.appearance = () => Object.assign({ theme: 'streamline', main: '', accent: '', display: '', body: '', name: '' }, S.get('appearance', {}));
+  S.suiteName = () => S.appearance().name.trim() || 'Classroom Suite';
+  const lumOf = hex => { const h = String(hex).replace('#', ''); if (h.length !== 6) return 0; return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4)).reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0); };
+  S.applyAppearance = (doc) => {
+    doc = doc || document;
+    const a = S.appearance(), t = S.THEMES[a.theme] || S.THEMES.streamline;
+    const main = a.main || t.main, accent = a.accent || t.accent, display = a.display || t.display, body = a.body || t.body;
+    const ink = lumOf(main) < .08 ? main : '#1C2B3A';
+    const stack = f => f === 'system' ? 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif' : `"${f}",${f === 'Limelight' || f === 'Playfair Display' ? 'Georgia,serif' : 'system-ui,sans-serif'}`;
+    let st = doc.getElementById('suite-appearance');
+    if (!st) { st = doc.createElement('style'); st.id = 'suite-appearance'; doc.head.appendChild(st); }
+    st.textContent = `:root{--serif:${stack(display)};--sans:${stack(body)}}
+:root:not([data-theme="dark"]){--sea:${main};--bar:${main};--edge:${ink};--ink:${ink};--land:${accent};--on-land:${S.textOn(accent)};--paper:${t.paper};--sheet:${t.sheet}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bar:#0B1119;--ink:#ECE9E1;--edge:#3C4B5C;--sea:#ECE9E1;--paper:#111A24;--sheet:#1A2532}}`;
+    const need = [display, body].filter(f => f !== 'system' && f !== 'Limelight' && f !== 'Jost');
+    let fl = doc.getElementById('suite-appearance-fonts');
+    if (need.length) {
+      const href = 'https://fonts.googleapis.com/css2?' + need.map(f => 'family=' + f.replace(/ /g, '+') + ':wght@400;600;700').join('&') + '&display=swap';
+      if (!fl) { fl = doc.createElement('link'); fl.id = 'suite-appearance-fonts'; fl.rel = 'stylesheet'; doc.head.appendChild(fl); }
+      if (fl.href !== href) fl.href = href;
+    } else if (fl) fl.remove();
+  };
+  S.applyAppearance();
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.key === 'appearance' || e.detail.key === '*')) S.applyAppearance(); });
+
+  // Pages opened inside the Present page (or a pop-out) hide the menu bar.
+  const QS = new URLSearchParams(location.search);
+  S.embedded = QS.has('embed');
+  S.startInProjector = QS.has('proj');
+  if (S.embedded) document.documentElement.classList.add('embed');
+  if (S.embedded) document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || document.querySelector('.suite-dialog') || document.body.classList.contains('timer-open') || document.querySelector('.qview') || document.getElementById('report')) return;
+    e.stopImmediatePropagation();
+    try { parent.postMessage({ suite: 'close' }, location.origin); } catch (x) {}
+  }, true);
+
   /* ---------- theme ---------- */
   const THEMES = ['auto', 'light', 'dark'];
   function applyTheme() { const t = S.get('theme', 'auto'); if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
@@ -458,11 +639,13 @@
       const b = S.backupStatus();
       const theme = S.get('theme', 'auto');
       el.innerHTML = `<div class="nav-inner">
-        <a class="wordmark" href="index.html">Classroom Suite <span class="speed" aria-hidden="true"><i></i><i></i><i></i></span></a>
+        <a class="wordmark" href="index.html">${S.esc(S.suiteName())} <span class="speed" aria-hidden="true"><i></i><i></i><i></i></span></a>
         <nav aria-label="Tools"><ul>${NAV.map(n => `<li>${n.soon
           ? `<span class="soon" title="Coming soon">${S.esc(n.label)}</span>`
           : `<a href="${n.href}"${n.id === current ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`}</li>`).join('')}</ul></nav>
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
+        <span class="popwrap"><button class="gear popbtn" data-suite="popmenu" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
+          <span class="popmenu" hidden><b>Pop out a mini window</b><button data-pop="timer">Timer</button><button data-pop="points">Table points</button><button data-pop="name">Name picker</button><span>Floats on top of Google Slides in Chrome or Edge.</span></span></span>
         <button class="btn quiet theme-btn" data-suite="theme">Theme: ${theme[0].toUpperCase() + theme.slice(1)}</button>
         <a class="gear${current === 'settings' || current === 'sub' ? ' on' : ''}" href="settings.html" aria-label="Classes and settings" title="Classes and settings"${current === 'settings' ? ' aria-current="page"' : ''}>${GEAR}</a>
       </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
@@ -475,6 +658,9 @@
     window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
     window.addEventListener('suite:change', e => { if (!e.detail || e.detail.key !== 'timer') { draw(); timerDraw(); } });
     el.addEventListener('click', e => {
+      const pm = e.target.closest('[data-suite="popmenu"]'), po = e.target.closest('[data-pop]');
+      if (pm) { const m = el.querySelector('.popmenu'); m.hidden = !m.hidden; pm.setAttribute('aria-expanded', String(!m.hidden)); return; }
+      if (po) { el.querySelector('.popmenu').hidden = true; S.popOut(po.dataset.pop); return; }
       if (!e.target.closest('[data-suite="theme"]')) return;
       const t = S.get('theme', 'auto');
       S.set('theme', THEMES[(THEMES.indexOf(t) + 1) % THEMES.length]);

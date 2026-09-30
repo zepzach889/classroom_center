@@ -11,6 +11,8 @@ spinner.html      Name spinner
 topics.html       Topic picker
 activities.html   Review game, station rotations, tally, partners and groups
 noise.html        Noise meter
+seating.html      Seating charts: whole room and assigned seats
+present.html      Show published Google Slides with tools on top
 settings.html     Classes, tables, rosters, seat shuffle, bell schedule, countdowns, backups
 sub.html          Printable substitute packet
 shared/style.css  Shared look

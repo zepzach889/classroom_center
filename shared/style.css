@@ -121,3 +121,13 @@ textarea{width:100%;resize:vertical}
   .nav-inner ul{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
   .nav-inner ul::-webkit-scrollbar{display:none}
 }
+
+html.embed #suite-nav{display:none}
+.popwrap{position:relative;display:inline-flex}
+.popbtn{background:none;cursor:pointer}
+.popmenu{position:absolute;right:0;top:44px;z-index:60;background:var(--sheet);color:var(--ink);border:2px solid var(--edge);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:6px;width:230px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.popmenu[hidden]{display:none}
+.popmenu b{font-size:14px}
+.popmenu button{font:inherit;font-weight:600;text-align:left;background:var(--paper);color:var(--ink);border:1.5px solid var(--rule);border-radius:10px;padding:7px 10px;cursor:pointer}
+.popmenu button:hover{border-color:var(--edge)}
+.popmenu span{font-size:12px;color:var(--ink-2)}

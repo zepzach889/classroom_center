@@ -7,11 +7,25 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-09-30e">
-<script src="shared/core.js?v=2026-09-30e"></script>
-<script>window.PAGE_VERSION = '2026-09-30e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
+<script src="shared/core.js?v=2026-10-01a"></script>
+<script>window.PAGE_VERSION = '2026-10-01a';</script>
 <style>
-.layout{max-width:1180px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
+.layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
+.layout[hidden]{display:none}
+.layout.general{grid-template-columns:minmax(0,860px);justify-content:center}
+.tabs-top{max-width:1180px;margin:0 auto;padding:18px 20px 0}
+.settabs{display:flex;gap:8px}
+.settabs button{font:inherit;font-size:16px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:7px 22px;cursor:pointer}
+.settabs button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.block{margin-bottom:18px}
+.lookgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 20px}
+.lookgrid label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700}
+.lookgrid .field,.lookgrid select{width:100%}
+.lookgrid input[type=color]{width:52px;height:36px;border:1.5px solid var(--rule);border-radius:8px;background:none;padding:2px;cursor:pointer}
+.lookpreview{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:16px 0 6px;padding:12px;border:2px dashed var(--rule);border-radius:16px}
+.lp-bar{background:var(--bar);color:#fff;font-family:var(--serif);font-size:20px;padding:6px 14px;border-radius:10px}
+.lp-h{font-family:var(--serif);font-size:24px}
 .rail h2{font-size:19px;margin-bottom:8px}
 .rail ul{list-style:none;margin:0 0 10px;padding:0}
 .rail-item{width:100%;display:flex;justify-content:space-between;gap:8px;font:inherit;color:var(--ink);background:none;border:0;border-left:3px solid transparent;padding:7px 10px;text-align:left;cursor:pointer;border-radius:0 6px 6px 0}
@@ -125,50 +139,68 @@ main{min-width:0;max-width:820px}
 </head>
 <body>
 <header id="suite-nav"></header>
-<div class="layout">
+<div class="tabs-top"><nav class="settabs" aria-label="Settings sections">
+  <button data-a="tab" data-id="classes" id="tab-classes">Classes</button>
+  <button data-a="tab" data-id="general" id="tab-general">General</button>
+</nav></div>
+<div class="layout" id="pane-classes">
   <aside class="rail" aria-label="Classes">
     <h2>Classes</h2>
     <ul id="rail-list"></ul>
     <button class="btn" data-a="addc">Add a class</button>
-    <a class="jump" href="#schedule">Bell schedule</a>
-    <a class="jump" href="#countdowns" style="margin-top:6px">Countdowns</a>
+    <a class="jump" href="seating.html">Seating charts</a>
     <a class="jump" href="sub.html" style="margin-top:6px">Substitute page</a>
-    <a class="jump" href="#backup" style="margin-top:6px">Backup and data</a>
   </aside>
   <main>
     <div id="class-area"></div>
+  </main>
+</div>
+<div class="layout general" id="pane-general" hidden>
+  <main>
     <section class="block" id="schedule" aria-labelledby="h-sched">
-      <details class="fold" id="sched-fold">
+      <details class="fold" id="sched-fold" data-fold="schedule">
         <summary><h2 id="h-sched">Bell schedule</h2><span class="fold-hint">Show</span></summary>
         <p class="hint">The dashboard uses this to show the current period. A period whose name matches a class (like "Period 2") links to that class automatically.</p>
         <div id="schedule-area"></div>
       </details>
     </section>
     <section class="block" id="countdowns" aria-labelledby="h-cd">
-      <h2 id="h-cd">Countdowns</h2>
-      <p class="hint">Upcoming dates for the dashboard, like a unit test or the end of a school day. The dashboard shows the three closest. Add a time (like 3:45) to count down to that moment; without one, it counts days. Each one drops off once it passes.</p>
-      <div id="cd-area"></div>
+      <details class="fold" data-fold="countdowns">
+        <summary><h2 id="h-cd">Countdowns</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Upcoming dates for the dashboard, like a unit test or the end of a school day. The dashboard shows the three closest. Add a time (like 3:45) to count down to that moment; without one, it counts days. Each one drops off once it passes.</p>
+        <div id="cd-area"></div>
+      </details>
+    </section>
+    <section class="block" id="appearance" aria-labelledby="h-look">
+      <details class="fold" data-fold="appearance">
+        <summary><h2 id="h-look">Appearance</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Colors, fonts, and the name at the top of every page. These are saved in this browser only, so anyone else using the suite on their own computer can pick their own.</p>
+        <div id="look-area"></div>
+      </details>
     </section>
     <section class="block" id="backup" aria-labelledby="h-backup">
-      <h2 id="h-backup">Backup and data</h2>
-      <p class="hint">Everything here is saved only in this browser on this computer. A backup is a file you keep yourself. Saving it to your school Google Drive lets you restore it on another computer.</p>
-      <div class="status" id="backup-status"></div>
-      <div class="bar">
-        <button class="btn primary" data-a="export">Download backup</button>
-        <label class="btn">Restore from a backup<input type="file" accept=".json,application/json" id="import-file" hidden></label>
-      </div>
-      <div class="danger-zone">
-        <button class="btn danger" data-a="wipe">Erase all data in this browser</button>
-      </div>
+      <details class="fold" data-fold="backup">
+        <summary><h2 id="h-backup">Backup and data</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Everything is saved only in this browser on this computer. A backup is a file you keep yourself. Saving it to your school Google Drive lets you restore it on another computer.</p>
+        <div class="status" id="backup-status"></div>
+        <div class="bar">
+          <button class="btn primary" data-a="export">Download backup</button>
+          <label class="btn">Restore from a backup<input type="file" accept=".json,application/json" id="import-file" hidden></label>
+        </div>
+        <div class="danger-zone">
+          <button class="btn danger" data-a="wipe">Erase all data in this browser</button>
+        </div>
+      </details>
     </section>
   </main>
 </div>
-
 <script>
 (function(){
   const $ = q => document.querySelector(q);
   const esc = Suite.esc;
   let sel = (location.hash.match(/class=([\w-]+)/) || [])[1] || null;
+  let tab = 'classes';
+  const folds = new Set();
 
   function current(list){ return list.find(c => c.id === sel) || list[0] || null; }
 
@@ -220,8 +252,8 @@ main{min-width:0;max-width:820px}
         </div>
       </div>
 
-      <section class="block" aria-labelledby="h-tables">
-        <h2 id="h-tables">Tables</h2>
+      <section class="block" aria-labelledby="h-tables"><details class="fold" data-fold="tables"${folds.has('tables') ? ' open' : ''}>
+        <summary><h2 id="h-tables">Tables and room layout</h2><span class="fold-hint">${folds.has('tables') ? 'Hide' : 'Show'}</span></summary>
         <p class="hint">Turn off "In use" for a table you're leaving empty in this class. It disappears from the tools but keeps its points.</p>
         <div class="scroll"><table class="grid-table">
           <thead><tr><th>Color</th><th>Name</th><th>Seats</th><th>Row</th><th>Spot</th><th>In use</th><th><span class="visually-hidden">Remove</span></th></tr></thead>
@@ -242,10 +274,10 @@ main{min-width:0;max-width:820px}
           <button class="btn" data-a="addt">Add a table</button>
           ${list.length > 1 ? '<button class="btn quiet" data-a="copyt">Use these tables in every class</button>' : ''}
         </div>
-      </section>
+      </details></section>
 
-      <section class="block" aria-labelledby="h-roster">
-        <h2 id="h-roster">Roster</h2>
+      <section class="block" aria-labelledby="h-roster"><details class="fold" data-fold="roster"${folds.has('roster') ? ' open' : ''}>
+        <summary><h2 id="h-roster">Roster</h2><span class="fold-hint">${folds.has('roster') ? 'Hide' : 'Show'}</span></summary>
         <p class="hint">Student names stay in this browser (and your backup file). They are never part of the website's files.</p>
         <div class="roster">
           ${c.tables.map(t => group(t, c.students.filter(s => s.tableId === t.id))).join('')}
@@ -263,12 +295,13 @@ main{min-width:0;max-width:820px}
             <button class="btn primary" data-a="adds">Add students</button>
           </div>
         </div>
-      </section>`;
-      history.replaceState(null, '', '#class=' + c.id);
+      </details></section>`;
+      if (tab === 'classes') history.replaceState(null, '', '#class=' + c.id);
     }
     renderBackup();
     renderSchedule();
     renderCountdowns();
+    renderLook();
   }
 
   function renderBackup(){
@@ -492,7 +525,7 @@ main{min-width:0;max-width:820px}
     else if (a === 'shcancel') { proposal = null; render(); }
     else if (a === 'shapply' && proposal) {
       lastSeats = { classId: c.id, seats: Object.fromEntries(c.students.map(s => [s.id, s.tableId])) };
-      c.students.forEach(s => { if (proposal.assign[s.id]) s.tableId = proposal.assign[s.id]; });
+      c.students.forEach(s => { if (proposal.assign[s.id] && proposal.assign[s.id] !== s.tableId) { s.tableId = proposal.assign[s.id]; delete s.seat; } });
       proposal = null; shuffleOpen = false; Suite.saveClasses(list); render(); Suite.toast('New seats saved for ' + c.name);
     }
     else if (a === 'shundo' && lastSeats && lastSeats.classId === c.id) {
@@ -506,6 +539,32 @@ main{min-width:0;max-width:820px}
       Suite.saveClasses(list); render();
     }
     else if (a === 'aprm') { (c.apart || []).splice(+el.dataset.i, 1); Suite.saveClasses(list); render(); }
+  }
+
+
+  /* ---------- appearance ---------- */
+  function renderLook(){
+    const a = Suite.appearance(), t = Suite.THEMES[a.theme] || Suite.THEMES.streamline;
+    const opt = (map, v) => Object.entries(map).map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
+    $('#look-area').innerHTML = `<div class="lookgrid">
+      <label>Suite name<input class="field" data-look="name" value="${esc(a.name)}" placeholder="Classroom Suite"></label>
+      <label>Color theme<select data-look="theme">${Object.entries(Suite.THEMES).map(([k, v]) => `<option value="${k}"${k === a.theme ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
+      <label>Main color<span class="bar"><input type="color" data-look="main" value="${esc(a.main || t.main)}"><button class="btn quiet small" data-a="lookreset" data-id="main"${a.main ? '' : ' hidden'}>Use theme's</button></span></label>
+      <label>Accent color<span class="bar"><input type="color" data-look="accent" value="${esc(a.accent || t.accent)}"><button class="btn quiet small" data-a="lookreset" data-id="accent"${a.accent ? '' : ' hidden'}>Use theme's</button></span></label>
+      <label>Heading font<select data-look="display"><option value="">Theme's (${esc(Suite.DISPLAY_FONTS[t.display])})</option>${opt(Suite.DISPLAY_FONTS, a.display)}</select></label>
+      <label>Text font<select data-look="body"><option value="">Theme's (${esc(Suite.BODY_FONTS[t.body])})</option>${opt(Suite.BODY_FONTS, a.body)}</select></label>
+    </div>
+    <div class="lookpreview"><span class="lp-bar">${esc(Suite.suiteName())}</span><span class="lp-h">Quarter 1, week 4</span><button class="btn primary" tabindex="-1">+1</button><button class="btn" style="background:var(--land);border-color:var(--land);color:var(--on-land)" tabindex="-1">3-point challenge</button></div>
+    <p class="hint">Dark main colors work best, since they're also used for text. Table colors are set separately for each class under Classes.</p>`;
+  }
+  function lookChange(el){
+    const a = Suite.get('appearance', {}), k = el.dataset.look;
+    if (k === 'theme') { a.theme = el.value; delete a.main; delete a.accent; }
+    else if (k === 'name') a.name = el.value.trim();
+    else a[k] = el.value;
+    Suite.set('appearance', a);
+    const f = document.activeElement && document.activeElement.dataset.look; renderLook();   // the menu bar redraws itself when appearance changes
+    if (f) { const n = document.querySelector('[data-look="' + f + '"]'); if (n) n.focus(); }
   }
 
   function save(list){ Suite.saveClasses(list); keepFocus(render); }
@@ -524,6 +583,8 @@ main{min-width:0;max-width:820px}
     }
     const list = Suite.classes(), c = current(list);
 
+    if (a === 'lookreset') { const l = Suite.get('appearance', {}); delete l[id]; Suite.set('appearance', l); renderLook(); return; }
+    if (a === 'tab') { showTab(id); history.replaceState(null, '', id === 'general' ? '#general' : (sel ? '#class=' + sel : '#')); return; }
     if (a === 'pick') { sel = id; render(); }
     else if (a === 'addc') {
       const name = await Suite.dialog({ title: 'New class name', input: 'Period ' + (list.length + 1), ok: 'Add class' });
@@ -584,7 +645,7 @@ main{min-width:0;max-width:820px}
       if (!await Suite.dialog({ title: 'Remove ' + s.name + '?', body: 'They will be removed from ' + c.name + '.', ok: 'Remove', danger: true })) return;
       withClass(k => { k.students = k.students.filter(x => x.id !== id); k.pinned = (k.pinned || []).filter(x => x !== id); k.apart = (k.apart || []).filter(p => !p.includes(id)); });
     }
-    else if (a === 'export') { Suite.exportBackup(); renderBackup(); Suite.toast('Backup downloaded'); }
+    else if (a === 'export') { await Suite.exportBackup(); renderBackup(); Suite.toast('Backup downloaded'); }
     else if (a === 'wipe') {
       if (!await Suite.dialog({ title: 'Erase all data in this browser?', body: 'All classes, tables, rosters, and points will be deleted. Download a backup first if you might want them back.', ok: 'Erase everything', danger: true })) return;
       Suite.clearAll(true); sel = null; render(); Suite.toast('All data erased');
@@ -606,6 +667,7 @@ main{min-width:0;max-width:820px}
   }
   document.addEventListener('change', async e => {
     const el = e.target, c = el.dataset.c, id = el.dataset.id;
+    if (el.dataset.look) return lookChange(el);
     if (el.dataset.cd) return cdChange(el);
     if (el.dataset.s) return scheduleChange(el);
     if (el.id === 'import-file') {
@@ -616,7 +678,7 @@ main{min-width:0;max-width:820px}
       catch (err) { await Suite.dialog({ title: 'Could not restore', body: err.message, alert: true }); return; }
       const when = parsed.exported ? ' from ' + new Date(parsed.exported).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) : '';
       if (!await Suite.dialog({ title: 'Restore this backup' + when + '?', body: 'Everything currently in this browser will be replaced.', ok: 'Restore', danger: true })) return;
-      Suite.restore(parsed.data); sel = null; render(); Suite.toast('Backup restored');
+      Suite.restore(parsed.data); await Suite.restoreFiles(parsed.files); sel = null; render(); Suite.toast('Backup restored');
       return;
     }
     if (!c) return;
@@ -628,7 +690,7 @@ main{min-width:0;max-width:820px}
       else if (c === 'tseats' && t) t.seats = Math.max(1, Math.min(30, parseInt(el.value, 10) || t.seats));
       else if (c === 'topen' && t) t.open = el.checked;
       else if (c === 'tcolor' && t) t.color = el.value;
-      else if (c === 'smove') { const s = k.students.find(x => x.id === id); if (s) s.tableId = el.value; }
+      else if (c === 'smove') { const s = k.students.find(x => x.id === id); if (s) { s.tableId = el.value; delete s.seat; } }
       else if (c === 'pin') { const set = new Set(k.pinned || []); if (el.checked) set.add(id); else set.delete(id); k.pinned = [...set]; }
       else if ((c === 'trow' || c === 'tcol') && t) {
         const lay = Suite.roomLayout(k.tables);
@@ -654,13 +716,31 @@ main{min-width:0;max-width:820px}
   });
   document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.s) scheduleChange(e.target, true); if (e.target.dataset && e.target.dataset.cd === 'label') cdChange(e.target); });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) render(); });
-  // The bell schedule stays folded unless you go to it.
-  const fold = document.getElementById('sched-fold');
-  const syncFold = () => { fold.querySelector('.fold-hint').textContent = fold.open ? 'Hide' : 'Show'; };
-  fold.addEventListener('toggle', syncFold);
-  const openIfSchedule = () => { if (location.hash === '#schedule') { fold.open = true; syncFold(); } };
-  window.addEventListener('hashchange', openIfSchedule); openIfSchedule();
-  document.addEventListener('click', e => { if (e.target.closest('a[href="#schedule"]')) { fold.open = true; syncFold(); } });
+  // Every section starts folded. Open ones stay open while you work (redraws included), for this visit.
+  document.addEventListener('toggle', e => {
+    const d = e.target; if (!d.matches || !d.matches('details.fold')) return;
+    const k = d.dataset.fold; if (k) { if (d.open) folds.add(k); else folds.delete(k); }
+    const h = d.querySelector('.fold-hint'); if (h) h.textContent = d.open ? 'Hide' : 'Show';
+  }, true);
+  function showTab(t){
+    tab = t;
+    document.getElementById('pane-classes').hidden = t !== 'classes';
+    document.getElementById('pane-general').hidden = t !== 'general';
+    document.getElementById('tab-classes').setAttribute('aria-current', String(t === 'classes'));
+    document.getElementById('tab-general').setAttribute('aria-current', String(t === 'general'));
+  }
+  function openSection(id){
+    const sec = document.getElementById(id); if (!sec) return;
+    const d = sec.querySelector('details.fold'); if (d) d.open = true;
+    setTimeout(() => sec.scrollIntoView({ block: 'start' }), 0);
+  }
+  function route(){
+    const h = location.hash.replace('#', '');
+    if (['schedule', 'countdowns', 'backup', 'appearance', 'general'].includes(h)) { showTab('general'); if (h !== 'general') openSection(h); }
+    else showTab('classes');
+  }
+  window.addEventListener('hashchange', route);
+  route();
   Suite.mountNav('settings');
   render();
 })();

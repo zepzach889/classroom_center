@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seating charts · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-01a">
+<script src="shared/core.js?v=2026-10-01a"></script>
+<script>window.PAGE_VERSION = '2026-10-01a';</script>
+<style>
+.wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pills button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:6px 18px;cursor:pointer}
+.pills button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.tooltitle{font-family:var(--serif);font-size:32px}
+.help{font-size:15px;color:var(--ink-2);margin:-4px 0 14px}
+.help b{color:var(--ink)}
+.front{text-align:center;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);border:2px dashed var(--rule);border-radius:12px;padding:6px;margin:0 0 14px}
+.front.bottom{margin:14px 0 0}
+.room{display:grid;gap:18px}
+.tbl{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
+.tbl.off{opacity:.5;border-style:dashed}
+.tbl h2{background:var(--tc);color:var(--tx);font-size:22px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tbl h2 span{font:600 13px var(--sans);opacity:.85}
+.seats{display:grid;gap:6px;padding:10px 12px 12px}
+.surface{grid-column:1 / -1;height:14px;border-radius:999px;background:var(--wash);border:1.5px solid var(--rule)}
+.seat{font:inherit;min-height:48px;border:2px solid var(--rule);border-radius:12px;background:var(--paper);color:var(--ink);font-size:15px;font-weight:600;padding:4px 6px;cursor:pointer;line-height:1.15;overflow-wrap:anywhere}
+.seat.empty{color:var(--ink-2);font-weight:400;font-size:13px;border-style:dashed}
+.seat:hover{border-color:var(--edge)}
+.seat.cap{border-color:var(--land)}
+.seat.cap::after{content:" (captain)";font-weight:400;font-size:12px;color:var(--ink-2)}
+.seat.sel,.chip.sel{outline:3px solid var(--land);outline-offset:2px;border-color:var(--land)}
+.seat.target{border-color:var(--sea);border-style:solid}
+.loose{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:6px}
+.loose:empty{display:none}
+.chip{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--rule);border-radius:999px;background:var(--paper);color:var(--ink);padding:3px 12px;cursor:pointer}
+.tray{margin-top:18px;background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:12px 16px}
+.tray h3{margin-bottom:6px}
+.tray .list{display:flex;flex-wrap:wrap;gap:6px;min-height:38px;align-items:center}
+.tray.drop{border-style:dashed;cursor:pointer}
+.empty-note{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:28px;max-width:640px}
+#exit-proj{display:none}
+body.proj #suite-nav,body.proj .ctl{display:none!important}
+body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
+body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
+body.proj .wrap{max-width:none;padding:20px 28px}
+body.proj .seat{font-size:20px;min-height:60px}
+body.proj .tbl h2{font-size:28px}
+.printhead{display:none}
+@media (max-width:760px){.room{grid-template-columns:1fr!important}.room .tbl{grid-row:auto!important;grid-column:auto!important}}
+@media print{
+  @page{size:landscape;margin:.4in}
+  body{background:#fff}
+  #suite-nav,.ctl,.backup-banner,#exit-proj{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .printhead{display:block;font-family:var(--serif);font-size:26px;margin-bottom:8px}
+  .tbl{break-inside:avoid;border-color:#111}
+  .tbl h2{background:none!important;color:#111!important;border-bottom:2px solid #111}
+  .seat{border-color:#999;background:#fff;color:#111}
+  .seat.sel,.chip.sel{outline:none}
+}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  let proj = Suite.startInProjector, sel = null;   // sel: the student waiting to be placed
+  const UI = Object.assign({ cur: null, front: 'top' }, Suite.get('seating', {}));
+  const saveUI = () => Suite.set('seating', UI);
+  { const m = location.hash.match(/class=([\w-]+)/); if (m) UI.cur = m[1]; }
+
+  const classes = () => Suite.classes();
+  const curClass = list => list.find(c => c.id === UI.cur) || list[0] || null;
+  // Who is in which seat. Students with no seat (or a clashing one) wait beside their table.
+  function seatMap(c, t){
+    const seats = Array(t.seats).fill(null), loose = [];
+    c.students.filter(s => s.tableId === t.id).sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+      if (Number.isInteger(s.seat) && s.seat >= 0 && s.seat < t.seats && !seats[s.seat]) seats[s.seat] = s; else loose.push(s);
+    });
+    return { seats, loose };
+  }
+
+  function render(){
+    document.body.classList.toggle('proj', proj);
+    const list = classes(), c = curClass(list);
+    if (!c) { $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>Seating charts use the tables and rosters from Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`; return; }
+    UI.cur = c.id;
+    const T = Suite.get('tracker', {}) || {}, caps = (T.captains || {})[c.id] || {};
+    const lay = Suite.roomLayout(c.tables);
+    const rowOf = t => UI.front === 'bottom' ? lay.rows - lay.at[t.id].row + 1 : lay.at[t.id].row;
+    const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId)).sort((a, b) => a.name.localeCompare(b.name));
+    const btn = (s, cls) => `<button class="${cls}${sel === s.id ? ' sel' : ''}${caps[s.tableId] === s.name && cls === 'seat' ? ' cap' : ''}" data-a="stu" data-id="${esc(s.id)}">${esc(s.name)}</button>`;
+    const tables = c.tables.map(t => {
+      const m = seatMap(c, t), top = Math.ceil(t.seats / 2);
+      const seatBtn = (s, i) => s ? btn(s, 'seat') : `<button class="seat empty${sel ? ' target' : ''}" data-a="seat" data-t="${esc(t.id)}" data-i="${i}" aria-label="Empty seat ${i + 1} at ${esc(t.name)}">Seat ${i + 1}</button>`;
+      const seatsHtml = m.seats.map((s, i) => (i === top ? '<div class="surface" aria-hidden="true"></div>' : '') + seatBtn(s, i)).join('');
+      return `<div class="tbl${t.open ? '' : ' off'}" style="grid-row:${rowOf(t)};grid-column:${lay.at[t.id].col};--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)}">
+        <h2>${esc(t.name)}<span>${m.seats.filter(Boolean).length + m.loose.length} of ${t.seats}${t.open ? '' : ', not in use'}</span></h2>
+        <div class="seats" style="grid-template-columns:repeat(${Math.max(1, top)},minmax(0,1fr))">${seatsHtml}</div>
+        <div class="loose ctl">${m.loose.map(s => btn(s, 'chip')).join('')}</div>
+      </div>`;
+    }).join('');
+    const front = `<div class="front${UI.front === 'bottom' ? ' bottom' : ''}">Front of the room</div>`;
+    $('#app').innerHTML = `
+      ${list.length > 1 ? `<nav class="pills ctl" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
+      <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} seating chart</div>
+        <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>
+          <button class="btn" data-a="print">Print</button><button class="btn" data-a="proj">Projector view</button></div></div>
+      <p class="help ctl">${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
+        : 'Tap a student, then tap a seat to move them. Tap a student in another seat to trade places. Moving someone to a different table changes their table too.'}</p>
+      <div class="printhead">${esc(c.name)} seating chart</div>
+      ${UI.front === 'top' ? front : ''}
+      <div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${tables}</div>
+      ${UI.front === 'bottom' ? front : ''}
+      <div class="tray ctl${sel ? ' drop' : ''}" data-a="tray"><h3>Not at a table</h3>
+        <div class="list">${unassigned.map(s => btn(s, 'chip')).join('') || `<span class="muted small">${sel ? 'Tap here to take the selected student out of their seat.' : 'Everyone has a table.'}</span>`}</div></div>`;
+  }
+
+  function place(c, sid, tid, seat){
+    const s = c.students.find(x => x.id === sid); if (!s) return;
+    const other = c.students.find(x => x !== s && x.tableId === tid && x.seat === seat);
+    if (other) { other.tableId = s.tableId; if (Number.isInteger(s.seat)) other.seat = s.seat; else delete other.seat; }
+    s.tableId = tid; s.seat = seat;
+  }
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a, list = classes(), c = curClass(list);
+    if (a === 'pick') { UI.cur = el.dataset.id; sel = null; saveUI(); render(); return; }
+    if (a === 'proj') { proj = !proj; sel = null; render(); return; }
+    if (a === 'print') { sel = null; render(); window.print(); return; }
+    if (a === 'flip') { UI.front = UI.front === 'top' ? 'bottom' : 'top'; saveUI(); render(); return; }
+    if (!c) return;
+    if (a === 'stu') {
+      const id = el.dataset.id;
+      if (!sel || sel === id) { sel = sel === id ? null : id; render(); return; }
+      // trade places with another student
+      const A = c.students.find(x => x.id === sel), B = c.students.find(x => x.id === id);
+      const at = { t: A.tableId, s: A.seat }; A.tableId = B.tableId; if (Number.isInteger(B.seat)) A.seat = B.seat; else delete A.seat;
+      B.tableId = at.t; if (Number.isInteger(at.s)) B.seat = at.s; else delete B.seat;
+      sel = null; Suite.saveClasses(list); render(); return;
+    }
+    if (a === 'seat' && sel) { place(c, sel, el.dataset.t, +el.dataset.i); sel = null; Suite.saveClasses(list); render(); return; }
+    if (a === 'tray' && sel && !e.target.closest('[data-a="stu"]')) {
+      const s = c.students.find(x => x.id === sel); if (s) { s.tableId = ''; delete s.seat; }
+      sel = null; Suite.saveClasses(list); render(); return;
+    }
+    if (a === 'fill') {
+      let n = 0;
+      c.tables.forEach(t => { const m = seatMap(c, t); m.loose.forEach(s => { const i = m.seats.indexOf(null); if (i > -1) { m.seats[i] = s; s.seat = i; n++; } }); });
+      Suite.saveClasses(list); render(); Suite.toast(n ? 'Seated ' + n + ' student' + (n === 1 ? '' : 's') : 'Everyone at a table already has a seat');
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || document.querySelector('.suite-dialog') || document.body.classList.contains('timer-open')) return;
+    if (sel) { sel = null; render(); } else if (proj) { proj = false; render(); }
+  });
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) render(); });
+  Suite.mountNav('seating');
+  render();
+})();
+</script>
+</body>
+</html>
