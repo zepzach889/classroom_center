@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-03b">
-<script src="shared/core.js?v=2026-10-03b"></script>
-<script>window.PAGE_VERSION = '2026-10-03b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-03c">
+<script src="shared/core.js?v=2026-10-03c"></script>
+<script>window.PAGE_VERSION = '2026-10-03c';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -45,6 +45,8 @@ body.printing #printarea{width:1100px}
 .loose{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:6px}
 .loose:empty{display:none}
 .chip{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--rule);border-radius:999px;background:var(--paper);color:var(--ink);padding:3px 12px;cursor:pointer}
+.roomsz{display:inline-flex;align-items:center;gap:4px;font-size:14px;color:var(--ink-2);margin-right:6px}
+.roomsz .btn{min-height:0;padding:2px 9px}
 .modes{display:inline-flex;border:2px solid var(--edge);border-radius:999px;overflow:hidden;margin:0 0 12px}
 .modes button{font:inherit;font-size:15px;font-weight:600;border:0;background:var(--sheet);color:var(--ink);padding:7px 18px;cursor:pointer}
 .modes button+button{border-left:2px solid var(--edge)}
@@ -87,7 +89,11 @@ body.proj .seat{font-size:20px;min-height:60px}
 body.proj .tbl h2{font-size:28px}
 .printhead{display:none}
 @media (max-width:760px){.room{grid-template-columns:1fr!important}.room .tbl{grid-row:auto!important;grid-column:auto!important}}
+#seatprint{display:none}
 @media print{
+  body.printing-img > *:not(#seatprint){display:none!important}
+  body.printing-img #seatprint{display:block}
+  body.printing-img #seatprint img{display:block;width:100%;height:auto;max-height:7.6in;object-fit:contain}
   @page{size:landscape;margin:.4in}
   body{background:#fff}
   #suite-nav,.ctl,.backup-banner,#exit-proj{display:none!important}
@@ -136,7 +142,8 @@ body.proj .tbl h2{font-size:28px}
     if (UI.mode === 'room' && !proj) { renderRoom(c, list); return; }
     const T = Suite.get('tracker', {}) || {}, caps = (T.captains || {})[c.id] || {};
     const lay = Suite.roomLayout(c.tables);
-    const rowOf = t => UI.front === 'bottom' ? lay.rows - lay.at[t.id].row + 1 : lay.at[t.id].row;
+    const RS = roomSize(c, lay);
+    const rowOf = t => UI.front === 'bottom' ? RS.rows - lay.at[t.id].row + 1 : lay.at[t.id].row;
     const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId)).sort((a, b) => a.name.localeCompare(b.name));
     const btn = (s, cls) => `<button class="${cls}${sel === s.id ? ' sel' : ''}${caps[s.tableId] === s.name && cls === 'seat' ? ' cap' : ''}" data-a="stu" data-id="${esc(s.id)}">${esc(s.name)}</button>`;
     const tables = c.tables.map(t => {
@@ -161,13 +168,13 @@ body.proj .tbl h2{font-size:28px}
       ${topTabs(list, c)}
       <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} seating chart</div>
         <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="shuffle">Shuffle seats</button>${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="unshuffle">Undo shuffle</button>' : ''}
-          <button class="btn" data-a="print">Print</button><button class="btn" data-a="proj">Projector view</button></div></div>
+          <button class="btn" data-a="print">Print</button><button class="btn quiet" data-a="savepic" title="Save the chart as a picture you can print or share">Save as picture</button><button class="btn" data-a="proj">Projector view</button></div></div>
       ${needSeats(c) ? `<p class="needs ctl"><b>${needSeats(c)} student${needSeats(c) === 1 ? ' needs' : 's need'} a seat.</b> Drag them into place, or press Fill empty seats.</p>` : ''}
       <p class="help ctl">${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
         : 'Drag a name onto a seat to move them, or onto another student to trade places. Moving someone to a different table changes their table too. (You can also tap a name, then tap a seat.)'}</p>
       <div id="printarea"><div class="printhead">${esc(c.name)} seating chart</div>
       ${UI.front === 'top' ? front : ''}
-      <div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${tables}</div>
+      <div class="room" style="grid-template-columns:repeat(${RS.cols},minmax(0,1fr));grid-template-rows:repeat(${RS.rows},auto)">${tables}</div>
       ${UI.front === 'bottom' ? front : ''}</div>
       <div class="tray ctl${sel ? ' drop' : ''}" data-a="tray"><h3>Not at a table</h3>
         <div class="list">${unassigned.map(s => btn(s, 'chip')).join('') || `<span class="muted small">${sel ? 'Tap here to take the selected student out of their seat.' : 'Everyone has a table.'}</span>`}</div></div>`;
@@ -182,10 +189,12 @@ body.proj .tbl h2{font-size:28px}
   const needSeats = c => c.students.length - c.tables.reduce((n, t) => n + seatMap(c, t).seats.filter(Boolean).length, 0);
 
   /* ---------- Edit room: tables, seats, and where they sit ---------- */
+  const roomSize = (c, lay) => ({ cols: Math.max(lay.cols, c.roomCols || 0, 1), rows: Math.max(lay.rows, c.roomRows || 0, 1) });
   const TEAM = () => Suite.word('team'), TEAMS = () => Suite.word('team', { plural: true });
   function arrangeLabel(t){ const o = Suite.seatOptions(t.seats).find(x => x.cols === Suite.seatLayout(t).cols); return o ? o.label : ''; }
   function renderRoom(c, list){
-    const lay = Suite.roomLayout(c.tables), gc = Math.max(3, lay.cols) + 1, gr = lay.rows + 1, at = {};
+    const lay = Suite.roomLayout(c.tables), RS = roomSize(c, lay), set = c.roomCols && c.roomRows;
+    const gc = set ? RS.cols : Math.max(3, lay.cols) + 1, gr = set ? RS.rows : lay.rows + 1, at = {};
     c.tables.forEach(t => { const p = lay.at[t.id]; at[p.row + ',' + p.col] = t; });
     const rowOf = r => UI.front === 'bottom' ? gr - r + 1 : r;
     let cells = '';
@@ -200,7 +209,7 @@ body.proj .tbl h2{font-size:28px}
     const front = `<div class="front${UI.front === 'bottom' ? ' bottom' : ''}">Front of the room</div>`;
     $('#app').innerHTML = `${topTabs(list, c)}
       <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} room</div>
-        <div class="bar"><button class="btn" data-a="tadd">Add a ${esc(TEAM())}</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>${list.length > 1 ? `<button class="btn" data-a="tcopy">Use this room in every class</button>` : ''}</div></div>
+        <div class="bar"><span class="roomsz">Room: ${gc} across, ${gr} deep <button class="btn quiet small" data-a="rsz" data-d="c-" aria-label="Remove a column"${gc <= Math.max(1, lay.cols) ? ' disabled' : ''}>− column</button><button class="btn quiet small" data-a="rsz" data-d="c+" aria-label="Add a column">+ column</button><button class="btn quiet small" data-a="rsz" data-d="r-" aria-label="Remove a row"${gr <= Math.max(1, lay.rows) ? ' disabled' : ''}>− row</button><button class="btn quiet small" data-a="rsz" data-d="r+" aria-label="Add a row">+ row</button></span><button class="btn" data-a="tadd">Add a ${esc(TEAM())}</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>${list.length > 1 ? `<button class="btn" data-a="tcopy">Use this room in every class</button>` : ''}</div></div>
       <p class="help ctl">Drag ${esc(TEAMS())} into the spots that match your room. Press Edit on a ${esc(TEAM())} to rename it, change its color or seats, or turn it off for ${esc(c.name)}.</p>
       ${UI.front === 'top' ? front : ''}<div class="roomgrid" style="grid-template-columns:repeat(${gc},minmax(0,1fr))">${cells}</div>${UI.front === 'bottom' ? front : ''}`;
   }
@@ -345,11 +354,12 @@ body.proj .tbl h2{font-size:28px}
     const list = classes(), c = curClass(list);
     if (!t || !c || t === d.el) { render(); return; }
     if (d.kind === 'tbl') {
+      { const lay0 = Suite.roomLayout(c.tables), set = c.roomCols && c.roomRows; if (!set) { c.roomCols = Math.max(3, lay0.cols) + 1; c.roomRows = lay0.rows + 1; } }
       pinAll(c);
       const T1 = c.tables.find(x => x.id === d.id);
       if (t.dataset.a === 'slot') { const lay = Suite.roomLayout(c.tables), gr = lay.rows + 1, r = +t.dataset.r; T1.row = r; T1.col = +t.dataset.c; }
       else { const T2 = c.tables.find(x => x.id === t.dataset.id); [T1.row, T2.row] = [T2.row, T1.row]; [T1.col, T2.col] = [T2.col, T1.col]; }
-      tidy(c); Suite.saveClasses(list); render(); return;
+      Suite.saveClasses(list); render(); return;
     }
     const A = c.students.find(x => x.id === d.id); if (!A) { render(); return; }
     if (t.dataset.a === 'seat') place(c, A.id, t.dataset.t, +t.dataset.i);
@@ -373,36 +383,67 @@ body.proj .tbl h2{font-size:28px}
     const z = Math.min(1, pageW / area.scrollWidth, pageH / area.scrollHeight);
     area.style.zoom = z.toFixed(3);
   }
-  window.addEventListener('beforeprint', fitForPrint);
+  window.addEventListener('beforeprint', () => { if (!document.body.classList.contains('printing-img')) { const cv = chartCanvas(); if (cv) { let host = document.getElementById('seatprint'); if (!host) { host = document.createElement('div'); host.id = 'seatprint'; document.body.appendChild(host); } host.innerHTML = `<img alt="Seating chart" src="${cv.toDataURL('image/png')}">`; document.body.classList.add('printing-img'); const done = () => { document.body.classList.remove('printing-img'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); } } });
   // The Print button builds a page-sized copy of just the chart, measures it at that size, and scales it to fit one sheet.
-  function printChart(){
-    const area = document.getElementById('printarea'); if (!area) return;
-    const W = Math.round((11 - 0.8) * 96), H = Math.round((8.5 - 0.8) * 96);   // letter, landscape, 0.4in margins
-    const fr = document.createElement('iframe');
-    fr.setAttribute('aria-hidden', 'true');
-    fr.style.cssText = `position:fixed;left:-10000px;top:0;width:${W}px;height:${H}px;border:0;visibility:hidden`;
-    document.body.appendChild(fr);
-    const d = fr.contentDocument;
-    const styles = [...document.querySelectorAll('link[rel="stylesheet"]')].map(l => `<link rel="stylesheet" href="${l.href}">`).join('')
-      + [...document.querySelectorAll('style')].map(x => `<style>${x.textContent}</style>`).join('');
-    d.open();
-    d.write(`<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>Seating chart</title>${styles}
-      <style>@page{size:landscape;margin:.4in}html,body{margin:0;background:#fff}body{width:${W}px}
-      #fit{width:1100px;transform-origin:top left}.printhead{display:block!important;font-family:var(--serif);font-size:26px;margin-bottom:8px}
-      .tbl h2{background:none!important;color:#111!important;border-bottom:2px solid #111}.seat{background:#fff;color:#111;border-color:#999}.seat.sel,.over{outline:none}</style></head>
-      <body><div id="fit">${area.innerHTML}</div></body></html>`);
-    d.close();
-    const go = () => {
-      const fit = d.getElementById('fit');
-      const z = Math.min(1, W / fit.scrollWidth, (H - 4) / fit.scrollHeight);
-      fit.style.transform = `scale(${z.toFixed(4)})`;
-      d.body.style.height = Math.floor(fit.scrollHeight * z) + 'px'; d.body.style.overflow = 'hidden';
-      fr.contentWindow.focus(); fr.contentWindow.print();
-      setTimeout(() => fr.remove(), 1500);
-    };
-    const ready = d.fonts && d.fonts.ready ? Promise.race([d.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();
-    fr.onload = null; setTimeout(() => ready.then(go), 150);
+  function chartCanvas(){
+    const list = classes(), c = curClass(list); if (!c) return null;
+    const T0 = Suite.get('tracker', {}) || {}, caps = (T0.captains || {})[c.id] || {};
+    const W = 3300, H = 2550, M = 150, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    const font = (px, bold) => `${bold ? '700 ' : ''}${px}px Georgia, "Times New Roman", serif`;
+    const fitText = (txt, maxW, maxH, start, bold) => { let px = start; g.font = font(px, bold); while (px > 14 && g.measureText(txt).width > maxW) { px -= 2; g.font = font(px, bold); } if (px > maxH * .8) { px = Math.floor(maxH * .8); g.font = font(px, bold); } return px; };
+    const rrect = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    g.fillStyle = '#111'; g.font = font(78, true); g.textBaseline = 'alphabetic'; g.fillText(c.name + ' seating chart', M, M + 60);
+    const lay = Suite.roomLayout(c.tables), RS = roomSize(c, lay), cols = RS.cols, rows = RS.rows;
+    const frontH = 70, top = M + 110, gap = 50;
+    let gridTop = top, gridBottom = H - M;
+    const drawFront = y => { g.setLineDash([18, 14]); g.strokeStyle = '#888'; g.lineWidth = 4; rrect(M, y, W - 2 * M, frontH, 16); g.stroke(); g.setLineDash([]); g.fillStyle = '#555'; g.font = font(40, true); g.textAlign = 'center'; g.fillText('FRONT OF THE ROOM', W / 2, y + 50); g.textAlign = 'left'; };
+    if (UI.front === 'bottom') { drawFront(H - M - frontH); gridBottom = H - M - frontH - gap; } else { drawFront(top); gridTop = top + frontH + gap; }
+    const cellW = (W - 2 * M - gap * (cols - 1)) / cols, cellH = (gridBottom - gridTop - gap * (rows - 1)) / rows;
+    c.tables.forEach(t => {
+      const p = lay.at[t.id], r = UI.front === 'bottom' ? rows - p.row + 1 : p.row;
+      const x = M + (p.col - 1) * (cellW + gap), y = gridTop + (r - 1) * (cellH + gap);
+      rrect(x, y, cellW, cellH, 26); g.lineWidth = 6; g.strokeStyle = t.open ? '#111' : '#999'; g.setLineDash(t.open ? [] : [20, 14]); g.stroke(); g.setLineDash([]);
+      const headH = Math.min(110, cellH * .16);
+      g.fillStyle = '#111'; const hp = fitText(t.name, cellW * .62, headH, 56, true); g.fillText(t.name, x + 30, y + headH * .5 + hp * .35);
+      const m = seatMap(c, t), count = m.seats.filter(Boolean).length + m.loose.length;
+      g.font = font(34); g.fillStyle = '#555'; g.textAlign = 'right'; g.fillText(t.open ? `${count} of ${t.seats}` : 'not in use', x + cellW - 30, y + headH * .5 + 12); g.textAlign = 'left';
+      g.beginPath(); g.moveTo(x, y + headH); g.lineTo(x + cellW, y + headH); g.lineWidth = 4; g.strokeStyle = '#111'; g.stroke();
+      // seats in the table's arrangement
+      const L = Suite.seatLayout(t), pad = 26, ax = x + pad, ay = y + headH + pad, aw = cellW - 2 * pad, ah = cellH - headH - 2 * pad;
+      const surf = 30, colsN = L.cols, rowsN = L.rows;
+      const sw = (aw - (L.surface === 'v' ? surf + 20 : 0) - (colsN - 1) * 16) / colsN, sh = (ah - (L.surface === 'h' ? surf + 20 : 0) - (rowsN - 1) * 14) / rowsN;
+      if (L.surface === 'v') { g.fillStyle = '#e8e8e8'; rrect(ax + sw + 10 + 8, ay, surf, ah, 12); g.fill(); }
+      if (L.surface === 'h') { g.fillStyle = '#e8e8e8'; rrect(ax, ay + sh + 10 + 7, aw, surf, 12); g.fill(); }
+      m.seats.forEach((st, i) => {
+        const q = L.pos(i); let sx = ax + q.c * (sw + 16), sy = ay + q.r * (sh + 14);
+        if (L.surface === 'v' && q.c >= 1) sx += surf + 20 - 16 + 16;
+        if (L.surface === 'h' && q.r >= 1) sy += surf + 20;
+        rrect(sx, sy, sw, sh, 14); g.lineWidth = 3; g.strokeStyle = st ? '#777' : '#bbb'; g.setLineDash(st ? [] : [10, 8]); g.stroke(); g.setLineDash([]);
+        const label = st ? st.name : 'Seat ' + (i + 1), bold = st && caps[t.id] === st.name;
+        g.fillStyle = st ? '#111' : '#999'; const px = fitText(label, sw - 20, sh, st ? 44 : 30, bold);
+        g.textAlign = 'center'; g.fillText(label, sx + sw / 2, sy + sh / 2 + px * .35); g.textAlign = 'left';
+      });
+    });
+    return cv;
   }
+  function printChart(){
+    const cv = chartCanvas(); if (!cv) return;
+    let host = document.getElementById('seatprint');
+    if (!host) { host = document.createElement('div'); host.id = 'seatprint'; document.body.appendChild(host); }
+    host.innerHTML = `<img alt="Seating chart" src="${cv.toDataURL('image/png')}">`;
+    document.body.classList.add('printing-img');
+    const done = () => { document.body.classList.remove('printing-img'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    const img = host.querySelector('img');
+    (img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; })).then(() => setTimeout(() => window.print(), 60));
+  }
+  function saveChartPicture(){
+    const cv = chartCanvas(); if (!cv) return;
+    const a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = ((curClass(classes()) || {}).name || 'class').replace(/[^\w -]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() + '-seating-chart.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
   window.addEventListener('afterprint', () => { document.body.classList.remove('printing'); const a = document.getElementById('printarea'); if (a) a.style.zoom = ''; });
 
   function place(c, sid, tid, seat){
@@ -418,16 +459,25 @@ body.proj .tbl h2{font-size:28px}
     if (a === 'pick') { UI.cur = el.dataset.id; sel = null; saveUI(); render(); return; }
     if (a === 'proj') { proj = !proj; sel = null; render(); return; }
     if (a === 'print') { sel = null; render(); printChart(); return; }
+    if (a === 'savepic') { saveChartPicture(); return; }
     if (a === 'flip') { UI.front = UI.front === 'top' ? 'bottom' : 'top'; saveUI(); render(); return; }
     if (a === 'mode') { UI.mode = el.dataset.id; sel = null; saveUI(); render(); return; }
     if (c && a === 'shuffle') { openShuffle(c, list); return; }
     if (c && a === 'unshuffle' && lastSeats) { c.students.forEach(s => { const v = lastSeats.seats[s.id]; if (v) { s.tableId = v[0]; if (Number.isInteger(v[1])) s.seat = v[1]; else delete s.seat; } }); lastSeats = null; Suite.saveClasses(list); render(); Suite.toast('Seats put back'); return; }
     if (c && a === 'tadd') { editTable(c, list, null); return; }
+    if (c && a === 'rsz') {
+      const lay0 = Suite.roomLayout(c.tables), set = c.roomCols && c.roomRows;
+      let cols = set ? c.roomCols : Math.max(3, lay0.cols) + 1, rows = set ? c.roomRows : lay0.rows + 1; pinAll(c);
+      const d = el.dataset.d;
+      if (d === 'c+') cols++; else if (d === 'r+') rows++;
+      else if (d === 'c-' && cols > lay0.cols) cols--; else if (d === 'r-' && rows > lay0.rows) rows--;
+      c.roomCols = Math.max(1, cols); c.roomRows = Math.max(1, rows); Suite.saveClasses(list); render(); return;
+    }
     if (c && a === 'tedit') { editTable(c, list, c.tables.find(x => x.id === el.dataset.id)); return; }
     if (c && a === 'tcopy') {
       if (!await Suite.dialog({ title: 'Use this room in every class?', body: 'Every other class gets these ' + TEAMS() + ', seats, colors, and spots. Students stay where their ' + TEAM() + ' still exists; others move to "Not at a table."', ok: 'Copy the room' })) return;
       pinAll(c);
-      list.forEach(o => { if (o === c) return; o.tables = JSON.parse(JSON.stringify(c.tables)); o.students.forEach(s => { const t = o.tables.find(x => x.id === s.tableId); if (!t) { s.tableId = ''; delete s.seat; } else if (Number.isInteger(s.seat) && s.seat >= t.seats) delete s.seat; }); });
+      list.forEach(o => { if (o === c) return; o.tables = JSON.parse(JSON.stringify(c.tables)); o.roomCols = c.roomCols; o.roomRows = c.roomRows; o.students.forEach(s => { const t = o.tables.find(x => x.id === s.tableId); if (!t) { s.tableId = ''; delete s.seat; } else if (Number.isInteger(s.seat) && s.seat >= t.seats) delete s.seat; }); });
       Suite.saveClasses(list); render(); Suite.toast('Room copied to every class'); return;
     }
     if (!c) return;
