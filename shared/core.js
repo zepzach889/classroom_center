@@ -12,6 +12,7 @@
   // Menu: a few everyday links, a Tools menu, and setup under the gear.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
+    { id: 'today', label: 'Today', href: 'today.html' },
     { id: 'tracker', label: 'Table points', href: 'tracker.html', feature: 'points' },
     { id: 'seating', label: 'Seating', href: 'seating.html' },
     { id: 'planner', label: 'Planner', href: 'planner.html' },
@@ -37,7 +38,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-02b';   // bump with every build; pages check they match
+  const VERSION = '2026-10-02d';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);

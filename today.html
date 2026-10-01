@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Nunito:wght@900&family=Schoolbell&family=Sniglet:wght@400;800&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-02d">
+<script src="shared/core.js?v=2026-10-02d"></script>
+<script>window.PAGE_VERSION = '2026-10-02d';</script>
+<style>
+:root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
+html,body{height:100%}
+body{overflow:hidden;display:flex;flex-direction:column}
+.tw{flex:1;min-height:0;display:flex;flex-direction:column}
+/* control rail (suite style) */
+.rail{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 16px;background:var(--paper);border-bottom:2px solid var(--rule)}
+.rail .pills{display:flex;gap:6px;flex-wrap:wrap}
+.rail .pills button{font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:4px 14px;cursor:pointer;white-space:nowrap}
+.rail .pills button[aria-checked="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.rail .status{flex:1;min-width:180px;font-size:14px;color:var(--ink-2);text-align:center}
+.rail .status b{color:var(--ink)}
+.rail .bar .btn{min-height:36px;padding:4px 14px;font-size:14px}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:10px;height:10px;border-radius:50%;border:2px solid var(--edge);display:inline-block;cursor:pointer}
+.steps i.on{background:var(--land);border-color:var(--land)}
+.steps i.lesson{border-radius:3px}
+/* stage */
+.stage-wrap{flex:1;min-height:0;display:grid;place-items:center;padding:10px;background:#0f1720}
+.stage{position:relative;width:min(100%,calc((100vh - var(--navh,70px) - var(--railh,58px) - 20px) * 16 / 9));aspect-ratio:16/9;background:#333 center/cover no-repeat;border-radius:12px;overflow:hidden;container-type:inline-size}
+body.full .stage-wrap{padding:0}
+body.full .stage{width:min(100vw,100vh * 16 / 9);border-radius:0}
+body.full #suite-nav,body.full .rail{display:none}
+.region{position:absolute}
+.region[hidden]{display:none}
+.date{display:grid;place-items:center;text-align:center}
+#dateText{font-family:"EB Garamond",Georgia,serif;font-weight:700;font-size:calc(3.05cqw * var(--fit,1));color:var(--ink-date);text-decoration:underline;text-decoration-thickness:.06em;text-underline-offset:.12em;white-space:nowrap}
+.board{padding:1.2cqw 3cqw 1.4cqw}
+.board-fit{height:100%;overflow:hidden;font-size:calc(2.2cqw * var(--fit,1))}
+.heading{margin:0 0 .25em;text-align:center;font-family:"Schoolbell","Comic Sans MS",cursive;font-weight:400;font-size:2.1em;line-height:1.1;color:var(--ink-green);letter-spacing:.02em}
+.lines{margin:0;padding:0 0 0 1.1em;font-family:"Sniglet","Trebuchet MS",sans-serif;font-weight:800;line-height:1.4;list-style:disc}
+.lines li{margin-bottom:.2em;padding-left:.15em}
+.lines li.lv1{margin-left:1.6em;list-style-type:circle}
+.lines li.lv2{margin-left:3.2em;list-style-type:square}
+.lines li.hide{visibility:hidden}
+.lines .emph{color:var(--ink-red);text-decoration:underline;text-decoration-thickness:.08em}
+.cork{padding:1cqw 1.2cqw}
+.cork-fit{height:100%;overflow:hidden;font-size:calc(1.9cqw * var(--fit,1))}
+.have-out{margin:0 0 .2em;font-family:"Nunito","Arial Rounded MT Bold",sans-serif;font-weight:900;font-size:1.45em;line-height:1.05;color:var(--ink-green);text-transform:uppercase;white-space:nowrap}
+.have-list{margin:0;padding-left:1.1em;font-family:"Nunito","Arial Rounded MT Bold",sans-serif;font-weight:900;line-height:1.35;color:var(--ink-blue);text-transform:uppercase}
+.have-list li{white-space:nowrap}
+.timer{display:grid;place-items:center;border:0;padding:0;cursor:pointer;background:radial-gradient(ellipse at 50% 60%,#1a1712 0%,#07090b 70%)}
+.bulbs{font-family:"Bungee",Impact,sans-serif;font-size:7.4cqw;letter-spacing:.06em;line-height:1;color:#ffd98a;background:radial-gradient(circle at 50% 50%,#fff6d6 0 28%,#ffc85a 34%,rgba(255,200,90,0) 52%) 0 0/.13em .13em;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 .08em rgba(255,196,80,.75)) drop-shadow(0 0 .25em rgba(255,160,40,.35))}
+.timer.done .bulbs{animation:blink .6s steps(2,jump-none) 6}
+@keyframes blink{50%{opacity:.25}}
+/* flag of the week */
+.flagboard{position:absolute;inset:0;background:#e9d9b6 center/cover no-repeat}
+.flagboard.plain{background:radial-gradient(ellipse at 30% 30%,#f3e6c6,#dcc59a 70%,#c9ae7f)}
+.fbox{position:absolute;background:#8fa1a8;border:.45cqw solid #fff;border-radius:1cqw;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.f-title{font-family:"EB Garamond",Georgia,serif;font-weight:700;font-size:3.1cqw;letter-spacing:.02em;padding-bottom:.6cqw;border-bottom:.3cqw solid #fff;width:82%;line-height:1.1}
+.f-sub{font-family:"Courier Prime","Courier New",monospace;font-style:italic;font-weight:700;font-size:2.9cqw;margin-top:.8cqw}
+.f-sub.answer{font-size:3.1cqw;color:#fff8d6}
+.f-prompt{font-family:"Courier Prime","Courier New",monospace;font-style:italic;font-weight:700;font-size:1.75cqw;line-height:1.5;padding:0 2cqw}
+.fimg{position:absolute;background:#fff;border:.45cqw solid #fff;border-radius:.6cqw;display:grid;place-items:center;overflow:hidden}
+.fimg img{max-width:100%;max-height:100%;object-fit:contain}
+.fimg .noimg{font-family:"Courier Prime",monospace;font-size:1.6cqw;color:#8a7d66;padding:2cqw;text-align:center}
+.f-draw{position:absolute;right:3cqw;bottom:3cqw;font:700 1.5cqw var(--sans);background:var(--land);color:var(--on-land);border:0;border-radius:999px;padding:.8cqw 2cqw;cursor:pointer}
+.flagboard .qmark{position:absolute;right:8cqw;top:50%;transform:translateY(-50%);font-family:"EB Garamond",serif;font-size:30cqw;color:rgba(120,90,50,.18);line-height:1}
+/* lesson and overlay */
+.lesson{position:absolute;inset:0;background:#0f1720;z-index:5}
+.lesson iframe{width:100%;height:100%;border:0;display:block}
+.lesson-empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:.6em;padding:0 12cqw;font-size:1.6cqw;color:#f4efe4}
+.lesson-empty .t{font-family:var(--serif);font-size:2.4em;color:var(--land)}
+.overlay{position:fixed;inset:0;z-index:60;background:var(--paper)}
+.overlay iframe{width:100%;height:100%;border:0}
+.overlay .close{position:fixed;top:12px;right:12px;z-index:61}
+/* editing drawer */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);z-index:70;background:var(--sheet);color:var(--ink);border-left:2px solid var(--edge);box-shadow:-12px 0 30px rgba(0,0,0,.2);display:flex;flex-direction:column}
+.drawer[hidden]{display:none}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:2px solid var(--rule)}
+.dhead h2{font-size:22px}
+.dbody{flex:1;overflow:auto;padding:12px 16px 20px}
+.dfoot{display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;border-top:2px solid var(--rule)}
+.daynav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.daynav b{flex:1;text-align:center;font-family:var(--serif);font-weight:400;font-size:19px}
+.scope{background:var(--wash);border-radius:12px;padding:8px 12px;font-size:14px;margin-bottom:10px}
+.scope select{margin-left:6px}
+details.sec{border:1.5px solid var(--rule);border-radius:14px;padding:8px 12px;margin-bottom:10px;background:var(--paper)}
+details.sec>summary{cursor:pointer;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;list-style:none}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary .muted{font-weight:400}
+.lineup{list-style:none;margin:0;padding:0}
+.lineup li{display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px solid var(--rule)}
+.lineup li:first-child{border-top:0}
+.lineup li span{flex:1}
+.lineup .btn{min-height:0;padding:1px 9px;font-size:14px}
+.lrow{display:grid;grid-template-columns:22px 1fr auto auto;gap:6px;align-items:center;margin-top:6px}
+.lrow .sw{width:22px;height:22px;border-radius:50%;border:2px solid var(--edge);cursor:pointer;padding:0}
+.lrow input.field{width:100%;min-width:0}
+.lrow.lv1 input.field{margin-left:22px;width:calc(100% - 22px)}
+.lrow.lv2 input.field{margin-left:44px;width:calc(100% - 44px)}
+.lrow .rv{font-size:12px;display:flex;gap:3px;align-items:center;white-space:nowrap}
+.lrow .x{min-height:0;padding:1px 8px}
+.src{display:flex;gap:12px;font-size:14px;margin:6px 0}
+.src label{display:flex;gap:4px;align-items:center}
+.fromplan{font-size:14px;background:var(--sheet);border:1.5px dashed var(--rule);border-radius:10px;padding:6px 10px;margin-top:6px}
+.fromplan ul{margin:4px 0 0;padding-left:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font:inherit;font-size:14px;border:1.5px solid var(--edge);border-radius:999px;background:var(--sheet);color:var(--ink);padding:3px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.lb{display:block;font-size:14px;font-weight:700;margin:8px 0 3px}
+.dbody .field.wide{width:100%}
+.note{font-size:13px;margin:4px 0 0}
+.note.warn{color:var(--plum);font-weight:600}
+.hintline{font-size:12px;color:var(--ink-2);margin:6px 0 0}
+.lookrow{display:grid;grid-template-columns:1fr 160px;gap:8px;align-items:center;padding:4px 0;border-top:1px solid var(--rule);font-size:15px}
+.lookrow:first-of-type{border-top:0}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="tw">
+  <div class="rail" id="rail"></div>
+  <main class="stage-wrap"><div class="stage" id="stage"></div></main>
+</div>
+<aside class="drawer" id="drawer" hidden aria-label="Edit this day"></aside>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  const clone = x => JSON.parse(JSON.stringify(x));
+
+  /* ---------- backgrounds and where the text goes (measured on 1920x1080) ---------- */
+  const LOOKS = {
+    history:  { name: 'History room', bg: 'backgrounds/history.jpg', date: [630, 70, 680, 75], board: [445, 215, 1030, 500], cork: [1565, 228, 305, 430], timer: [746, 751, 428, 243], coverTimer: true },
+    advisory: { name: 'Advisory room', bg: 'backgrounds/advisory.jpg', date: [495, 70, 960, 72], board: [458, 210, 1020, 490], cork: [1560, 205, 310, 450] },
+    lego:     { name: 'LEGO room', bg: 'backgrounds/lego.jpg', date: [448, 72, 857, 68], board: [470, 222, 845, 473], cork: [1395, 218, 230, 325] }
+  };
+  const BOARDS = {
+    welcome:  { label: 'Welcome', heading: 'WELCOME!' },
+    flag:     { label: 'Flag of the Week', heading: 'FLAG OF THE WEEK' },
+    warmup:   { label: 'Warm-up', heading: 'WARM-UP' },
+    returned: { label: 'Returned work', heading: 'Returned Work' },
+    due:      { label: 'Things that are due', heading: 'THINGS THAT ARE DUE' },
+    agenda:   { label: "Today's agenda", heading: "TODAY'S AGENDA" },
+    custom:   { label: 'Custom board', heading: 'REMINDERS' }
+  };
+  const HISTORY_LINES = [
+    { color: 'red', level: 0, text: 'Please get out your textbooks' },
+    { color: 'blue', level: 0, text: 'Open up your Chromebook and log on to Google Classroom.' },
+    { color: 'blue', level: 0, text: 'Open up the warm-up question and answer before class starts.' },
+    { color: 'green', level: 0, text: 'Check the board next to the screen for your planner info.' }];
+  const COMMON = ['Pen or pencil', 'Binder', 'Textbook', 'Chromebook', 'Planner', 'Notebook', 'Colored pencils', 'Your build'];
+  const INK = { blue: 'var(--ink-blue)', red: 'var(--ink-red)', green: 'var(--ink-green)' }, INK_ORDER = ['blue', 'red', 'green'];
+
+  let T = Object.assign({ mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {} }, Suite.get('today', {}));
+  const save = () => Suite.set('today', T);
+  let viewDate = Suite.dateKey(new Date()), screen = 0, reveal = 0, lesson = false, full = false, editing = false, revealFlag = false;
+  const urls = {};
+  async function fileUrl(id){ if (!id) return null; if (urls[id]) return urls[id]; const r = await Suite.files.get(id); return r && r.blob ? (urls[id] = URL.createObjectURL(r.blob)) : null; }
+
+  /* ---------- classes, courses, and each row's usual setup ---------- */
+  const classes = () => Suite.classes();
+  const rowKeyOf = cid => { const co = Suite.courseOf(cid); return co ? Suite.courseKey(co.id) : cid; };
+  const rowName = cid => { const co = Suite.courseOf(cid); return co ? co.name : (classes().find(c => c.id === cid) || {}).name || ''; };
+  function guessLook(name){ return /advis/i.test(name) ? 'advisory' : /lego/i.test(name) ? 'lego' : 'history'; }
+  function usual(cid){
+    const key = rowKeyOf(cid);
+    if (!T.rows[key]) {
+      const look = guessLook(rowName(cid)), hist = look === 'history';
+      T.rows[key] = {
+        look, deckUrl: '', timer: { on: hist, min: 3, auto: hist },
+        lineup: hist ? ['welcome', 'flag', 'warmup', 'returned', 'due', 'agenda'] : ['welcome', 'agenda'],
+        haveOut: hist ? ['Pen or pencil', 'Binder', 'Textbook', 'Chromebook'] : look === 'lego' ? ['Binder'] : ['Pen or pencil', 'Binder'],
+        boards: {
+          welcome: { heading: BOARDS.welcome.heading, lines: hist ? clone(HISTORY_LINES) : look === 'lego'
+            ? [{ color: 'blue', level: 0, text: 'Please sit in your assigned seat.' }, { color: 'blue', level: 0, text: 'Get your builds from the cabinet.' }, { color: 'red', level: 0, text: 'DO NOT TOUCH THE LEGOS YET!' }]
+            : [{ color: 'blue', level: 0, text: 'Please sit in your assigned seat.' }, { color: 'blue', level: 0, text: 'Please get out the materials listed in the "HAVE OUT" section.' }] },
+          warmup: { heading: BOARDS.warmup.heading, lines: [] },
+          returned: { heading: BOARDS.returned.heading, lines: [] },
+          due: { heading: BOARDS.due.heading, source: 'plan', lines: [] },
+          agenda: { heading: BOARDS.agenda.heading, source: 'plan', lines: [] },
+          custom: { heading: BOARDS.custom.heading, lines: [] }
+        }
+      };
+      save();
+    }
+    return T.rows[key];
+  }
+  // the day's setup for a class: its own (one period), else its course's, else the usual
+  function dayFor(date, cid){
+    const d = T.days[date] || {}, own = d[cid], co = d[rowKeyOf(cid)];
+    const u = usual(cid), rec = own || co;
+    return rec ? Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' }, rec) : { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' };
+  }
+  let scope = 'course';   // edit for the course, or just this period
+  function editable(date, cid){
+    const key = scope === 'period' ? cid : rowKeyOf(cid);
+    T.days[date] = T.days[date] || {};
+    if (!T.days[date][key]) { const cur = dayFor(date, cid); T.days[date][key] = clone({ lineup: cur.lineup, haveOut: cur.haveOut, boards: cur.boards, slideLink: cur.slideLink || '' }); }
+    return T.days[date][key];
+  }
+
+  /* ---------- which class is on screen ---------- */
+  function autoPick(){
+    const now = new Date(), day = Suite.scheduleFor(now), P = day.periods, st = Suite.periodStatus(P, now), list = classes();
+    const real = i => { for (let k = i; k >= 0 && k < P.length; k++) if (!Suite.isPassing(P[k]) && !P[k].isBreak) return P[k]; return null; };
+    const cur = st.cur >= 0 && !Suite.isPassing(P[st.cur]) && !P[st.cur].isBreak ? P[st.cur] : null;
+    const p = cur || (st.next >= 0 ? real(st.next) : null) || (st.cur >= 0 ? real(st.cur + 1) : null);
+    const c = p ? Suite.classForPeriod(p, list) : null;
+    const same = c && c.name.trim().toLowerCase() === (p ? p.name : '').trim().toLowerCase();
+    if (c) return { cid: c.id, text: cur ? `${same ? '' : p.name + ' '}until ${Suite.fmt12(p.end)}` : `up next${same ? '' : ': ' + p.name} at ${Suite.fmt12(p.start)}`, period: p };
+    return { cid: (list[0] || {}).id, text: 'No class right now', period: null };
+  }
+  const activeId = () => T.mode === 'auto' ? autoPick().cid : T.mode;
+
+  /* ---------- which boards show, and their content ---------- */
+  const weekKey = date => { const [y, m, d] = date.split('-').map(Number), x = new Date(y, m - 1, d, 12); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return Suite.dateKey(x); };
+  const flagFor = date => T.flags[weekKey(date)] || null;
+  const isRevealDay = date => { const f = flagFor(date); if (!f) return false; const [y, m, d] = date.split('-').map(Number); return new Date(y, m - 1, d).getDay() === (f.revealDay || 5); };
+  function boardLines(date, cid, type, rec){
+    const b = (rec.boards || {})[type] || {};
+    if ((type === 'due' || type === 'agenda') && b.source !== 'custom') {
+      const plan = Suite.agendaFor(date, cid) || {};
+      if (type === 'agenda') return (plan.items || []).map(t => ({ text: t, color: 'blue', level: 0 }));
+      return plan.homework ? plan.homework.split('\n').filter(x => x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })) : [];
+    }
+    return (b.lines || []).filter(l => (l.text || '').trim());
+  }
+  function screens(date, cid){
+    const rec = dayFor(date, cid);
+    return rec.lineup.filter(t => t === 'flag' ? !!flagFor(date) : t === 'welcome' || boardLines(date, cid, t, rec).length);
+  }
+  const hiddenCount = (date, cid, type) => type === 'warmup' ? boardLines(date, cid, type, dayFor(date, cid)).filter(l => l.reveal).length : type === 'flag' && isRevealDay(date) ? 1 : 0;
+
+  /* ---------- drawing ---------- */
+  const place = box => box ? `left:${box[0] / 19.2}%;top:${box[1] / 10.8}%;width:${box[2] / 19.2}%;height:${box[3] / 10.8}%` : 'display:none';
+  const lineHtml = (l, hidden) => `<li class="lv${Math.min(2, l.level || 0)}${hidden ? ' hide' : ''}" style="color:${INK[l.color] || INK.blue}">${esc(l.text).replace(/\*([^*]+)\*/g, '<span class="emph">$1</span>')}</li>`;
+  const ordinal = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+  const longDate = k => { const [y, m, d] = k.split('-').map(Number), x = new Date(y, m - 1, d); return `${x.toLocaleDateString('en-US', { weekday: 'long' })}, ${x.toLocaleDateString('en-US', { month: 'long' })} ${ordinal(d)}, ${y}`; };
+  function lookOf(cid){ const u = usual(cid); return T.custom[u.look] ? Object.assign({}, LOOKS[T.custom[u.look].base] || LOOKS.history, { custom: T.custom[u.look] }) : LOOKS[u.look] || LOOKS.history; }
+
+  async function render(){
+    document.body.classList.toggle('full', full);
+    const cid = activeId(), list = classes();
+    if (!cid) { $('#stage').innerHTML = '<div class="lesson"><div class="lesson-empty"><p class="t">Add your classes first</p><p>Today uses your classes and bell schedule.</p></div></div>'; renderRail(null); return; }
+    const S = screens(viewDate, cid), rec = dayFor(viewDate, cid), u = usual(cid), L = lookOf(cid);
+    if (screen >= S.length) screen = Math.max(0, S.length - 1);
+    const type = S[screen] || 'welcome';
+    let html = '';
+    if (lesson) html = lessonHtml(cid, rec);
+    else if (type === 'flag') html = await flagHtml();
+    else {
+      const lines = boardLines(viewDate, cid, type, rec), b = (rec.boards || {})[type] || {};
+      let shown = 0;
+      const items = lines.map(l => { const hid = l.reveal && type === 'warmup' ? (shown++ >= reveal) : false; return lineHtml(l, hid); }).join('');
+      html = `<div class="region date" style="${place(L.date)}"><span id="dateText">${esc(longDate(viewDate))}</span></div>
+        <div class="region board" style="${place(L.board)}"><div class="board-fit" id="boardFit"><h1 class="heading">${esc(b.heading || BOARDS[type].heading)}</h1><ul class="lines">${items}</ul></div></div>
+        <div class="region cork" style="${place(L.cork)}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list">${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></div>
+        ${L.timer && (u.timer.on || L.coverTimer) ? `<button class="region timer" id="rTimer" style="${place(L.timer)}" aria-label="Warm-up timer. Click to start or pause."><span class="bulbs" id="timerText">${timerText()}</span></button>` : ''}`;
+    }
+    const st = $('#stage');
+    st.innerHTML = html;
+    st.style.backgroundImage = lesson || type === 'flag' ? 'none' : `url("${L.custom ? (await fileUrl(L.custom.fileId)) || L.bg : L.bg}")`;
+    renderRail(cid, S);
+    requestAnimationFrame(fitAll);
+  }
+  function fitAll(){ ['#dateText', '#boardFit', '#corkFit'].forEach(sel => { const el = document.querySelector(sel); if (!el) return; el.style.setProperty('--fit', 1); let f = 1; const box = sel === '#dateText' ? el.parentElement : el;
+    while ((box.scrollHeight > box.clientHeight + 1 || box.scrollWidth > box.clientWidth + 1) && f > .45) { f -= .04; el.style.setProperty('--fit', f.toFixed(2)); } }); }
+  async function flagHtml(){
+    const f = flagFor(viewDate) || {}, img = await fileUrl(f.fileId), bg = await fileUrl(T.flagBg), friday = isRevealDay(viewDate), shown = friday && reveal > 0;
+    return `<div class="flagboard${bg ? '' : ' plain'}" style="${bg ? `background-image:url('${bg}')` : ''}">
+      ${bg ? '' : '<div class="qmark" aria-hidden="true">?</div>'}
+      <div class="fbox" style="${place([200, 85, 950, 235])}"><div class="f-title">FLAG OF THE WEEK</div><div class="f-sub${shown ? ' answer' : ''}">${shown ? esc(f.answer ? "It's " + f.answer + '!' : 'The answer') : friday ? 'Last day to guess!' : 'Guess TODAY'}</div></div>
+      <div class="fimg" style="${place([195, 368, 965, 590])}">${img ? `<img src="${img}" alt="Flag of the week">` : '<div class="noimg">Add this week\'s flag in Edit day, under Flag of the Week.</div>'}</div>
+      <div class="fbox" style="${place([200, 998, 950, 130])}"><div class="f-prompt">${esc(shown ? 'Did you guess right? Time for the drawing!' : f.prompt || 'Submit your guess using the form on Google Classroom.')}</div></div>
+      ${shown ? '<button class="f-draw" data-a="drawing">Start the drawing</button>' : ''}
+    </div>`;
+  }
+  /* ---------- lesson deck ---------- */
+  const publishedId = url => ((url || '').match(/\/presentation\/d\/e\/([\w-]+)/) || [])[1] || null;
+  const docId = url => ((url || '').match(/\/presentation\/d\/(?!e\/)([\w-]+)/) || [])[1] || null;
+  const slideParam = url => ((url || '').match(/slide=(id\.[\w-]+)/) || [])[1] || null;
+  function lessonHtml(cid, rec){
+    const u = usual(cid), pid = publishedId(u.deckUrl), slide = slideParam(rec.slideLink);
+    if (!pid) return `<div class="lesson"><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Open <b>Edit day</b> and paste this class's published deck link under Lesson slides.</p></div></div>`;
+    return `<div class="lesson"><iframe title="Lesson slides" allowfullscreen src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
+  }
+  function openInSlides(cid){
+    const rec = dayFor(viewDate, cid), u = usual(cid), id = docId(rec.slideLink) || docId(u.deckUrl), slide = slideParam(rec.slideLink);
+    if (id) window.open(`https://docs.google.com/presentation/d/${id}/present${slide ? '?slide=' + slide : ''}`, '_blank');
+    else if (publishedId(u.deckUrl)) window.open(u.deckUrl, '_blank');
+    else Suite.toast('Add a slide link in Edit day first');
+  }
+
+  /* ---------- the warm-up timer ---------- */
+  const timer = { left: 0, end: 0, running: false, cid: null, done: false };
+  function resetTimer(cid){ const u = usual(cid || activeId()); timer.running = false; timer.done = false; timer.cid = cid || activeId(); timer.left = (u.timer.min || 3) * 60000; }
+  function toggleTimer(){
+    if (timer.running) { timer.left = Math.max(0, timer.end - Date.now()); timer.running = false; }
+    else { if (timer.left <= 0) resetTimer(); timer.end = Date.now() + timer.left; timer.running = true; timer.done = false; }
+    drawTimer(); renderRail(activeId());
+  }
+  const timerText = () => { const ms = timer.running ? Math.max(0, timer.end - Date.now()) : timer.left, s = Math.ceil(ms / 1000); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+  function drawTimer(){
+    if (timer.running && Date.now() >= timer.end) { timer.running = false; timer.left = 0; timer.done = true; renderRail(activeId()); }
+    const el = $('#timerText'), b = $('#rTimer'); if (el) el.textContent = timerText();
+    if (b) { b.classList.toggle('done', timer.done); }
+  }
+  let lastAuto = '', lastCid = null;
+  setInterval(() => {
+    drawTimer();
+    if (T.mode !== 'auto') return;
+    const pick = autoPick();
+    if (pick.cid !== lastCid) { lastCid = pick.cid; if (!timer.running) resetTimer(pick.cid); screen = 0; reveal = 0; lesson = false; render(); }
+    const p = pick.period, now = new Date(), nowHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    if (p && p.start === nowHM && viewDate === Suite.dateKey(now)) {
+      const key = Suite.dateKey(now) + p.start, u = usual(pick.cid);
+      if (key !== lastAuto && u.timer.on && u.timer.auto && lookOf(pick.cid).timer) { lastAuto = key; resetTimer(pick.cid); toggleTimer(); screen = 0; lesson = false; render(); }
+    }
+  }, 250);
+
+  /* ---------- moving through the boards ---------- */
+  function next(){
+    const cid = activeId(), S = screens(viewDate, cid);
+    if (lesson) return;
+    const type = S[screen], h = hiddenCount(viewDate, cid, type);
+    if (reveal < h) { reveal++; render(); return; }
+    if (screen < S.length - 1) { screen++; reveal = 0; render(); return; }
+    lesson = true; render();
+  }
+  function prev(){
+    const cid = activeId(), S = screens(viewDate, cid);
+    if (lesson) { lesson = false; screen = S.length - 1; reveal = hiddenCount(viewDate, cid, S[screen]); render(); return; }
+    if (reveal > 0) { reveal--; render(); return; }
+    if (screen > 0) { screen--; reveal = hiddenCount(viewDate, cid, S[screen]); render(); }
+  }
+
+  /* ---------- control rail ---------- */
+  function renderRail(cid, S){
+    S = S || (cid ? screens(viewDate, cid) : []);
+    const list = classes(), today = Suite.dateKey(new Date()), auto = T.mode === 'auto' ? autoPick() : null;
+    const seen = new Set(), picks = list.filter(c => { const k = rowKeyOf(c.id); if (seen.has(k + c.id)) return false; seen.add(k + c.id); return true; });
+    const u = cid ? usual(cid) : null, L = cid ? lookOf(cid) : null;
+    $('#rail').innerHTML = `<div class="pills" role="radiogroup" aria-label="Which class to show">
+        <button role="radio" data-a="mode" data-id="auto" aria-checked="${T.mode === 'auto'}" title="Follow the bell schedule">Auto</button>
+        ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${T.mode === c.id}">${esc(c.name)}</button>`).join('')}</div>
+      <div class="status">${cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
+      <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(BOARDS[t].label)}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
+      <div class="bar">
+        <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
+        ${!lesson && S[screen] !== 'flag' && L && L.timer && u.timer.on ? `<button class="btn" data-a="timer" title="T to start or pause, R to reset">${timer.running ? 'Pause timer' : timer.left <= 0 ? 'Restart timer' : 'Start timer'}</button>` : ''}
+        ${lesson ? '<button class="btn" data-a="boards">Back to boards</button><button class="btn" data-a="openslides" title="If the deck won\'t show here, open it in Google Slides">Open in Slides</button>' : '<button class="btn" data-a="lesson" title="L">Lesson</button>'}
+        <button class="btn" data-a="edit" title="E">Edit day</button><button class="btn" data-a="full" title="F">Full screen</button></div>`;
+    document.documentElement.style.setProperty('--railh', $('#rail').offsetHeight + 'px');
+  }
+
+  /* ---------- the editing drawer ---------- */
+  const isSchool = k => { const [y, m, d] = k.split('-').map(Number); return Suite.scheduleFor(new Date(y, m - 1, d, 12)).periods.length > 0; };
+  const shiftDay = (k, dir) => { const [y, m, d] = k.split('-').map(Number), x = new Date(y, m - 1, d, 12); for (let i = 0; i < 30; i++) { x.setDate(x.getDate() + dir); if (isSchool(Suite.dateKey(x))) break; } return Suite.dateKey(x); };
+  function lineEditor(type, lines, canReveal){
+    return `${lines.map((l, i) => `<div class="lrow lv${l.level || 0}" data-type="${type}" data-i="${i}">
+        <button class="sw" data-d="color" style="background:${INK[l.color] || INK.blue}" aria-label="Color: ${l.color || 'blue'}. Click to change."></button>
+        <input class="field" data-d="text" value="${esc(l.text || '')}" aria-label="Line ${i + 1}" placeholder="Type a line. Tab makes it a sub-point.">
+        ${canReveal ? `<label class="rv" title="Stays hidden until you click Next"><input type="checkbox" data-d="reveal"${l.reveal ? ' checked' : ''}> on click</label>` : '<span></span>'}
+        <button class="btn quiet x" data-d="rm" aria-label="Remove line">×</button></div>`).join('')}
+      <div class="bar" style="margin-top:6px"><button class="btn small" data-d="add" data-type="${type}">Add a line</button></div>`;
+  }
+  function renderDrawer(){
+    const cid = activeId(); if (!cid) return;
+    const rec = dayFor(viewDate, cid), u = usual(cid), co = Suite.courseOf(cid), c = classes().find(x => x.id === cid);
+    const ownExists = !!((T.days[viewDate] || {})[cid]);
+    if (!co) scope = 'course';
+    const plan = Suite.agendaFor(viewDate, cid) || {};
+    const f = flagFor(viewDate) || {};
+    const boardSec = type => {
+      if (type === 'flag') return '';
+      const b = (rec.boards || {})[type] || { heading: BOARDS[type].heading, lines: [] }, planBoard = type === 'due' || type === 'agenda';
+      const planLines = type === 'agenda' ? (plan.items || []) : (plan.homework ? plan.homework.split('\n').filter(Boolean) : []);
+      return `<details class="sec"${type === 'welcome' || type === 'warmup' ? ' open' : ''}><summary>${esc(BOARDS[type].label)} <span class="muted small">${planBoard && b.source !== 'custom' ? 'from your plan' : (b.lines || []).filter(l => l.text).length + ' lines'}</span></summary>
+        <label class="lb">Heading<input class="field wide" data-h="${type}" value="${esc(b.heading || BOARDS[type].heading)}"></label>
+        ${planBoard ? `<div class="src"><label><input type="radio" name="src-${type}" data-src="${type}" value="plan"${b.source !== 'custom' ? ' checked' : ''}> From my plan</label><label><input type="radio" name="src-${type}" data-src="${type}" value="custom"${b.source === 'custom' ? ' checked' : ''}> Write for students</label></div>` : ''}
+        ${planBoard && b.source !== 'custom' ? `<div class="fromplan">${planLines.length ? `<ul>${planLines.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<span class="muted">Nothing in the Planner for this day yet. ${type === 'agenda' ? 'Agenda steps' : 'Homework'} you add there shows here.</span>`}<div class="hintline"><a href="planner.html#date=${viewDate}&class=${encodeURIComponent(cid)}">Open the Planner</a></div></div>`
+          : lineEditor(type, b.lines || [], type === 'warmup')}
+      </details>`;
+    };
+    $('#drawer').innerHTML = `<div class="dhead"><h2>Edit ${esc(rowName(cid))}</h2><button class="btn quiet" data-d="close" aria-label="Close">×</button></div>
+      <div class="dbody">
+        <div class="daynav"><button class="btn small" data-d="day" data-dir="-1" aria-label="Previous school day">‹</button><b>${esc(longDate(viewDate))}</b><button class="btn small" data-d="day" data-dir="1" aria-label="Next school day">›</button>${viewDate !== Suite.dateKey(new Date()) ? '<button class="btn quiet small" data-d="today">Today</button>' : ''}</div>
+        ${co ? `<div class="scope">Changes apply to <select data-d="scope"><option value="course"${scope === 'course' ? ' selected' : ''}>all of ${esc(co.name)}</option><option value="period"${scope === 'period' ? ' selected' : ''}>${esc(c.name)} only</option></select>${ownExists ? `<div class="hintline">${esc(c.name)} has its own setup this day. <a href="#" data-d="unown">Use the course setup again</a></div>` : ''}</div>` : ''}
+        <details class="sec" open><summary>Boards and order <span class="muted small">${rec.lineup.length} boards</span></summary>
+          <ul class="lineup">${Object.keys(BOARDS).map(t => ({ t, on: rec.lineup.includes(t) })).sort((a, b) => (a.on ? rec.lineup.indexOf(a.t) : 99) - (b.on ? rec.lineup.indexOf(b.t) : 99)).map(({ t, on }) => `<li>
+            <input type="checkbox" data-d="lineup" data-t="${t}"${on ? ' checked' : ''} aria-label="Show ${esc(BOARDS[t].label)}"><span>${esc(BOARDS[t].label)}</span>
+            ${on ? `<button class="btn quiet" data-d="up" data-t="${t}" aria-label="Move up">↑</button><button class="btn quiet" data-d="down" data-t="${t}" aria-label="Move down">↓</button>` : ''}</li>`).join('')}</ul>
+          <p class="hintline">Boards with nothing on them are skipped. Flag of the Week shows on the weeks you add a flag.</p></details>
+        ${rec.lineup.map(boardSec).join('')}
+        <details class="sec"><summary>Have out <span class="muted small">${(rec.haveOut || []).length} items</span></summary>
+          <div class="chips">${[...new Set(COMMON.concat(rec.haveOut || []))].map(x => `<button class="chip" data-d="have" data-v="${esc(x)}" aria-pressed="${(rec.haveOut || []).includes(x)}">${esc(x)}</button>`).join('')}</div>
+          <div class="bar" style="margin-top:8px"><input class="field" id="haveNew" placeholder="Add another item"><button class="btn small" data-d="haveadd">Add</button></div></details>
+        <details class="sec"><summary>Flag of the Week <span class="muted small">${f.fileId ? 'this week: ' + esc(f.answer || 'set') : 'not set this week'}</span></summary>
+          <p class="hintline" style="margin-top:0">One flag for the whole week, shown in every class that has the Flag board. On the reveal day, Next shows the answer, then you can start the spinner drawing.</p>
+          <div class="bar" style="margin-top:6px"><label class="btn small">${f.fileId ? 'Change the flag picture' : 'Add the flag picture'}<input type="file" accept="image/*" data-d="flagimg" hidden></label>${f.fileId ? '<button class="btn quiet danger small" data-d="flagclear">Remove this week\'s flag</button>' : ''}</div>
+          <label class="lb">Answer<input class="field wide" data-d="flagans" value="${esc(f.answer || '')}" placeholder="South Korea"></label>
+          <label class="lb">Instructions<input class="field wide" data-d="flagprompt" value="${esc(f.prompt || 'Submit your guess using the form on Google Classroom.')}"></label>
+          <label class="lb">Reveal day<select data-d="flagday">${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((n, i) => `<option value="${i + 1}"${(f.revealDay || 5) === i + 1 ? ' selected' : ''}>${n}</option>`).join('')}</select></label></details>
+        <details class="sec"><summary>Lesson slides</summary>
+          <label class="lb">Published deck link <span class="muted small">(set once for ${esc(rowName(cid))})</span><input class="field wide" data-d="deck" value="${esc(u.deckUrl || '')}" placeholder="From File, Share, Publish to the web"></label>
+          <label class="lb">This day's first lesson slide <span class="muted small">(click the slide in Google Slides, then copy the address bar)</span><input class="field wide" data-d="slide" value="${esc(rec.slideLink || '')}" placeholder="https://docs.google.com/presentation/d/…#slide=id.…"></label>
+          <p class="note${u.deckUrl && !publishedId(u.deckUrl) ? ' warn' : ''}">${u.deckUrl && !publishedId(u.deckUrl) ? 'That looks like an editing link. Use the link from Publish to the web so it can show here; "Open in Slides" still works.' : 'If your district limits published decks, use Open in Slides during the lesson instead.'}</p></details>
+        <details class="sec"><summary>Background and timer</summary>
+          <label class="lb">Background<select data-d="look">${Object.entries(LOOKS).map(([k, v]) => `<option value="${k}"${u.look === k ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}${Object.entries(T.custom).map(([k, v]) => `<option value="${k}"${u.look === k ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
+          <div class="bar" style="margin-top:6px"><label class="btn small">Upload a background<input type="file" accept="image/*" data-d="lookup" hidden></label><span class="muted small">Uses the text spots of the background chosen above.</span></div>
+          <div class="bar" style="margin-top:10px"><label class="rv"><input type="checkbox" data-d="ton"${u.timer.on ? ' checked' : ''}> Warm-up timer</label><input class="field num" type="number" min="1" max="30" data-d="tmin" value="${u.timer.min}" style="width:70px"> minutes</div>
+          <label class="rv" style="margin-top:6px;display:flex;gap:6px"><input type="checkbox" data-d="tauto"${u.timer.auto ? ' checked' : ''}> Start automatically when the bell rings</label>
+          <div class="bar" style="margin-top:10px"><label class="btn small">Flag of the Week background<input type="file" accept="image/*" data-d="flagbg" hidden></label>${T.flagBg ? '<button class="btn quiet small" data-d="flagbgclear">Use the plain one</button>' : ''}</div></details>
+        <p class="hintline">Lines: press <b>Tab</b> to make a sub-point and <b>Shift+Tab</b> to undo it; <b>Enter</b> adds a line. Put *asterisks* around words to underline them in red.</p>
+      </div>
+      <div class="dfoot"><button class="btn small" data-d="copyprev">Copy the previous day</button><button class="btn small" data-d="saveusual">Save as the usual setup</button><button class="btn quiet small" data-d="reset">Reset day to usual</button></div>`;
+  }
+  const commit = (redrawer) => { save(); render(); if (redrawer) { const top = $('.dbody') ? $('.dbody').scrollTop : 0, open = [...document.querySelectorAll('details.sec')].map(d => d.open); renderDrawer(); const b = $('.dbody'); if (b) b.scrollTop = top; document.querySelectorAll('details.sec').forEach((d, i) => { if (open[i] != null) d.open = open[i]; }); } };
+  function boardRec(type){ const r = editable(viewDate, activeId()); r.boards = r.boards || {}; r.boards[type] = r.boards[type] || { heading: BOARDS[type].heading, lines: [] }; r.boards[type].lines = r.boards[type].lines || []; return r.boards[type]; }
+
+  $('#drawer').addEventListener('click', async e => {
+    const el = e.target.closest('[data-d]'); if (!el) return;
+    const d = el.dataset.d, cid = activeId(), row = el.closest('.lrow');
+    if (d === 'close') { editing = false; $('#drawer').hidden = true; return; }
+    if (d === 'day') { viewDate = shiftDay(viewDate, +el.dataset.dir); screen = 0; reveal = 0; render(); renderDrawer(); return; }
+    if (d === 'today') { viewDate = Suite.dateKey(new Date()); render(); renderDrawer(); return; }
+    if (d === 'unown') { e.preventDefault(); delete T.days[viewDate][cid]; scope = 'course'; commit(true); return; }
+    if (d === 'up' || d === 'down') { const r = editable(viewDate, cid), i = r.lineup.indexOf(el.dataset.t), j = i + (d === 'up' ? -1 : 1); if (j >= 0 && j < r.lineup.length) [r.lineup[i], r.lineup[j]] = [r.lineup[j], r.lineup[i]]; commit(true); return; }
+    if (d === 'add') { const b = boardRec(el.dataset.type); b.lines.push({ text: '', color: 'blue', level: 0 }); commit(true); const inp = [...document.querySelectorAll(`.lrow[data-type="${el.dataset.type}"] input[data-d="text"]`)].pop(); if (inp) inp.focus(); return; }
+    if (row && d === 'color') { const b = boardRec(row.dataset.type), l = b.lines[+row.dataset.i]; l.color = INK_ORDER[(INK_ORDER.indexOf(l.color || 'blue') + 1) % 3]; commit(true); return; }
+    if (row && d === 'rm') { boardRec(row.dataset.type).lines.splice(+row.dataset.i, 1); commit(true); return; }
+    if (d === 'have') { const r = editable(viewDate, cid), v = el.dataset.v, i = r.haveOut.indexOf(v); if (i > -1) r.haveOut.splice(i, 1); else r.haveOut.push(v); commit(true); return; }
+    if (d === 'haveadd') { const v = $('#haveNew').value.trim(); if (!v) return; const r = editable(viewDate, cid); if (!r.haveOut.includes(v)) r.haveOut.push(v); commit(true); return; }
+    if (d === 'flagclear') { delete T.flags[weekKey(viewDate)]; commit(true); return; }
+    if (d === 'flagbgclear') { T.flagBg = null; commit(true); return; }
+    if (d === 'copyprev') {
+      const prevDay = shiftDay(viewDate, -1), p = dayFor(prevDay, cid), r = editable(viewDate, cid);
+      Object.assign(r, clone({ lineup: p.lineup, haveOut: p.haveOut, boards: p.boards })); commit(true); Suite.toast('Copied from ' + longDate(prevDay)); return;
+    }
+    if (d === 'saveusual') { const cur = dayFor(viewDate, cid), u = usual(cid); Object.assign(u, clone({ lineup: cur.lineup, haveOut: cur.haveOut, boards: cur.boards })); commit(true); Suite.toast('Saved as the usual setup for ' + rowName(cid)); return; }
+    if (d === 'reset') { const day = T.days[viewDate] || {}; delete day[scope === 'period' ? cid : rowKeyOf(cid)]; commit(true); Suite.toast('This day is back to the usual setup'); return; }
+  });
+  $('#drawer').addEventListener('input', e => {
+    const el = e.target, row = el.closest('.lrow'), cid = activeId();
+    if (row && el.dataset.d === 'text') { boardRec(row.dataset.type).lines[+row.dataset.i].text = el.value; commit(false); return; }
+    if (el.dataset.h) { boardRec(el.dataset.h).heading = el.value; commit(false); return; }
+    if (el.dataset.d === 'slide') { editable(viewDate, cid).slideLink = el.value.trim(); commit(false); return; }
+    if (el.dataset.d === 'deck') { usual(cid).deckUrl = el.value.trim(); commit(false); return; }
+    if (el.dataset.d === 'flagans' || el.dataset.d === 'flagprompt') { const f = T.flags[weekKey(viewDate)] = T.flags[weekKey(viewDate)] || { revealDay: 5 }; f[el.dataset.d === 'flagans' ? 'answer' : 'prompt'] = el.value; commit(false); return; }
+  });
+  $('#drawer').addEventListener('change', async e => {
+    const el = e.target, row = el.closest('.lrow'), cid = activeId(), d = el.dataset.d;
+    if (d === 'scope') { scope = el.value; renderDrawer(); return; }
+    if (d === 'lineup') { const r = editable(viewDate, cid), t = el.dataset.t; if (el.checked) { if (!r.lineup.includes(t)) r.lineup.push(t); } else r.lineup = r.lineup.filter(x => x !== t); commit(true); return; }
+    if (row && d === 'reveal') { boardRec(row.dataset.type).lines[+row.dataset.i].reveal = el.checked; commit(false); return; }
+    if (el.dataset.src) { const b = boardRec(el.dataset.src); b.source = el.value;
+      if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
+      commit(true); return; }
+    if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (d === 'ton' || d === 'tauto') { usual(cid).timer[d === 'ton' ? 'on' : 'auto'] = el.checked; if (d === 'ton') resetTimer(cid); commit(true); return; }
+    if (d === 'tmin') { usual(cid).timer.min = Math.max(1, Math.min(30, parseInt(el.value, 10) || 3)); if (!timer.running) resetTimer(cid); commit(false); return; }
+    if (d === 'flagday') { const f = T.flags[weekKey(viewDate)] = T.flags[weekKey(viewDate)] || {}; f.revealDay = +el.value; commit(false); return; }
+    if ((d === 'flagimg' || d === 'flagbg' || d === 'lookup') && el.files[0]) {
+      try {
+        const meta = await Suite.files.put(el.files[0]);
+        if (d === 'flagimg') { const f = T.flags[weekKey(viewDate)] = T.flags[weekKey(viewDate)] || { revealDay: 5 }; f.fileId = meta.id; }
+        else if (d === 'flagbg') T.flagBg = meta.id;
+        else { const u = usual(cid), id = 'custom-' + Suite.uid(), base = LOOKS[u.look] ? u.look : (T.custom[u.look] || {}).base || 'history'; T.custom[id] = { name: el.files[0].name.replace(/\.[^.]+$/, ''), fileId: meta.id, base }; u.look = id; }
+        commit(true); Suite.toast('Picture added');
+      } catch (err) { Suite.toast(err.message || "Couldn't add that picture"); }
+    }
+  });
+  // Tab / Shift+Tab change a line's level; Enter adds a line below
+  $('#drawer').addEventListener('keydown', e => {
+    const el = e.target, row = el.closest && el.closest('.lrow'); if (!row || el.dataset.d !== 'text') return;
+    const b = boardRec(row.dataset.type), i = +row.dataset.i, l = b.lines[i];
+    // the drawer redraws right away, so put the cursor back right away too (no gap for typing to fall through)
+    const focusLine = (n, end) => { const inp = document.querySelector(`.lrow[data-type="${row.dataset.type}"][data-i="${n}"] input[data-d="text"]`); if (inp) { inp.focus(); if (end) inp.setSelectionRange(inp.value.length, inp.value.length); } };
+    if (e.key === 'Tab') { e.preventDefault(); l.level = Math.max(0, Math.min(2, (l.level || 0) + (e.shiftKey ? -1 : 1))); commit(true); focusLine(i, true); }
+    else if (e.key === 'Enter') { e.preventDefault(); b.lines.splice(i + 1, 0, { text: '', color: l.color || 'blue', level: l.level || 0 }); commit(true); focusLine(i + 1); }
+  });
+
+  /* ---------- buttons and keys ---------- */
+  function openDrawing(){
+    const ov = document.createElement('div'); ov.className = 'overlay';
+    const cid = activeId();
+    ov.innerHTML = `<button class="btn close" data-o="close">Back to the flag</button><iframe title="Name spinner" src="spinner.html?embed&proj#class=${encodeURIComponent(cid)}"></iframe>`;
+    document.body.appendChild(ov);
+    const close = () => { ov.remove(); window.removeEventListener('message', onMsg); };
+    const onMsg = ev => { if (ev.origin === location.origin && ev.data && ev.data.suite === 'close') close(); };
+    window.addEventListener('message', onMsg);
+    ov.addEventListener('click', ev => { if (ev.target.closest('[data-o="close"]')) close(); });
+  }
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-a]');
+    if (!el) { if (e.target.closest('#rTimer')) toggleTimer(); return; }
+    const a = el.dataset.a, cid = activeId();
+    if (a === 'mode') { T.mode = el.dataset.id; save(); screen = 0; reveal = 0; lesson = false; if (!timer.running) resetTimer(activeId()); render(); if (editing) renderDrawer(); }
+    else if (a === 'next') next();
+    else if (a === 'prev') prev();
+    else if (a === 'go') { if (el.dataset.i === 'lesson') lesson = true; else { lesson = false; screen = +el.dataset.i; reveal = 0; } render(); }
+    else if (a === 'timer') toggleTimer();
+    else if (a === 'lesson') { lesson = true; render(); }
+    else if (a === 'boards') { lesson = false; render(); }
+    else if (a === 'openslides') openInSlides(cid);
+    else if (a === 'edit') { editing = !editing; $('#drawer').hidden = !editing; if (editing) renderDrawer(); }
+    else if (a === 'full') { full = !full; if (full && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); else if (!full && document.fullscreenElement) document.exitFullscreen().catch(() => {}); render(); }
+    else if (a === 'drawing') openDrawing();
+  });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && full) { full = false; render(); } });
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('.suite-dialog') || document.querySelector('.overlay') || document.body.classList.contains('timer-open')) return;
+    if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) return;
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); next(); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); prev(); }
+    else if (editing && k !== 'Escape') return;      // letters are for typing while the edit drawer is open
+    else if (k === 't' || k === 'T') toggleTimer();
+    else if (k === 'r' || k === 'R') { resetTimer(); drawTimer(); renderRail(activeId()); }
+    else if (k === 'l' || k === 'L') { lesson = !lesson; render(); }
+    else if (k === 'e' || k === 'E') { editing = !editing; $('#drawer').hidden = !editing; if (editing) renderDrawer(); }
+    else if (k === 'f' || k === 'F') { full = !full; render(); }
+    else if (k === 'Escape') { if (editing) { editing = false; $('#drawer').hidden = true; } else if (full) { full = false; render(); } }
+  });
+  window.addEventListener('resize', () => requestAnimationFrame(fitAll));
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { T = Object.assign({ mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {} }, Suite.get('today', {})); render(); } });
+  Suite.mountNav('today');
+  resetTimer(activeId()); lastCid = activeId();
+  render();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(fitAll));
+})();
+</script>
+</body>
+</html>
