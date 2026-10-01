@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-06c">
-<script src="shared/core.js?v=2026-10-06c"></script>
-<script>window.PAGE_VERSION = '2026-10-06c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-07b">
+<script src="shared/core.js?v=2026-10-07b"></script>
+<script>window.PAGE_VERSION = '2026-10-07b';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -27,6 +27,7 @@ table.plan th.day.today{color:var(--land)}
 details.students{margin-top:14px;border:1.5px solid var(--rule);border-radius:12px;padding:8px 12px;background:var(--paper)}
 details.students summary{cursor:pointer;font-weight:700}
 details.students textarea{width:100%}
+.stc{border:1.5px dashed var(--rule);border-radius:10px;padding:8px;margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .dayoff{display:block;margin-top:3px;font:600 11px var(--sans);color:var(--ink-2);background:none;border:1px dashed var(--rule);border-radius:999px;padding:1px 8px;cursor:pointer}
 .dayoff:hover{border-color:var(--edge);color:var(--ink)}
 table.plan th.rowh{width:170px;vertical-align:top;background:var(--sheet);border:2px solid var(--edge);border-radius:14px;padding:10px 12px}
@@ -145,7 +146,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   }
 
   /* ---------- the Today screen's student boards, prepared from here ---------- */
-  const TODAY_BOARDS = [['warmup', 'Warm-up', 'WARM-UP'], ['returned', 'Returned work', 'Returned Work']];
+  const TODAY_BOARDS = [['welcome', 'Welcome', 'WELCOME!'], ['warmup', 'Warm-up', 'WARM-UP'], ['returned', 'Returned work', 'Returned Work']];
   const todayStore = () => Object.assign({ rows: {}, days: {} }, Suite.get('today', {}) || {});
   const todayRec = (date, key) => ((todayStore().days || {})[date] || {})[key] || null;
   const linesToText = lines => (lines || []).map(l => '-'.repeat(Math.min(2, l.level || 0)) + (l.level ? ' ' : '') + (l.reveal ? '? ' : '') + (l.text || '').trim()).join('\n');
@@ -158,20 +159,27 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     });
   }
   function boardHasText(rec){ return !!rec && Object.values(rec.boards || {}).some(b => (b.lines || []).some(l => (l.text || '').trim())); }
-  function saveStudents(date, key, values){
+  function saveStudents(date, key, values, extra){
     const T = todayStore(); T.days = T.days || {}; const day = T.days[date] = T.days[date] || {};
     const rec = day[key] = day[key] || {}; rec.boards = rec.boards || {};
     let changed = false;
-    values.forEach(([id, heading, txt]) => {
+    values.forEach(([id, heading, txt, custom]) => {
       const cur = rec.boards[id], before = linesToText(cur && cur.lines);
-      if (txt.trim() === before.trim()) return;
+      if (custom && cur && cur.heading !== heading) { cur.heading = heading; changed = true; }
+      if (txt.trim() === before.trim() && !(custom && !cur && txt.trim())) return;
+      if (!cur && !txt.trim()) return;
       rec.boards[id] = Object.assign({ heading }, cur || {}, { lines: textToLines(txt, cur && cur.lines) }); changed = true;
     });
-    if (!changed) { if (!Object.keys(rec.boards).length && Object.keys(rec).length === 1) delete day[key]; return; }
+    if (extra) {
+      const have = extra.haveOut.split(',').map(x => x.trim()).filter(Boolean), had = rec.haveOut || [];
+      if (have.join('|') !== had.join('|')) { if (have.length) rec.haveOut = have; else delete rec.haveOut; changed = true; }
+      if ((extra.slideLink || '') !== (rec.slideLink || '')) { if (extra.slideLink) rec.slideLink = extra.slideLink; else delete rec.slideLink; changed = true; }
+    }
+    if (!changed) { if (!Object.keys(rec.boards).length && Object.keys(rec).length === 1) { delete day[key]; Suite.set('today', T); } return; }
     // make sure boards with something on them are in the day's lineup
     const base = rec.lineup || ((T.rows || {})[key] || {}).lineup || ['welcome', 'agenda'];
     const lineup = base.slice();
-    values.forEach(([id]) => { if ((rec.boards[id].lines || []).length && !lineup.includes(id)) { const at = Math.max(lineup.indexOf('welcome') + 1, 0); lineup.splice(at + (id === 'returned' && lineup.includes('warmup') ? 1 : 0), 0, id); } });
+    values.forEach(([id]) => { if (rec.boards[id] && (rec.boards[id].lines || []).length && !lineup.includes(id)) { const at = Math.max(lineup.indexOf('welcome') + 1, 0); lineup.splice(at + (id === 'returned' && lineup.includes('warmup') ? 1 : 0), 0, id); } });
     rec.lineup = lineup;
     Suite.set('today', T);
   }
@@ -194,13 +202,18 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       <label class="lb" for="ed-items">Agenda <span class="muted small">(one step per line)</span></label><textarea id="ed-items" rows="6">${esc((e.items || []).join('\n'))}</textarea>
       <label class="lb" for="ed-hw">Homework</label><input class="field" id="ed-hw" value="${esc(e.homework || '')}" placeholder="Optional">
       <span class="lb">Links and files <span class="muted small">(slides, docs, handouts; they show on the dashboard and the sub packet)</span></span>
+      <p class="hintline" style="margin-top:0">A Google Slides link here also becomes the lesson slides on the Today screen.</p>
       <div id="ed-mats"></div>
       <div class="bar" style="margin-top:6px"><button class="btn small" data-e="addlink">Add a link</button><label class="btn small">Attach a file<input type="file" id="ed-file" multiple hidden></label></div>
-      <details class="students"${boardHasText(todayRec(dateKey, target)) ? ' open' : ''}><summary>Students see (Today screen)</summary>
-        <p class="hintline">One line per bullet. Start a line with <b>-</b> for a sub-point (<b>--</b> for a third level) and with <b>?</b> to keep it hidden until you click, like a warm-up answer. Due and Agenda come from the plan above.</p>
-        ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="3" data-sb="${id}">${esc(linesToText(((todayRec(dateKey, target) || {}).boards || {})[id] && todayRec(dateKey, target).boards[id].lines))}</textarea>`).join('')}
-        ${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id)).map(([id, bd]) => `<label class="lb" for="st-${id}">${esc(String(bd.heading || 'Custom board').replace(/<[^>]+>/g, ''))} <span class="muted small">(custom board)</span></label><textarea id="st-${id}" rows="3" data-sb="${id}" data-h="${esc(bd.heading || '')}">${esc(linesToText(bd.lines))}</textarea>`).join('')}
-        <div class="bar" style="margin-top:6px"><a class="btn small" href="today.html#date=${dateKey}&class=${encodeURIComponent((r.classes[0] || {}).id || '')}" title="See this day's Today screen">Open in Today</a></div>
+      <details class="students"${boardHasText(todayRec(dateKey, target)) || ((todayRec(dateKey, target) || {}).slideLink) ? ' open' : ''}><summary>Students see (Today screen)</summary>
+        <p class="hintline">What goes on this day's Today screen. Leave a box empty to use the usual one. One line per bullet: start a line with <b>-</b> for a sub-point (<b>--</b> for a third level) and with <b>?</b> to keep it hidden until you click, like a warm-up answer. Due and Agenda come from the plan above.</p>
+        <label class="lb" for="st-slide">Lesson slides <span class="muted small">(the slide Today opens after the boards)</span></label>
+        <input class="field" id="st-slide" style="width:100%" value="${esc((todayRec(dateKey, target) || {}).slideLink || '')}" placeholder="Paste the Google Slides link for this day's first slide (or add it under Links and files above)">
+        ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="${id === 'welcome' ? 2 : 3}" data-sb="${id}" placeholder="${id === 'welcome' ? 'Empty: the usual Welcome board' : ''}">${esc(linesToText(((todayRec(dateKey, target) || {}).boards || {})[id] && todayRec(dateKey, target).boards[id].lines))}</textarea>`).join('')}
+        <label class="lb" for="st-have">Have out <span class="muted small">(comma between items; empty uses the usual list)</span></label>
+        <input class="field" id="st-have" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).haveOut || []).join(', '))}" placeholder="Pen or pencil, Notebook">
+        <div id="st-custom">${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id)).map(([id, bd]) => `<div class="stc"><input class="field" data-hh="${id}" value="${esc(String(bd.heading || '').replace(/<[^>]+>/g, ''))}" placeholder="Board heading" aria-label="Board heading"><textarea rows="3" data-sb="${id}">${esc(linesToText(bd.lines))}</textarea></div>`).join('')}</div>
+        <div class="bar" style="margin-top:6px"><button class="btn small" data-e="stadd" type="button">Add a board</button><a class="btn small" href="today.html#date=${dateKey}&class=${encodeURIComponent((r.classes[0] || {}).id || '')}" title="See this day's Today screen">Open in Today</a></div>
       </details>
       <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
         <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
@@ -234,6 +247,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       const b = ev.target.closest('[data-e]'); if (!b) return;
       const k = b.dataset.e;
       if (k === 'cancel') { close(); dropUnused(added); }
+      else if (k === 'stadd') { const id = 'c-' + Suite.uid(), d = document.createElement('div'); d.className = 'stc'; d.innerHTML = `<input class="field" data-hh="${id}" placeholder="Board heading, like REMINDERS" aria-label="Board heading"><textarea rows="3" data-sb="${id}" placeholder="One line per bullet"></textarea>`; back.querySelector('#st-custom').appendChild(d); d.querySelector('input').focus(); }
       else if (k === 'addlink') { mats.push({ id: Suite.uid(), kind: 'link', title: '', url: '' }); drawMats(); const f = back.querySelector('.mrow:last-child input'); if (f) f.focus(); }
       else if (k === 'mrm') { const m = mats.splice(+b.dataset.i, 1)[0]; if (m && m.kind === 'file') removed.push(m.file.id); drawMats(); }
       else if (k === 'course') { close(); openEditor(rowKey, dateKey, null); }
@@ -250,7 +264,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         const links = mats.filter(m => m.kind === 'file' || (m.url || '').trim()).map(m => m.kind === 'link' ? Object.assign(m, { url: /^https?:\/\//i.test(m.url.trim()) ? m.url.trim() : 'https://' + m.url.trim() }) : m);
         const entry = { target: q('ed-target').value.trim(), items: q('ed-items').value.split('\n').map(x => x.trim()).filter(Boolean), homework: q('ed-hw').value.trim(), materials: links };
         Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework || links.length ? entry : null);
-        saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].map(t => [t.dataset.sb, t.dataset.h || (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || 'MY BOARD', t.value]));
+        saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].map(t => { const hh = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return [t.dataset.sb, hh ? (hh.value.trim() ? esc(hh.value.trim()) : 'MY BOARD') : (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || 'MY BOARD', t.value, !!hh]; }),
+          { haveOut: back.querySelector('#st-have').value, slideLink: back.querySelector('#st-slide').value.trim() });
         close(); dropUnused(removed); render(); Suite.toast('Plan saved');
       }
     });

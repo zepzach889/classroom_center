@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-06c">
-<script src="shared/core.js?v=2026-10-06c"></script>
-<script>window.PAGE_VERSION = '2026-10-06c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-07b">
+<script src="shared/core.js?v=2026-10-07b"></script>
+<script>window.PAGE_VERSION = '2026-10-07b';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -120,6 +120,7 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .x-fit{height:100%;overflow:hidden;font-family:"Chelsea Market","Trebuchet MS",sans-serif;font-size:calc(1.9cqw * var(--fit,1));line-height:1.3;color:var(--ink-blue);white-space:pre-wrap}
 /* timer: each style is sized from its own box, so nothing floats outside it */
 .timer{display:grid;place-items:center;border:0;padding:0;margin:0;cursor:pointer;background:none;container-type:size;color:inherit}
+.timer .tm-in{display:grid;place-items:center;width:100%;height:100%}
 .timer .tm-num{font-variant-numeric:tabular-nums;line-height:1}
 .tm-digital .tm-num{font:700 min(46cqh,16cqw)/1 var(--sans);letter-spacing:.04em;color:#fff;background:var(--tc);padding:8cqh 9cqh;border-radius:16cqh;box-shadow:0 2cqh 6cqh rgba(0,0,0,.25)}
 .tm-flip .tm-row{display:flex;align-items:center;gap:min(3cqh,1cqw)}
@@ -167,6 +168,8 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .tmenu-list button:hover{background:var(--wash)}
 .fstools{position:absolute;right:1cqw;bottom:1cqw;z-index:6;opacity:.35;transition:opacity .15s}
 .fstools:hover,.fstools:focus-within{opacity:1}
+.lesson .fstools{z-index:6}
+.lesson .fstools .btn{background:rgba(15,23,32,.55);color:#fff;border-color:rgba(255,255,255,.5)}
 .fstools .tmenu-list{top:auto;bottom:calc(100% + 6px)}
 .tool{container-type:size;background:rgba(255,255,255,.92);border-radius:1cqw;box-shadow:0 .3cqw 1cqw rgba(0,0,0,.2);display:grid;place-items:center;overflow:visible;color:#1f2a33}
 .tool>.w-in{width:100%;height:100%;display:grid;place-items:center;overflow:hidden;border-radius:inherit}
@@ -496,7 +499,7 @@ details.sec>summary .muted{font-weight:400}
         <div class="region date ${pn('date')}${E ? ' ed' : ''}" data-k="date" style="${place(L.date)};${boxStyle(L, 'date')}"><span id="dateText"${ce('date')}>${rec.dateText ? clean(rec.dateText) : esc(autoDate)}</span>${handles('date')}</div>
         <div class="region board ${pn('board')}${E ? ' ed' : ''}" data-k="board" style="${place(L.board)};${boxStyle(L, 'board')}"><div class="board-fit" id="boardFit"><h1 class="heading"${ce('heading', ` data-t="${type}"`)}>${clean(b.heading != null ? b.heading : (BOARDS[type] || {}).heading || '')}</h1><ul class="lines"${planBoard ? '' : ce('lines', ` data-t="${type}"`)}>${items}</ul>${E && planBoard ? `<p class="planned">This board comes from your Planner. To type your own version, choose "Write for students" in Day settings.</p>` : ''}</div>${handles('board')}</div>
         <div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>
-        ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer tm-${u.timer.style || 'digital'}${dark ? ' on-dark' : ''}${E ? ' ed' : ''}" id="rTimer" data-k="timer" style="${place(L.timer)};--tc:${esc(u.timer.color || '#2f6fd0')}"${E ? ' data-g="move" tabindex="-1"' : ''} aria-label="Warm-up timer. Click to start or pause.">${timerInner(u.timer.style)}${handles('timer')}</button>` : ''}
+        ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer tm-${u.timer.style || 'digital'}${dark ? ' on-dark' : ''}${E ? ' ed' : ''}" id="rTimer" data-k="timer" style="${place(L.timer)};--tc:${esc(u.timer.color || '#2f6fd0')}"${E ? ' data-g="move" tabindex="-1"' : ''} aria-label="Warm-up timer. Click to start or pause."><span class="tm-in" id="timerIn">${timerInner(u.timer.style)}</span>${handles('timer')}</button>` : ''}
         ${!E && full ? `<span class="fstools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span>` : ''}
         ${u.showEvents ? (() => { const ev = Suite.eventsOn(viewDate); return ev.length || E ? `<div class="region evs${E ? ' ed' : ''}" data-k="events" style="${place(L.events || NEUTRAL.events)}"${E ? ' data-g="move"' : ''}>${ev.length ? ev.map(x => `<span class="evtag">${esc(x.title)}${x.note ? `<small>${esc(x.note)}</small>` : ''}</span>`).join('') : '<span class="evtag ph">School events from your Planner show here</span>'}${handles('events')}</div>` : ''; })() : ''}
         ${(b.tools || []).map(w => `<div class="region tool tool-${w.kind}${E ? ' ed' : ''}" data-k="t:${esc(w.id)}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>${handles('t:' + w.id)}${E ? `<button class="xdel" data-g="tdel" data-x="${esc(w.id)}" aria-label="Remove this tool">×</button>` : ''}</div>`).join('')}
@@ -545,8 +548,8 @@ details.sec>summary .muted{font-weight:400}
   const deckFor = (cid) => usual(cid).deckUrl || ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || '';
   function lessonHtml(cid, rec){
     const u = usual(cid), pid = publishedId(deckFor(cid)), slide = slideParam(slideLinkFor(cid, rec));
-    if (!pid) return `<div class="lesson"><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Open <b>Edit day</b> and paste this class's published deck link under Lesson slides.</p></div></div>`;
-    return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><iframe title="Lesson slides" allowfullscreen src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
+    if (!pid) return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Open <b>Edit day</b> and paste this class's published deck link under Lesson slides.</p></div></div>`;
+    return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><iframe title="Lesson slides" allowfullscreen src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
   }
   function openInSlides(cid){
     const rec = dayFor(viewDate, cid), u = usual(cid), link = slideLinkFor(cid, rec), deck = deckFor(cid), id = docId(link) || docId(deck), slide = slideParam(link);
@@ -575,7 +578,8 @@ details.sec>summary .muted{font-weight:400}
   function drawTimer(){
     if (timer.running && Date.now() >= timer.end) { timer.running = false; timer.left = 0; timer.done = true; renderRail(activeId()); }
     const b = $('#rTimer');
-    if (b) { const html = timerInner(usual(activeId()).timer.style); if (b.dataset.h !== html) { b.innerHTML = html; b.dataset.h = html; } b.classList.toggle('done', timer.done); }
+    const tin = document.getElementById('timerIn');
+    if (b && tin) { const html = timerInner(usual(activeId()).timer.style); if (tin.dataset.h !== html) { tin.innerHTML = html; tin.dataset.h = html; } b.classList.toggle('done', timer.done); }
   }
   let lastAuto = '', lastCid = null;
   setInterval(() => {
@@ -1087,6 +1091,11 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'editdone') endEdit();
     else if (a === 'settings') { editing = true; $('#drawer').hidden = false; renderDrawer(); }
     else if (a === 'xaddbox') { const lay = ownLayout($('#stage').dataset.look); lay.extras.push({ id: Suite.uid(), box: [760, 420, 460, 200], panel: 'none', html: 'Type here' }); save(); render().then(() => { const x = [...document.querySelectorAll('.x-fit[contenteditable]')].pop(); if (x) { x.focus(); document.execCommand('selectAll'); } }); }
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!editing || $('#drawer').hidden) return;
+    if (e.target.closest('#drawer, .suite-dialog-back, .overlay, [data-a="edit"], [data-a="settings"], .tmenu')) return;
+    editing = false; $('#drawer').hidden = true;
   });
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && full) { full = false; render(); } });
   document.addEventListener('keydown', e => {

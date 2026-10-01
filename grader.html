@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-06c">
-<script src="shared/core.js?v=2026-10-06c"></script>
-<script>window.PAGE_VERSION = '2026-10-06c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-07b">
+<script src="shared/core.js?v=2026-10-07b"></script>
+<script>window.PAGE_VERSION = '2026-10-07b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -35,7 +35,8 @@
 .look .pct{font:700 30px var(--sans);margin-top:6px}
 .look .letter{display:inline-block;margin-left:10px;background:var(--sea);color:var(--on-sea);border-radius:12px;padding:0 12px}
 .look .step{display:flex;justify-content:center;gap:8px;margin-top:10px}
-.chart{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.chart{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.chart .col{display:flex;flex-direction:column;gap:5px}
 .cell{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:baseline;border:1.5px solid var(--rule);border-radius:10px;padding:5px 10px;background:var(--paper);font-variant-numeric:tabular-nums;cursor:pointer}
 .cell:hover{border-color:var(--edge)}
 .cell.on{border-color:var(--land);box-shadow:0 0 0 2px var(--land)}
@@ -61,7 +62,7 @@
   .grid2{display:block}
   .printhead{display:block;font-family:var(--serif);font-size:22px;margin-bottom:8px}
   .card{border:0;padding:0}
-  .chart{grid-template-columns:repeat(5,1fr);gap:3px}
+  .chart{gap:2px 24px}.chart .col{gap:2px}
   .cell{padding:2px 6px;border-color:#999;background:#fff;break-inside:avoid}
   .cell.on{box-shadow:none;border-color:#999}
 }
@@ -126,7 +127,8 @@
         </div>
         <section class="card">
           <div class="chead noprint"><h2>Every score</h2><span class="muted small">${G.questions} questions, worth ${fmt(G.worth)} points, by number ${word}. Each question is worth ${fmt(G.worth / Math.max(1, G.questions))} points.</span></div>
-          <div class="chart">${steps().map(n => { const sc = scoreFor(n), lt = letter(sc.pct); return `<div class="cell${valid && Math.abs(n - typed) < 1e-9 ? ' on' : ''}${lt === 'F' ? ' fail' : ''}" data-a="pick" data-n="${n}"><span class="w">${G.by === 'wrong' ? '−' : ''}${n % 1 ? n.toFixed(1) : n}</span><span class="p">${fmt(sc.points)}</span><span class="g">${fmt(sc.pct)}%${lt ? ' ' + lt : ''}</span></div>`; }).join('')}</div>
+          <div class="chart">${(() => { const all = steps(), half = Math.ceil(all.length / 2), cell = n => { const sc = scoreFor(n), lt = letter(sc.pct); return `<div class="cell${valid && Math.abs(n - typed) < 1e-9 ? ' on' : ''}${lt === 'F' ? ' fail' : ''}" data-a="pick" data-n="${n}"><span class="w">${G.by === 'wrong' ? '−' : ''}${n % 1 ? n.toFixed(1) : n}</span><span class="p">${fmt(sc.points)}</span><span class="g">${fmt(sc.pct)}%${lt ? ' ' + lt : ''}</span></div>`; };
+            return `<div class="col">${all.slice(0, half).map(cell).join('')}</div><div class="col">${all.slice(half).map(cell).join('')}</div>`; })()}</div>
         </section>
       </div>`;
   }

@@ -38,7 +38,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-06c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-07b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -854,7 +854,12 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     // keep the page's pinned pieces clear of the menu, and slim the menu once you scroll
     const setH = () => document.documentElement.style.setProperty('--navh', el.offsetHeight + 'px');
     if (window.ResizeObserver) new ResizeObserver(setH).observe(el); setH();
-    const onScroll = () => el.classList.toggle('slim', window.scrollY > 24);
+    let slim = false;
+    const onScroll = () => {
+      const room = document.documentElement.scrollHeight - window.innerHeight;
+      const want = room > 160 && (slim ? window.scrollY > 8 : window.scrollY > 48);
+      if (want !== slim) { slim = want; el.classList.toggle('slim', slim); }
+    };
     window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
     window.addEventListener('suite:change', e => { if (!e.detail || e.detail.key !== 'timer') { draw(); timerDraw(); } });
     const closeMenus = () => { el.querySelectorAll('.ddmenu').forEach(m => { m.hidden = true; }); el.querySelectorAll('[data-dd]').forEach(b => b.setAttribute('aria-expanded', 'false')); };
