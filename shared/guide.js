@@ -4,7 +4,7 @@
   'use strict';
   const S = window.Suite, esc = S.esc;
   const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink', 'Gray', 'Brown', 'Navy', 'Gold'];
-  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
+  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['present', 'Present (Google Slides)']];
 
   const G = {
     step: 0,
@@ -193,7 +193,7 @@
       ['.nav-inner a[href="tracker.html"]', 'Points', 'Give points to each ' + S.word('team') + ' with one tap (or the number keys). Weekly winners, streaks, and ' + S.word('lead', { plural: true }) + ' are tracked for you.'],
       ['.nav-inner a[href="seating.html"]', 'Seating', 'Your room as a seating chart. Drag names onto seats, then print it on one page or show it on the projector.'],
       ['.nav-inner a[href="planner.html"]', 'Planner', 'Plan each day for a week at a glance. Group sections into courses to plan once for all of them, attach slides and files, add school events, and shift plans when a snow day hits.'],
-      ['[data-dd="tools"]', 'Tools', 'Name spinner, topic picker, review game, stations, tally, partners and groups, the noise meter, and Present slides (your Google Slides with tools on top).'],
+      ['[data-dd="tools"]', 'Tools', 'Name spinner, topic picker, review game, stations, tally, partners and groups, the noise meter, an easy grader, and Present slides (your Google Slides with tools on top).'],
       ['#st-pill', 'Timer', 'A big countdown for the whole class. It keeps running while you move between pages and chimes when time is up.'],
       ['[data-dd="pop"]', 'Pop out', 'A small window with the timer, points, or a name picker that floats on top of Google Slides (in Chrome or Edge).'],
       ['[data-dd="gear"]', 'Setup', 'Classes and rosters, the substitute page, bell schedule, countdowns, appearance, backups, and this tour.']

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Easy grader · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-06c">
+<script src="shared/core.js?v=2026-10-06c"></script>
+<script>window.PAGE_VERSION = '2026-10-06c';</script>
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.top h1{font-size:34px}
+.grid2{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px}
+.card h2{font-size:22px;margin-bottom:10px}
+.lb{display:block;font-size:14px;font-weight:700;margin:12px 0 4px}
+.lb:first-of-type{margin-top:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.num{width:90px}
+.seg{display:inline-flex;border:2px solid var(--edge);border-radius:999px;overflow:hidden}
+.seg button{font:inherit;font-size:15px;font-weight:700;border:0;background:var(--sheet);color:var(--ink);padding:6px 16px;cursor:pointer}
+.seg button+button{border-left:2px solid var(--edge)}
+.seg button[aria-pressed="true"]{background:var(--sea);color:var(--on-sea)}
+.checks label{display:flex;gap:6px;align-items:center;font-size:15px;margin-top:6px}
+.look{text-align:center}
+.look .ask{font-size:16px;font-weight:600;color:var(--ink-2)}
+.look input{font:700 44px var(--sans);width:150px;text-align:center;margin:8px 0;border-radius:16px}
+.look .score{font-family:var(--serif);font-size:72px;line-height:1;margin-top:6px}
+.look .score small{font-family:var(--sans);font-size:24px;color:var(--ink-2)}
+.look .pct{font:700 30px var(--sans);margin-top:6px}
+.look .letter{display:inline-block;margin-left:10px;background:var(--sea);color:var(--on-sea);border-radius:12px;padding:0 12px}
+.look .step{display:flex;justify-content:center;gap:8px;margin-top:10px}
+.chart{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.cell{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:baseline;border:1.5px solid var(--rule);border-radius:10px;padding:5px 10px;background:var(--paper);font-variant-numeric:tabular-nums;cursor:pointer}
+.cell:hover{border-color:var(--edge)}
+.cell.on{border-color:var(--land);box-shadow:0 0 0 2px var(--land)}
+.cell .w{font-weight:700;color:var(--ink-2);min-width:2.6em}
+.cell .p{font-weight:800;font-size:17px}
+.cell .g{font-size:13px;color:var(--ink-2)}
+.cell.fail .p{color:var(--plum)}
+.chead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.saved{list-style:none;margin:6px 0 0;padding:0}
+.saved li{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--rule)}
+.saved li:first-child{border-top:0}
+.saved .nm{flex:1;font-weight:600;cursor:pointer}
+.saved .meta{font-size:13px;color:var(--ink-2)}
+.cuts{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}
+.cuts label{display:flex;flex-direction:column;align-items:center;font-weight:700;font-size:14px;gap:3px}
+.cuts input{width:100%;text-align:center}
+.printhead{display:none}
+@media print{
+  @page{margin:.5in}
+  body{background:#fff}
+  #suite-nav,.noprint,.backup-banner{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .grid2{display:block}
+  .printhead{display:block;font-family:var(--serif);font-size:22px;margin-bottom:8px}
+  .card{border:0;padding:0}
+  .chart{grid-template-columns:repeat(5,1fr);gap:3px}
+  .cell{padding:2px 6px;border-color:#999;background:#fff;break-inside:avoid}
+  .cell.on{box-shadow:none;border-color:#999}
+}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q);
+  const esc = Suite.esc;
+  const G = Object.assign({ questions: 20, worth: 100, by: 'wrong', half: false, decimals: 1, letters: true, cuts: { A: 90, B: 80, C: 70, D: 60 }, saved: [], typed: '' }, Suite.get('grader', {}));
+  const save = () => Suite.set('grader', G);
+
+  const fmt = n => { const d = G.decimals, v = Math.round(n * Math.pow(10, d)) / Math.pow(10, d); return v.toFixed(d).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1'); };
+  // the score for a number missed (or a number right)
+  function scoreFor(count){
+    const q = Math.max(1, G.questions), wrong = G.by === 'wrong' ? count : q - count;
+    const frac = Math.max(0, Math.min(1, (q - wrong) / q));
+    return { points: frac * G.worth, pct: frac * 100 };
+  }
+  function letter(pct){ if (!G.letters) return ''; const c = G.cuts; return pct >= c.A ? 'A' : pct >= c.B ? 'B' : pct >= c.C ? 'C' : pct >= c.D ? 'D' : 'F'; }
+  const steps = () => { const out = [], step = G.half ? .5 : 1; for (let n = 0; n <= G.questions + 1e-9; n += step) out.push(+n.toFixed(1)); return out; };
+
+  function render(){
+    const typed = G.typed === '' ? null : parseFloat(G.typed), valid = typed != null && !isNaN(typed) && typed >= 0 && typed <= G.questions;
+    const s = valid ? scoreFor(typed) : null;
+    const word = G.by === 'wrong' ? 'missed' : 'right';
+    $('#app').innerHTML = `
+      <div class="top noprint"><h1>Easy grader</h1><div class="row"><button class="btn" data-a="print">Print the chart</button></div></div>
+      <div class="printhead">${G.questions} questions · worth ${G.worth} points · scored by number ${word}</div>
+      <div class="grid2">
+        <div class="noprint">
+          <section class="card look" aria-live="polite">
+            <div class="ask">How many ${word}?</div>
+            <input id="gtyped" class="field" inputmode="decimal" value="${esc(G.typed)}" aria-label="How many ${word}" autocomplete="off">
+            ${s ? `<div class="score">${fmt(s.points)}<small> / ${fmt(G.worth)}</small></div><div class="pct">${fmt(s.pct)}%${letter(s.pct) ? `<span class="letter">${letter(s.pct)}</span>` : ''}</div>` : `<div class="muted" style="margin-top:10px">${typed != null && !valid ? `Enter a number from 0 to ${G.questions}.` : 'Type a number, or click a score in the chart.'}</div>`}
+            <div class="step"><button class="btn small" data-a="step" data-d="-1">− 1</button><button class="btn small" data-a="step" data-d="1">+ 1</button><button class="btn quiet small" data-a="clear">Clear</button></div>
+          </section>
+          <section class="card" style="margin-top:16px">
+            <h2>The assignment</h2>
+            <label class="lb" for="gq">Number of questions</label>
+            <div class="row"><input id="gq" class="field num" type="number" min="1" max="300" step="1" value="${G.questions}" data-c="questions"><button class="btn quiet small" data-a="q" data-d="-1" aria-label="One fewer question">−</button><button class="btn quiet small" data-a="q" data-d="1" aria-label="One more question">+</button></div>
+            <span class="lb">Worth</span>
+            <div class="row"><span class="seg">${[100, 50, 10].map(n => `<button data-a="worth" data-v="${n}" aria-pressed="${G.worth === n}">${n}</button>`).join('')}</span>
+              <label class="small">or <input class="field num" type="number" min="1" max="1000" step="any" value="${[100, 50, 10].includes(G.worth) ? '' : G.worth}" placeholder="other" data-c="worth" aria-label="Other point total"> points</label></div>
+            <span class="lb">Score by</span>
+            <span class="seg"><button data-a="by" data-v="wrong" aria-pressed="${G.by === 'wrong'}">Number missed</button><button data-a="by" data-v="right" aria-pressed="${G.by === 'right'}">Number right</button></span>
+            <div class="checks">
+              <label><input type="checkbox" data-c="half"${G.half ? ' checked' : ''}> Allow half credit (steps of ½)</label>
+              <label><input type="checkbox" data-c="letters"${G.letters ? ' checked' : ''}> Show letter grades</label>
+              <label>Round to <select data-c="decimals">${[[0, 'whole numbers'], [1, '1 decimal place'], [2, '2 decimal places']].map(([v, n]) => `<option value="${v}"${G.decimals === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+            </div>
+            ${G.letters ? `<span class="lb">Letter grade cutoffs (percent)</span><div class="cuts">${['A', 'B', 'C', 'D'].map(k => `<label>${k}<input class="field" type="number" min="0" max="100" value="${G.cuts[k]}" data-cut="${k}"></label>`).join('')}<label>F<span class="small muted" style="padding-top:8px">below ${G.cuts.D}</span></label></div>` : ''}
+          </section>
+          <section class="card" style="margin-top:16px">
+            <h2>Saved assignments</h2>
+            <div class="row"><input id="gname" class="field" placeholder="Name, like Unit 2 quiz" style="flex:1;min-width:0"><button class="btn small" data-a="savecur">Save</button></div>
+            ${G.saved.length ? `<ul class="saved">${G.saved.map((x, i) => `<li><span class="nm" data-a="load" data-i="${i}" title="Use this setup">${esc(x.name)}</span><span class="meta">${x.questions} questions · ${x.worth} pts</span><button class="btn quiet danger small" data-a="del" data-i="${i}" aria-label="Delete ${esc(x.name)}">×</button></li>`).join('')}</ul>` : '<p class="muted small" style="margin:8px 0 0">None yet.</p>'}
+          </section>
+        </div>
+        <section class="card">
+          <div class="chead noprint"><h2>Every score</h2><span class="muted small">${G.questions} questions, worth ${fmt(G.worth)} points, by number ${word}. Each question is worth ${fmt(G.worth / Math.max(1, G.questions))} points.</span></div>
+          <div class="chart">${steps().map(n => { const sc = scoreFor(n), lt = letter(sc.pct); return `<div class="cell${valid && Math.abs(n - typed) < 1e-9 ? ' on' : ''}${lt === 'F' ? ' fail' : ''}" data-a="pick" data-n="${n}"><span class="w">${G.by === 'wrong' ? '−' : ''}${n % 1 ? n.toFixed(1) : n}</span><span class="p">${fmt(sc.points)}</span><span class="g">${fmt(sc.pct)}%${lt ? ' ' + lt : ''}</span></div>`; }).join('')}</div>
+        </section>
+      </div>`;
+  }
+  function setTyped(v){ G.typed = String(v); save(); render(); const i = $('#gtyped'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a;
+    if (a === 'worth') { G.worth = +el.dataset.v; save(); render(); }
+    else if (a === 'by') { G.by = el.dataset.v; G.typed = ''; save(); render(); }
+    else if (a === 'q') { G.questions = Math.max(1, Math.min(300, G.questions + +el.dataset.d)); save(); render(); }
+    else if (a === 'pick') setTyped(el.dataset.n);
+    else if (a === 'step') { const cur = parseFloat(G.typed) || 0, step = (G.half ? .5 : 1) * +el.dataset.d; setTyped(Math.max(0, Math.min(G.questions, +(cur + step).toFixed(1)))); }
+    else if (a === 'clear') setTyped('');
+    else if (a === 'print') window.print();
+    else if (a === 'savecur') { const name = $('#gname').value.trim(); if (!name) { Suite.toast('Give it a name first'); return; } G.saved = G.saved.filter(x => x.name !== name).concat({ name, questions: G.questions, worth: G.worth, by: G.by, half: G.half }); save(); render(); Suite.toast('Saved ' + name); }
+    else if (a === 'load') { const x = G.saved[+el.dataset.i]; Object.assign(G, { questions: x.questions, worth: x.worth, by: x.by || 'wrong', half: !!x.half, typed: '' }); save(); render(); Suite.toast('Using ' + x.name); }
+    else if (a === 'del') { G.saved.splice(+el.dataset.i, 1); save(); render(); }
+  });
+  document.addEventListener('change', e => {
+    const el = e.target, c = el.dataset.c;
+    if (el.dataset.cut) { G.cuts[el.dataset.cut] = Math.max(0, Math.min(100, parseFloat(el.value) || 0)); save(); render(); return; }
+    if (!c) return;
+    if (c === 'questions') G.questions = Math.max(1, Math.min(300, parseInt(el.value, 10) || G.questions));
+    else if (c === 'worth') { const v = parseFloat(el.value); if (v > 0) G.worth = v; }
+    else if (c === 'half') G.half = el.checked;
+    else if (c === 'letters') G.letters = el.checked;
+    else if (c === 'decimals') G.decimals = +el.value;
+    save(); render();
+  });
+  // typing the number: score updates as you type; Enter clears for the next paper
+  document.addEventListener('input', e => { if (e.target.id === 'gtyped') { G.typed = e.target.value.replace(/[^\d.]/g, ''); save(); const pos = e.target.selectionStart; render(); const i = $('#gtyped'); i.focus(); i.setSelectionRange(pos, pos); } });
+  document.addEventListener('keydown', e => {
+    if (e.target.id !== 'gtyped') return;
+    if (e.key === 'Enter') { e.preventDefault(); setTyped(''); }
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); const cur = parseFloat(G.typed) || 0, step = (G.half ? .5 : 1) * (e.key === 'ArrowUp' ? 1 : -1); setTyped(Math.max(0, Math.min(G.questions, +(cur + step).toFixed(1)))); }
+  });
+  Suite.mountNav('grader');
+  render();
+  const i = $('#gtyped'); if (i) i.focus();
+})();
+</script>
+</body>
+</html>

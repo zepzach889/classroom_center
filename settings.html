@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-06b">
-<script src="shared/core.js?v=2026-10-06b"></script>
-<script>window.PAGE_VERSION = '2026-10-06b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-06c">
+<script src="shared/core.js?v=2026-10-06c"></script>
+<script>window.PAGE_VERSION = '2026-10-06c';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -565,7 +565,7 @@ main{min-width:0;max-width:820px}
 
 
   /* ---------- words and tools ---------- */
-  const TOOL_LIST = [['points', 'Team points (and weekly prizes)'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
+  const TOOL_LIST = [['points', 'Team points (and weekly prizes)'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['present', 'Present (Google Slides)']];
   function renderWords(){
     const P = Suite.prefs();
     const sel = (k, opts) => `<select data-word="${k}">${opts.map(o => `<option${P.words[k] === o ? ' selected' : ''}>${o}</option>`).join('')}${opts.includes(P.words[k]) ? '' : `<option selected>${esc(P.words[k])}</option>`}</select>`;

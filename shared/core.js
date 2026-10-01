@@ -23,6 +23,7 @@
       { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally', feature: 'tally' },
       { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups', feature: 'groups' },
       { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' },
+      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
       { id: 'present', label: 'Present slides', href: 'present.html', feature: 'present' }
     ] }
   ];
@@ -32,12 +33,12 @@
     { id: 'general', label: 'General settings', href: 'settings.html#general' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
-  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'present'];
+  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'present', 'grader'];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-06b';   // bump with every build; pages check they match
+  const VERSION = '2026-10-06c';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -64,7 +65,7 @@
 
 
   /* ---------- this user's words and tools ---------- */
-  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true };
+  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true, grader: true };
   S.prefs = () => { const p = S.get('prefs', {}); return { words: Object.assign({ team: 'table', lead: 'captain' }, p.words || {}), features: Object.assign({}, FEATURE_DEFAULTS, p.features || {}) }; };
   S.feature = f => S.prefs().features[f] !== false;
   // S.word('team') -> "table"; S.word('team', { plural: true, cap: true }) -> "Tables"
