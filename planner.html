@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-03c">
-<script src="shared/core.js?v=2026-10-03c"></script>
-<script>window.PAGE_VERSION = '2026-10-03c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-04b">
+<script src="shared/core.js?v=2026-10-04b"></script>
+<script>window.PAGE_VERSION = '2026-10-04b';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -23,6 +23,8 @@ table.plan th{font-weight:600;text-align:left;vertical-align:bottom;padding:4px 
 table.plan th.day{font-size:15px}
 table.plan th.day span{display:block;font-size:12px;font-weight:500;color:var(--ink-2)}
 table.plan th.day.today{color:var(--land)}
+.dayoff{display:block;margin-top:3px;font:600 11px var(--sans);color:var(--ink-2);background:none;border:1px dashed var(--rule);border-radius:999px;padding:1px 8px;cursor:pointer}
+.dayoff:hover{border-color:var(--edge);color:var(--ink)}
 table.plan th.rowh{width:170px;vertical-align:top;background:var(--sheet);border:2px solid var(--edge);border-radius:14px;padding:10px 12px}
 .rowh .nm{font-family:var(--serif);font-size:19px;font-weight:400;display:block}
 .rowh .secs{font-size:12px;color:var(--ink-2);display:block;margin:2px 0 6px}
@@ -109,7 +111,10 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   function render(){
     const R = rows(), D = days(), A = Suite.agendaAll(), today = keyOf(new Date());
     const fri = D[4], label = D[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' to ' + fri.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    const head = D.map(d => { const sc = Suite.scheduleFor(d), k = keyOf(d); return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<span>${esc(sc.periods.length ? sc.scheduleName || sc.label : sc.label)}</span></th>`; }).join('');
+    const offs = Suite.getSchedule().special;
+    const head = D.map(d => { const sc = Suite.scheduleFor(d), k = keyOf(d), off = offs.find(x => x.date === k && x.scheduleId === 'none');
+      return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<span>${esc(sc.periods.length ? sc.scheduleName || sc.label : sc.label)}</span>
+        <button class="dayoff noprint" data-a="${off ? 'dayon' : 'dayoff'}" data-date="${k}">${off ? 'Undo day off' : 'Mark day off'}</button></th>`; }).join('');
     const evRow = `<tr class="evrow"><th class="rowh" scope="row"><span class="nm">School events</span><span class="secs">Dress-up days, testing, field trips</span></th>${D.map(d => {
         const k = keyOf(d), ev = Suite.eventsOn(k);
         return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn ev${ev.length ? '' : ' empty'}" data-a="events" data-date="${k}" aria-label="School events on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">${ev.length ? ev.map(x => `<span class="evchip">${esc(x.title)}</span>`).join('') : '+ Event'}</button></td>`; }).join('')}</tr>`;
@@ -126,7 +131,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
-        <div class="bar"><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
+        <div class="bar"><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
       <div class="printonly">Plans for ${esc(label)}</div>
       ${mergeable() ? `<div class="banner noprint"><span><b>Some days still have a separate plan for each period</b>, saved before you set up courses. Combine the ones that match into the course plan? Periods with a different plan keep their own.</span><button class="btn primary" data-a="merge">Combine them</button></div>` : ''}
       ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
@@ -205,6 +210,45 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework || links.length ? entry : null);
         close(); dropUnused(removed); render(); Suite.toast('Plan saved');
       }
+    });
+  }
+
+
+  /* ---------- days off (holidays, breaks): saved to the bell schedule as no-school days ---------- */
+  const listDays = (a, b) => { const out = [], d = parse(a), end = parse(b || a); while (d <= end) { const wd = d.getDay(); if (wd > 0 && wd < 6) out.push(keyOf(d)); d.setDate(d.getDate() + 1); } return out; };
+  function setDaysOff(dates, label){ const S = Suite.getSchedule(); dates.forEach(k => { S.special = S.special.filter(x => x.date !== k); S.special.push({ date: k, label: label || 'No school', scheduleId: 'none' }); }); Suite.saveSchedule(S); }
+  function clearDaysOff(dates){ const S = Suite.getSchedule(); S.special = S.special.filter(x => !(dates.includes(x.date) && x.scheduleId === 'none')); Suite.saveSchedule(S); }
+  function openDaysOff(){
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const draw = () => {
+      const offs = Suite.getSchedule().special.filter(x => x.scheduleId === 'none').sort((a, b) => a.date < b.date ? -1 : 1);
+      // group back-to-back days with the same name into one row
+      const groups = []; offs.forEach(x => { const g = groups[groups.length - 1]; if (g && g.label === x.label && listDays(g.end, x.date).length <= 2 && x.date > g.end) { g.end = x.date; g.dates.push(x.date); } else groups.push({ label: x.label, start: x.date, end: x.date, dates: [x.date] }); });
+      const fmt = k => parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="do-t">
+        <h2 id="do-t">Days off</h2>
+        <p>Holidays, breaks, and other days without school. They show as no school here, on the dashboard, and on the Today screen, and shifting plans skips them.</p>
+        <label class="lb" for="do-name">Name</label><input class="field" id="do-name" placeholder="Winter break">
+        <div class="evgrid"><label>First day<input type="date" class="field" id="do-start" value="${keyOf(days()[0])}"></label><label>Last day <span class="muted small">(same day for a single day off)</span><input type="date" class="field" id="do-end" value="${keyOf(days()[0])}"></label></div>
+        <div class="bar" style="margin-top:10px"><button class="btn primary" data-o="add">Add days off</button></div>
+        <h3 style="margin-top:16px">Coming up and past</h3>
+        ${groups.length ? `<ul class="evlist">${groups.map((g, i) => `<li><span><b>${esc(g.label)}</b> <span class="muted small">${fmt(g.start)}${g.end !== g.start ? ' to ' + fmt(g.end) : ''}</span></span><button class="btn quiet danger small" data-o="rm" data-i="${i}" aria-label="Remove ${esc(g.label)}">×</button></li>`).join('')}</ul>` : '<p class="muted">None yet.</p>'}
+        <div class="suite-dialog-actions"><button class="btn" data-o="close">Done</button></div></div>`;
+      back._groups = groups;
+    };
+    document.body.appendChild(back); draw();
+    const close = () => { back.remove(); render(); };
+    back.addEventListener('click', e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('[data-o]'); if (!b) return;
+      if (b.dataset.o === 'close') close();
+      else if (b.dataset.o === 'add') {
+        let a = back.querySelector('#do-start').value, z = back.querySelector('#do-end').value || a; if (!a) return;
+        if (z < a) [a, z] = [z, a];
+        const dates = listDays(a, z); if (!dates.length) { Suite.toast('Those dates are all on a weekend'); return; }
+        setDaysOff(dates, back.querySelector('#do-name').value.trim() || 'No school'); draw(); Suite.toast(dates.length + ' day' + (dates.length === 1 ? '' : 's') + ' off added');
+      }
+      else if (b.dataset.o === 'rm') { clearDaysOff(back._groups[+b.dataset.i].dates); draw(); }
     });
   }
 
@@ -327,6 +371,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     else if (a === 'now') { week = monday(new Date()); render(); }
     else if (a === 'edit') openEditor(el.dataset.row, el.dataset.date, null);
     else if (a === 'courses') openCourses();
+    else if (a === 'daysoff') openDaysOff();
+    else if (a === 'dayoff') { (async () => { const name = await Suite.dialog({ title: 'Mark ' + parse(el.dataset.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' as a day off?', input: 'No school', ok: 'Mark day off' }); if (name) { setDaysOff([el.dataset.date], name); render(); } })(); }
+    else if (a === 'dayon') { clearDaysOff([el.dataset.date]); render(); }
     else if (a === 'events') openEvents(el.dataset.date);
     else if (a === 'merge') { const n = Suite.mergeIntoCourses(); render(); Suite.toast(n ? 'Combined ' + n + ' matching plan' + (n === 1 ? '' : 's') : 'Nothing to combine'); }
     else if (a === 'shift') openShift(el.dataset.row);

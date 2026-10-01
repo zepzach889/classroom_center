@@ -11,7 +11,7 @@
   // Menu: a few everyday links, a Tools menu, and setup under the gear.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
-    { id: 'today', label: 'Today', href: 'today.html' },
+    { id: 'today', label: 'Today', href: 'today.html', beta: true },
     { id: 'tracker', label: 'Table points', href: 'tracker.html', feature: 'points' },
     { id: 'seating', label: 'Seating', href: 'seating.html' },
     { id: 'planner', label: 'Planner', href: 'planner.html' },
@@ -22,9 +22,9 @@
       { id: 'act-stations', label: 'Stations', href: 'activities.html#tool=stations', feature: 'stations' },
       { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally', feature: 'tally' },
       { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups', feature: 'groups' },
-      { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' }
-    ] },
-    { id: 'present', label: 'Present', href: 'present.html', feature: 'present' }
+      { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' },
+      { id: 'present', label: 'Present slides', href: 'present.html', feature: 'present' }
+    ] }
   ];
   const GEAR_MENU = [
     { id: 'settings', label: 'Classes and rosters', href: 'settings.html#classes' },
@@ -32,12 +32,12 @@
     { id: 'general', label: 'General settings', href: 'settings.html#general' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
-  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise'];
+  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'present'];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-03c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-04b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -827,7 +827,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
       const isHere = id => id === current || id === actTool;
       const on = n => !n.feature || S.feature(n.feature);
       const label = n => n.id === 'tracker' ? S.word('team', { cap: true }) + ' points' : n.label;
-      const link = n => `<a href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(label(n))}</a>`;
+      const link = n => `<a href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(label(n))}${n.beta ? '<span class="beta" title="Still being refined">Beta</span>' : ''}</a>`;
       const toolItems = NAV.find(n => n.menu).menu.filter(on);
       const menu = (key, items, title) => `<div class="ddmenu" data-ddm="${key}" hidden role="menu"${title ? ` aria-label="${S.esc(title)}"` : ''}>${items.map(n => n.pop
         ? `<button role="menuitem" data-pop="${n.pop}">${S.esc(n.label)}</button>`

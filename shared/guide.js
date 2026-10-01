@@ -189,12 +189,11 @@
     injectCss();
     const steps = [
       ['.nav-inner a[href="index.html"]:not(.wordmark)', 'Dashboard', 'The clock, today\'s bells, the class in session, today\'s plan, and countdowns. It follows your bell schedule automatically.'],
-      ['.nav-inner a[href="today.html"]', 'Today', 'Your start-of-class screen: the date, Have Out list, and a few boards you step through (welcome, warm-up, agenda, and more), with a warm-up timer and your lesson slides at the end. Use Edit day to fill it in, and Move text to arrange it.'],
+      ['.nav-inner a[href="today.html"]', 'Today (beta)', 'Still being refined, so expect a few rough edges. Your start-of-class screen: the date, Have Out list, and a few boards you step through (welcome, warm-up, agenda, and more), with a warm-up timer and your lesson slides at the end. Use Edit day to fill it in, and Move text to arrange it.'],
       ['.nav-inner a[href="tracker.html"]', 'Points', 'Give points to each ' + S.word('team') + ' with one tap (or the number keys). Weekly winners, streaks, and ' + S.word('lead', { plural: true }) + ' are tracked for you.'],
       ['.nav-inner a[href="seating.html"]', 'Seating', 'Your room as a seating chart. Drag names onto seats, then print it on one page or show it on the projector.'],
       ['.nav-inner a[href="planner.html"]', 'Planner', 'Plan each day for a week at a glance. Group sections into courses to plan once for all of them, attach slides and files, add school events, and shift plans when a snow day hits.'],
-      ['[data-dd="tools"]', 'Tools', 'Name spinner, topic picker, review game, stations, tally, partners and groups, and the noise meter.'],
-      ['.nav-inner a[href="present.html"]', 'Present', 'Show your published Google Slides here, with the timer, spinner, and points one click away on top of them.'],
+      ['[data-dd="tools"]', 'Tools', 'Name spinner, topic picker, review game, stations, tally, partners and groups, the noise meter, and Present slides (your Google Slides with tools on top).'],
       ['#st-pill', 'Timer', 'A big countdown for the whole class. It keeps running while you move between pages and chimes when time is up.'],
       ['[data-dd="pop"]', 'Pop out', 'A small window with the timer, points, or a name picker that floats on top of Google Slides (in Chrome or Edge).'],
       ['[data-dd="gear"]', 'Setup', 'Classes and rosters, the substitute page, bell schedule, countdowns, appearance, backups, and this tour.']
