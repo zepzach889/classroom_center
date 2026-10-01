@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02d">
-<script src="shared/core.js?v=2026-10-02d"></script>
-<script>window.PAGE_VERSION = '2026-10-02d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-03b">
+<script src="shared/core.js?v=2026-10-03b"></script>
+<script>window.PAGE_VERSION = '2026-10-03b';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -149,7 +149,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       ${r.kind === 'course' ? `<div class="scope">${one
           ? `Just <b>${esc(one.name)}</b>. The rest of ${esc(r.name)} keeps the course plan.<div class="bar"><button class="btn quiet small" data-e="course">Back to the course plan</button>${day[one.id] ? `<button class="btn quiet danger small" data-e="unown">Use the course plan for ${esc(one.name)} again</button>` : ''}</div>`
           : `For every section: ${r.classes.map(c => esc(c.name) + (day[c.id] ? ' (changed)' : '')).join(', ') || 'none yet'}.<div class="bar"><label class="small" for="ed-one">Change one period only:</label><select id="ed-one"><option value="">Choose…</option>${r.classes.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></div>`}</div>` : ''}
-      <label class="lb" for="ed-target">Learning target</label><input class="field" id="ed-target" value="${esc(e.target || '')}" placeholder="I can explain why the Nile mattered to Egyptian farmers.">
+      <label class="lb" for="ed-target">Learning target</label><input class="field" id="ed-target" value="${esc(e.target || '')}" placeholder="I can explain the main idea of today's reading.">
       <label class="lb" for="ed-items">Agenda <span class="muted small">(one step per line)</span></label><textarea id="ed-items" rows="6">${esc((e.items || []).join('\n'))}</textarea>
       <label class="lb" for="ed-hw">Homework</label><input class="field" id="ed-hw" value="${esc(e.homework || '')}" placeholder="Optional">
       <span class="lb">Links and files <span class="muted small">(slides, docs, handouts; they show on the dashboard and the sub packet)</span></span>
@@ -254,7 +254,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       const co = Suite.courses(), cl = Suite.classes();
       back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="co-t">
         <h2 id="co-t">Courses</h2>
-        <p>A course is a group of periods that get the same lesson, like all your 6th grade sections. You plan once for the course, and each period can still be changed on its own.</p>
+        <p>A course is a group of periods that get the same lesson, like all the sections of one grade or subject. You plan once for the course, and each period can still be changed on its own.</p>
         <div class="courses">${co.length ? `<ul>${co.map(c => `<li><span class="nm">${esc(c.name)}</span><span class="muted small">${cl.filter(k => (c.classIds || []).includes(k.id)).map(k => esc(k.name)).join(', ')}</span>
           <button class="btn quiet small" data-c="edit" data-id="${esc(c.id)}">Edit</button><button class="btn quiet danger small" data-c="del" data-id="${esc(c.id)}" aria-label="Remove ${esc(c.name)}">×</button></li>`).join('')}</ul>` : '<p class="muted">No courses yet.</p>'}</div>
         <div class="suite-dialog-actions" style="justify-content:space-between"><button class="btn" data-c="add">Add a course</button><button class="btn primary" data-c="done">Done</button></div></div>`;
@@ -264,7 +264,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       const taken = new Set(co.filter(x => x.id !== c.id).flatMap(x => x.classIds || []));
       back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="co-t">
         <h2 id="co-t">${c.name ? 'Edit ' + esc(c.name) : 'New course'}</h2>
-        <label class="lb" for="co-name">Name</label><input class="field" id="co-name" value="${esc(c.name)}" placeholder="6th grade World History">
+        <label class="lb" for="co-name">Name</label><input class="field" id="co-name" value="${esc(c.name)}" placeholder="6th grade science">
         <span class="lb">Periods in this course</span>
         <div class="checks">${cl.map(k => `<label${taken.has(k.id) ? ' title="Already in another course"' : ''}><input type="checkbox" value="${esc(k.id)}"${(c.classIds || []).includes(k.id) ? ' checked' : ''}${taken.has(k.id) ? ' disabled' : ''}> ${esc(k.name)}</label>`).join('')}</div>
         <div class="suite-dialog-actions"><button class="btn" data-c="back">Cancel</button><button class="btn primary" data-c="save" data-id="${esc(c.id)}">Save course</button></div></div>`;

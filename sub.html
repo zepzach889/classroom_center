@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02d">
-<script src="shared/core.js?v=2026-10-02d"></script>
-<script>window.PAGE_VERSION = '2026-10-02d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-03b">
+<script src="shared/core.js?v=2026-10-03b"></script>
+<script>window.PAGE_VERSION = '2026-10-03b';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -107,7 +107,7 @@
         <div><label class="lb" for="snotes">Notes for the sub</label><textarea id="snotes" rows="6" data-t="notes" placeholder="Welcome, the day at a glance, who to call with questions..."></textarea></div>
         <div><label class="lb" for="semerg">Emergency procedures</label><textarea id="semerg" rows="6" data-t="emergency" placeholder="Fire and lockdown routes, where the emergency folder is, the office extension..."></textarea></div>
         <div><label class="lb" for="swhere">Where to find things</label><textarea id="swhere" rows="5" data-t="where" placeholder="Copies on the front table, extra pencils in the bin by the door..."></textarea></div>
-        <div><label class="lb" for="srules">How table points work</label><textarea id="srules" rows="5" data-t="rules"></textarea></div>
+        <div id="rulesbox"><label class="lb" for="srules">How points work</label><textarea id="srules" rows="5" data-t="rules"></textarea></div>
       </div>
     </details>
     <details class="cbox">
@@ -121,14 +121,9 @@
 (function(){
   const $ = q => document.querySelector(q);
   const esc = Suite.esc;
-  const RULES = [
-    'Each table is a team. Points go to the whole table, not to one student.',
-    '+1 for good participation or behavior. -1 for disruptions such as talking during instructions.',
-    'At the end of class: +2 if the table area is clean, +1 if it is mostly clean.',
-    'Each table has a captain who makes sure the area is cleaned up, chairs are pushed in, and papers are passed out and collected.',
-    'Please leave a note with any points you gave, and I will add them.'
-  ].join('\n');
-  const S0 = Object.assign({ notes: '', rules: RULES, emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {} }, Suite.get('sub', {}));
+  const usesPoints = () => Suite.feature('points') && Suite.classes().some(c => c.tables.some(t => t.open));
+  const RULES = () => `Students sit in ${Suite.word('team', { plural: true })}, and points go to the whole ${Suite.word('team')}. Please jot down any points you'd like to give, and I'll add them when I'm back.`;
+  const S0 = Object.assign({ notes: '', rules: '', emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {} }, Suite.get('sub', {}));
   ['helpers', 'classNotes', 'materials'].forEach(k => { S0[k] = S0[k] || {}; });
   let date = Suite.dateKey(new Date());
   const save = () => Suite.set('sub', S0);
@@ -166,7 +161,7 @@
         const c = Suite.classForPeriod(p, list);
         return `<tr><td>${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)}</td><td>${esc(p.name)}</td><td>${c ? esc(c.name) : p.isBreak ? '' : '<span style="color:#666">No class</span>'}</td></tr>`; }).join('')}</tbody></table>`
         : '<p>No bells on this day.</p>'}
-      ${block('How table points work', S0.rules)}
+      ${usesPoints() ? block('How ' + Suite.word('team') + ' points work', S0.rules || RULES()) : ''}
     </section>`;
     const pages = chosen.map(c => {
       const lay = Suite.roomLayout(c.tables), p = periodFor(c), a = Suite.agendaFor(date, c.id), cp = caps[c.id] || {};
@@ -191,9 +186,9 @@
         <h3>Seating chart</h3>
         ${c.students.length ? room : '<p class="noroster">No roster entered for this class.</p>'}
         ${unassigned.length ? `<p style="margin-top:8px"><span class="k">Not at a table:</span> ${unassigned.map(s => esc(s.name)).join(', ')}</p>` : ''}
-        <h3>Points given today</h3>
+        ${usesPoints() && c.tables.some(t => t.open) ? `<h3>Points given today</h3>
         <table><thead><tr>${c.tables.filter(t => t.open).map(t => `<th>${esc(t.name)}</th>`).join('')}</tr></thead>
-          <tbody><tr>${c.tables.filter(t => t.open).map(() => '<td style="height:54px"></td>').join('')}</tr></tbody></table>
+          <tbody><tr>${c.tables.filter(t => t.open).map(() => '<td style="height:54px"></td>').join('')}</tr></tbody></table>` : ''}
       </section>`;
     }).join('');
     $('#packet').innerHTML = list.length ? overview + pages : '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>';
@@ -205,6 +200,7 @@
     $('#sdate').value = date;
     $('#classpick').innerHTML = list.map(c => `<label><input type="checkbox" value="${esc(c.id)}"${S0.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="muted small">No classes yet.</span>';
     document.querySelectorAll('textarea[data-t]').forEach(t => { t.value = S0[t.dataset.t] || ''; });
+    $('#rulesbox').hidden = !usesPoints(); $('#srules').placeholder = RULES();
     $('#classnotes').innerHTML = list.map(c => `<div class="classnote"><h3>${esc(c.name)}</h3>
         <span class="lb">Students the sub can rely on</span>
         <div class="helpers">${c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => `<label><input type="checkbox" data-help="${esc(c.id)}" value="${esc(s.id)}"${(S0.helpers[c.id] || []).includes(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">No roster yet.</span>'}</div>

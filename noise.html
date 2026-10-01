@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02d">
-<script src="shared/core.js?v=2026-10-02d"></script>
-<script>window.PAGE_VERSION = '2026-10-02d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-03b">
+<script src="shared/core.js?v=2026-10-03b"></script>
+<script>window.PAGE_VERSION = '2026-10-03b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:6px 0 16px}
@@ -79,7 +79,7 @@ body.proj .nmeter{height:90px}
     const v = mic.cal.samples.slice().sort((a, b) => a - b);
     mic.cal = null;
     if (v.length < 10) { Suite.toast("Couldn't hear the room. Try again."); render(); return; }
-    N.base = v[Math.floor(v.length * 0.9)];   // the loud end of "quiet", so the fan's ups and downs count as zero
+    N.base = v[Math.floor(v.length * 0.9)];   // the loud end of "quiet", so steady background noise counts as zero
     mic.level = 0; mic.quiet = 0; saveN(); render(); Suite.toast('Calibrated to your room');
   }
   function micStop(){
@@ -114,7 +114,7 @@ body.proj .nmeter{height:90px}
   function noiseView(){
     const head = `<div class="toolbar ctl"><div class="tooltitle">Noise meter</div><div class="bar">${mic ? `<button class="btn${N.base == null ? ' primary' : ''}" data-a="ncal"${mic.cal ? ' disabled' : ''}>${N.base == null ? 'Calibrate' : 'Recalibrate'}</button><button class="btn" data-a="nstop">Stop listening</button>` : ''}<button class="btn" data-a="proj">Projector view</button></div></div>`;
     if (mic && mic.cal) return head + `<div class="nbox"><div class="nlabel" style="color:var(--ink)">Listening to the room…</div>
-        <p style="margin:0 auto;font-size:20px">Keep the room quiet for 5 seconds, with the fan running the way it usually does.</p></div>`;
+        <p style="margin:0 auto;font-size:20px">Keep the room quiet for 5 seconds, with the usual background noise (fans, heaters, a projector) going as it normally does.</p></div>`;
     if (!mic) return head + `<div class="empty">
         <h2>${micErr === 'blocked' ? 'The microphone is blocked' : micErr ? "This computer can't use a microphone here" : 'Listen to the room'}</h2>
         <p>${micErr === 'blocked' ? 'The browser (or your school) has blocked microphone access for this site. You can allow it from the lock or camera icon in the address bar, if your school permits it.'
@@ -126,8 +126,8 @@ body.proj .nmeter{height:90px}
         <div class="nmeter" aria-hidden="true"><span id="nbar"></span><i class="nline" style="left:${N.line}%"></i></div>
         <div class="nquiet">Time under the line: <b id="nquiet">0:00</b> <button class="btn quiet small ctl" data-a="nreset">Reset</button></div>
       </div>
-      ${N.base == null ? `<div class="card ctl ncal"><b>Calibrate for your room.</b> With the fan on and the class quiet, press <b>Calibrate</b>. The meter then measures only the noise above that, so the fan reads as zero. You only need to do it again if the room changes.</div>`
-        : `<p class="hint ctl" style="margin-top:10px">Calibrated to your room. If the fan or the room changes, press Recalibrate. <a href="#" data-a="nclear">Clear calibration</a></p>`}
+      ${N.base == null ? `<div class="card ctl ncal"><b>Calibrate for your room.</b> With the class quiet and the room's usual background noise going, press <b>Calibrate</b>. The meter then measures only the noise above that, so the steady hum reads as zero. You only need to do it again if the room changes.</div>`
+        : `<p class="hint ctl" style="margin-top:10px">Calibrated to your room. If the room's background noise changes, press Recalibrate. <a href="#" data-a="nclear">Clear calibration</a></p>`}
       <div class="card ctl ncontrols">
         <label>Where's the line? <input type="range" min="15" max="95" value="${N.line}" data-c="nline" aria-label="Loudness line"></label>
         <label>Microphone sensitivity <input type="range" min="1" max="10" value="${N.sens}" data-c="nsens" aria-label="Microphone sensitivity"></label>

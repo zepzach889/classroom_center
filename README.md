@@ -14,7 +14,6 @@ noise.html        Noise meter
 seating.html      Seating charts and room setup (tables, seats, layout)
 planner.html      Weekly planner: courses, snow-day shift, printable week
 today.html        Today screen: class boards, warm-up timer, Flag of the Week, lesson deck
-backgrounds/      Classroom background images for the Today screen
 present.html      Show published Google Slides with tools on top
 help.html         Help and the menu tour
 shared/guide.js   First-visit setup guide and tour

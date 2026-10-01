@@ -6,8 +6,7 @@
   const PREFIX = 'suite:';
   const PALETTE = ['#24405E', '#C99A3E', '#B84A32', '#5E806B', '#6A5577', '#3F7F8A', '#8A6A3E', '#4A5663'];
   const OLD_PALETTE = ['#2E6378', '#B7924A', '#6B7F3A', '#7A2E4F', '#4F5D8A', '#A0643A', '#3F7F74', '#8A5A83'];
-  // [id, name, seats, row, spot] — spot = position from the left, matching the room
-  const DEFAULT_TABLES = [['sequoyah', 'Sequoyah', 8, 1, 1], ['delmarva', 'Delmarva', 6, 1, 2], ['franklin', 'Franklin', 6, 1, 3], ['jefferson', 'Jefferson', 6, 2, 2], ['metropotamia', 'Metropotamia', 6, 2, 3]];
+  const DEFAULT_TABLE_COUNT = 5, DEFAULT_SEATS = 6;
   // Flip "soon" to false as each page is added to the site.
   // Menu: a few everyday links, a Tools menu, and setup under the gear.
   const NAV = [
@@ -38,7 +37,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-02d';   // bump with every build; pages check they match
+  const VERSION = '2026-10-03b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -76,13 +75,15 @@
   };
 
   /* ---------- classes & tables ---------- */
-  S.defaultTables = () => DEFAULT_TABLES.map(([id, name, seats, row, col], i) => ({ id, name, seats, open: true, color: PALETTE[i % PALETTE.length], row, col }));
+  S.defaultTables = () => Array.from({ length: DEFAULT_TABLE_COUNT }, (_, i) => ({ id: 't' + (i + 1) + '-' + S.uid().slice(0, 4), name: S.word('team', { cap: true }) + ' ' + (i + 1), seats: DEFAULT_SEATS, open: true, color: PALETTE[i % PALETTE.length] }));
   // Where each table sits in the room. Tables without a spot get the default for their name,
   // or the next free spot. Returns { cols, rows, at: { tableId: { row, col } } }.
   S.roomLayout = tables => {
-    const known = {}; DEFAULT_TABLES.forEach(d => { known[d[1].toLowerCase()] = { row: d[3], col: d[4] }; });
+    // Tables with a set spot keep it. The rest fill rows of three, and a partial last row lines up on the right.
     const at = {}, used = new Set(), key = (r, c) => r + ',' + c;
-    const want = t => (t.row && t.col) ? { row: +t.row, col: +t.col } : known[String(t.name).trim().toLowerCase()] || null;
+    const loose = tables.filter(t => !(t.row && t.col)), auto = {};
+    loose.forEach((t, i) => { const r = Math.floor(i / 3), inRow = Math.min(3, loose.length - r * 3); auto[t.id] = { row: r + 1, col: (i % 3) + 1 + (3 - inRow) }; });
+    const want = t => (t.row && t.col) ? { row: +t.row, col: +t.col } : auto[t.id];
     const later = [];
     tables.forEach(t => { const w = want(t); if (w && !used.has(key(w.row, w.col))) { at[t.id] = w; used.add(key(w.row, w.col)); } else later.push(t); });
     let cols = Math.max(3, ...Object.values(at).map(p => p.col), 1);

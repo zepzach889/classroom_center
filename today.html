@@ -6,10 +6,10 @@
 <title>Today · Classroom Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Nunito:wght@900&family=Schoolbell&family=Sniglet:wght@400;800&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02d">
-<script src="shared/core.js?v=2026-10-02d"></script>
-<script>window.PAGE_VERSION = '2026-10-02d';</script>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-03b">
+<script src="shared/core.js?v=2026-10-03b"></script>
+<script>window.PAGE_VERSION = '2026-10-03b';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -36,11 +36,12 @@ body.full #suite-nav,body.full .rail{display:none}
 .region{position:absolute}
 .region[hidden]{display:none}
 .date{display:grid;place-items:center;text-align:center}
-#dateText{font-family:"EB Garamond",Georgia,serif;font-weight:700;font-size:calc(3.05cqw * var(--fit,1));color:var(--ink-date);text-decoration:underline;text-decoration-thickness:.06em;text-underline-offset:.12em;white-space:nowrap}
+#dateText{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:calc(3.05cqw * var(--fit,1));color:var(--ink-date);text-decoration:underline;text-decoration-thickness:.06em;text-underline-offset:.12em;white-space:nowrap}
 .board{padding:1.2cqw 3cqw 1.4cqw}
 .board-fit{height:100%;overflow:hidden;font-size:calc(2.2cqw * var(--fit,1))}
-.heading{margin:0 0 .25em;text-align:center;font-family:"Schoolbell","Comic Sans MS",cursive;font-weight:400;font-size:2.1em;line-height:1.1;color:var(--ink-green);letter-spacing:.02em}
-.lines{margin:0;padding:0 0 0 1.1em;font-family:"Sniglet","Trebuchet MS",sans-serif;font-weight:800;line-height:1.4;list-style:disc}
+.heading{margin:0 0 .25em;text-align:center;font-family:"Architects Daughter","Comic Sans MS",cursive;font-weight:400;-webkit-text-stroke:.035em currentColor;font-size:2.1em;line-height:1.1;color:var(--ink-green);letter-spacing:.02em}
+.lines{margin:0;padding:0 0 0 1.1em;font-family:"Chelsea Market","Trebuchet MS",sans-serif;font-weight:400;line-height:1.4;list-style:disc}
+.lines b{font-weight:700}
 .lines li{margin-bottom:.2em;padding-left:.15em}
 .lines li.lv1{margin-left:1.6em;list-style-type:circle}
 .lines li.lv2{margin-left:3.2em;list-style-type:square}
@@ -48,9 +49,37 @@ body.full #suite-nav,body.full .rail{display:none}
 .lines .emph{color:var(--ink-red);text-decoration:underline;text-decoration-thickness:.08em}
 .cork{padding:1cqw 1.2cqw}
 .cork-fit{height:100%;overflow:hidden;font-size:calc(1.9cqw * var(--fit,1))}
-.have-out{margin:0 0 .2em;font-family:"Nunito","Arial Rounded MT Bold",sans-serif;font-weight:900;font-size:1.45em;line-height:1.05;color:var(--ink-green);text-transform:uppercase;white-space:nowrap}
-.have-list{margin:0;padding-left:1.1em;font-family:"Nunito","Arial Rounded MT Bold",sans-serif;font-weight:900;line-height:1.35;color:var(--ink-blue);text-transform:uppercase}
+.have-out{margin:0 0 .2em;font-family:"Chelsea Market","Arial Rounded MT Bold",sans-serif;font-weight:400;font-size:1.45em;line-height:1.05;color:var(--ink-green);text-transform:uppercase;white-space:nowrap}
+.have-list{margin:0;padding-left:1.1em;font-family:"Chelsea Market","Arial Rounded MT Bold",sans-serif;font-weight:400;line-height:1.35;color:var(--ink-blue);text-transform:uppercase}
 .have-list li{white-space:nowrap}
+.basicroom{position:absolute;inset:0;background:linear-gradient(180deg,#3f6f78 0%,#36616a 76%,#9a6e45 76%,#b78655 100%)}
+.br-banner{position:absolute;background:#f7eedb;border:.45cqw solid #c79a45;border-radius:.5cqw;box-shadow:0 .3cqw .8cqw rgba(0,0,0,.25)}
+.br-board{position:absolute;background:#fbfbf8;border:.6cqw solid #b9c0c6;border-radius:.4cqw;box-shadow:0 .4cqw 1cqw rgba(0,0,0,.25)}
+.br-cork{position:absolute;background:#c99a62;border:.7cqw solid #1f3d63;border-radius:.4cqw;box-shadow:inset 0 0 2cqw rgba(90,55,20,.35),0 .4cqw 1cqw rgba(0,0,0,.25)}
+.rs{position:fixed;inset:0;z-index:90;background:rgba(10,16,24,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}
+.rs-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;width:min(1200px,96vw);color:#fff}
+.rs-head h2{color:#fff;font-size:22px}
+.rs-stage{position:relative;width:min(1200px,96vw,calc((100vh - 170px) * 16 / 9));aspect-ratio:16/9;background:#333 center/cover no-repeat;border-radius:8px;overflow:hidden;touch-action:none}
+.rsbox{position:absolute;border:3px dashed var(--c);background:color-mix(in srgb,var(--c) 18%,transparent);cursor:move;touch-action:none}
+.rsbox span{position:absolute;left:4px;top:3px;background:var(--c);color:#fff;font:700 13px var(--sans);padding:1px 8px;border-radius:999px;pointer-events:none}
+.rsbox i{position:absolute;right:-8px;bottom:-8px;width:18px;height:18px;border-radius:50%;background:var(--c);border:2px solid #fff;cursor:nwse-resize}
+.rsbox.off{display:none}
+.rs-note{color:#dfe6ec;font-size:14px;margin:0}
+.bm{pointer-events:none}
+.bm img{position:absolute;bottom:0;left:50%;height:100%;width:auto;max-width:none;transform:translateX(-50%)}
+.rtb{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:var(--sheet);padding:6px 0 8px;border-bottom:1.5px solid var(--rule);margin-bottom:10px}
+.rtb button{font:inherit;font-size:14px;min-width:30px;height:30px;border:1.5px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;padding:0 6px}
+.rtb button:hover{border-color:var(--edge)}
+.rtb .cdot{width:22px;min-width:22px;height:22px;border-radius:50%;padding:0;border:2px solid var(--edge)}
+.rtb select{font:inherit;font-size:13px;height:30px;border-radius:8px}
+.rtb .sep{width:1px;height:22px;background:var(--rule);margin:0 2px}
+.rline{min-height:30px;border:1.5px solid var(--rule);border-radius:8px;background:var(--paper);padding:4px 8px;font-family:"Chelsea Market",var(--sans);font-size:15px;line-height:1.35;outline:none}
+.rline:focus{border-color:var(--sea);box-shadow:0 0 0 2px rgba(0,0,0,.05)}
+.rline:empty::before{content:attr(data-ph);color:var(--ink-2)}
+.lrow.lv1 .rline{margin-left:22px}.lrow.lv2 .rline{margin-left:44px}
+.bmrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sched li{display:grid;grid-template-columns:130px 1fr 1fr auto;gap:6px;align-items:center;padding:4px 0}
+.sched{list-style:none;margin:6px 0;padding:0}
 .timer{display:grid;place-items:center;border:0;padding:0;cursor:pointer;background:radial-gradient(ellipse at 50% 60%,#1a1712 0%,#07090b 70%)}
 .bulbs{font-family:"Bungee",Impact,sans-serif;font-size:7.4cqw;letter-spacing:.06em;line-height:1;color:#ffd98a;background:radial-gradient(circle at 50% 50%,#fff6d6 0 28%,#ffc85a 34%,rgba(255,200,90,0) 52%) 0 0/.13em .13em;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 .08em rgba(255,196,80,.75)) drop-shadow(0 0 .25em rgba(255,160,40,.35))}
 .timer.done .bulbs{animation:blink .6s steps(2,jump-none) 6}
@@ -96,7 +125,7 @@ details.sec>summary .muted{font-weight:400}
 .lineup li:first-child{border-top:0}
 .lineup li span{flex:1}
 .lineup .btn{min-height:0;padding:1px 9px;font-size:14px}
-.lrow{display:grid;grid-template-columns:22px 1fr auto auto;gap:6px;align-items:center;margin-top:6px}
+.lrow{display:grid;grid-template-columns:22px 1fr auto auto;gap:6px;align-items:start;margin-top:6px}
 .lrow .sw{width:22px;height:22px;border-radius:50%;border:2px solid var(--edge);cursor:pointer;padding:0}
 .lrow input.field{width:100%;min-width:0}
 .lrow.lv1 input.field{margin-left:22px;width:calc(100% - 22px)}
@@ -133,11 +162,11 @@ details.sec>summary .muted{font-weight:400}
   const clone = x => JSON.parse(JSON.stringify(x));
 
   /* ---------- backgrounds and where the text goes (measured on 1920x1080) ---------- */
+  // The built-in room is drawn, not a picture. Teachers upload their own rooms and bitmojis (saved in their browser).
   const LOOKS = {
-    history:  { name: 'History room', bg: 'backgrounds/history.jpg', date: [630, 70, 680, 75], board: [445, 215, 1030, 500], cork: [1565, 228, 305, 430], timer: [746, 751, 428, 243], coverTimer: true },
-    advisory: { name: 'Advisory room', bg: 'backgrounds/advisory.jpg', date: [495, 70, 960, 72], board: [458, 210, 1020, 490], cork: [1560, 205, 310, 450] },
-    lego:     { name: 'LEGO room', bg: 'backgrounds/lego.jpg', date: [448, 72, 857, 68], board: [470, 222, 845, 473], cork: [1395, 218, 230, 325] }
+    basic: { name: 'Simple classroom', basic: true, date: [520, 48, 880, 96], board: [470, 196, 980, 520], cork: [1560, 196, 300, 500], timer: [760, 790, 400, 210], bm: [70, 210, 380, 850] }
   };
+  const BITMOJI = {};
   const BOARDS = {
     welcome:  { label: 'Welcome', heading: 'WELCOME!' },
     flag:     { label: 'Flag of the Week', heading: 'FLAG OF THE WEEK' },
@@ -147,15 +176,15 @@ details.sec>summary .muted{font-weight:400}
     agenda:   { label: "Today's agenda", heading: "TODAY'S AGENDA" },
     custom:   { label: 'Custom board', heading: 'REMINDERS' }
   };
-  const HISTORY_LINES = [
-    { color: 'red', level: 0, text: 'Please get out your textbooks' },
-    { color: 'blue', level: 0, text: 'Open up your Chromebook and log on to Google Classroom.' },
-    { color: 'blue', level: 0, text: 'Open up the warm-up question and answer before class starts.' },
-    { color: 'green', level: 0, text: 'Check the board next to the screen for your planner info.' }];
-  const COMMON = ['Pen or pencil', 'Binder', 'Textbook', 'Chromebook', 'Planner', 'Notebook', 'Colored pencils', 'Your build'];
+  const STARTER_LINES = [
+    { color: 'blue', level: 0, text: 'Find your seat and get settled.' },
+    { color: 'blue', level: 0, text: 'Get out the materials listed under Have Out.' },
+    { color: 'green', level: 0, text: 'Start the warm-up when you are ready.' }];
+  const COMMON = ['Pen or pencil', 'Notebook', 'Binder', 'Textbook', 'Laptop', 'Planner', 'Colored pencils', 'Calculator'];
   const INK = { blue: 'var(--ink-blue)', red: 'var(--ink-red)', green: 'var(--ink-green)' }, INK_ORDER = ['blue', 'red', 'green'];
 
-  let T = Object.assign({ mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {} }, Suite.get('today', {}));
+  const BLANK = { mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {}, bitmojis: {}, bmAdj: {} };
+  let T = Object.assign(clone(BLANK), Suite.get('today', {}));
   const save = () => Suite.set('today', T);
   let viewDate = Suite.dateKey(new Date()), screen = 0, reveal = 0, lesson = false, full = false, editing = false, revealFlag = false;
   const urls = {};
@@ -165,19 +194,15 @@ details.sec>summary .muted{font-weight:400}
   const classes = () => Suite.classes();
   const rowKeyOf = cid => { const co = Suite.courseOf(cid); return co ? Suite.courseKey(co.id) : cid; };
   const rowName = cid => { const co = Suite.courseOf(cid); return co ? co.name : (classes().find(c => c.id === cid) || {}).name || ''; };
-  function guessLook(name){ return /advis/i.test(name) ? 'advisory' : /lego/i.test(name) ? 'lego' : 'history'; }
   function usual(cid){
     const key = rowKeyOf(cid);
     if (!T.rows[key]) {
-      const look = guessLook(rowName(cid)), hist = look === 'history';
       T.rows[key] = {
-        look, deckUrl: '', timer: { on: hist, min: 3, auto: hist },
-        lineup: hist ? ['welcome', 'flag', 'warmup', 'returned', 'due', 'agenda'] : ['welcome', 'agenda'],
-        haveOut: hist ? ['Pen or pencil', 'Binder', 'Textbook', 'Chromebook'] : look === 'lego' ? ['Binder'] : ['Pen or pencil', 'Binder'],
+        look: 'basic', bitmoji: 'none', schedule: [], deckUrl: '', timer: { on: false, min: 3, auto: false },
+        lineup: ['welcome', 'agenda'],
+        haveOut: ['Pen or pencil', 'Notebook'],
         boards: {
-          welcome: { heading: BOARDS.welcome.heading, lines: hist ? clone(HISTORY_LINES) : look === 'lego'
-            ? [{ color: 'blue', level: 0, text: 'Please sit in your assigned seat.' }, { color: 'blue', level: 0, text: 'Get your builds from the cabinet.' }, { color: 'red', level: 0, text: 'DO NOT TOUCH THE LEGOS YET!' }]
-            : [{ color: 'blue', level: 0, text: 'Please sit in your assigned seat.' }, { color: 'blue', level: 0, text: 'Please get out the materials listed in the "HAVE OUT" section.' }] },
+          welcome: { heading: BOARDS.welcome.heading, lines: clone(STARTER_LINES) },
           warmup: { heading: BOARDS.warmup.heading, lines: [] },
           returned: { heading: BOARDS.returned.heading, lines: [] },
           due: { heading: BOARDS.due.heading, source: 'plan', lines: [] },
@@ -227,7 +252,7 @@ details.sec>summary .muted{font-weight:400}
       if (type === 'agenda') return (plan.items || []).map(t => ({ text: t, color: 'blue', level: 0 }));
       return plan.homework ? plan.homework.split('\n').filter(x => x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })) : [];
     }
-    return (b.lines || []).filter(l => (l.text || '').trim());
+    return (b.lines || []).filter(l => (l.text || '').trim() || (l.html && l.html.replace(/<[^>]+>/g, '').trim()));
   }
   function screens(date, cid){
     const rec = dayFor(date, cid);
@@ -237,16 +262,60 @@ details.sec>summary .muted{font-weight:400}
 
   /* ---------- drawing ---------- */
   const place = box => box ? `left:${box[0] / 19.2}%;top:${box[1] / 10.8}%;width:${box[2] / 19.2}%;height:${box[3] / 10.8}%` : 'display:none';
-  const lineHtml = (l, hidden) => `<li class="lv${Math.min(2, l.level || 0)}${hidden ? ' hide' : ''}" style="color:${INK[l.color] || INK.blue}">${esc(l.text).replace(/\*([^*]+)\*/g, '<span class="emph">$1</span>')}</li>`;
+  const lineHtml = (l, hidden) => `<li class="lv${Math.min(2, l.level || 0)}${hidden ? ' hide' : ''}" style="color:${INK[l.color] || INK.blue}">${lineInner(l)}</li>`;
   const ordinal = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
   const longDate = k => { const [y, m, d] = k.split('-').map(Number), x = new Date(y, m - 1, d); return `${x.toLocaleDateString('en-US', { weekday: 'long' })}, ${x.toLocaleDateString('en-US', { month: 'long' })} ${ordinal(d)}, ${y}`; };
-  function lookOf(cid){ const u = usual(cid); return T.custom[u.look] ? Object.assign({}, LOOKS[T.custom[u.look].base] || LOOKS.history, { custom: T.custom[u.look] }) : LOOKS[u.look] || LOOKS.history; }
+  function roomFor(date, cid){
+    const u = usual(cid), d = T.days[date] || {}, own = d[cid] || d[rowKeyOf(cid)] || {};
+    const unit = (u.schedule || []).filter(x => x.from && x.from <= date).sort((a, b) => a.from < b.from ? -1 : 1).pop();
+    const look = own.look || (unit && unit.look) || u.look;
+    return { look: LOOKS[look] || T.custom[look] ? look : 'basic', bitmoji: own.bitmoji || (unit && unit.bitmoji) || u.bitmoji || 'none', unit };
+  }
+  const layoutOf = L => ({ date: L.date, board: L.board, cork: L.cork, timer: L.timer || null, bm: L.bm });
+  function lookById(id){ const c = T.custom[id]; return c ? Object.assign({ name: c.name }, layoutOf(LOOKS.basic), c.layout || {}, { custom: c }) : LOOKS[id] || LOOKS.basic; }
+  function lookOf(cid, date){ return lookById(roomFor(date || viewDate, cid).look); }
+  const bmName = id => BITMOJI[id] || (T.bitmojis[id] || {}).name || 'Bitmoji';
+  async function bmSrc(id){ if (!id || id === 'none') return null; const b = T.bitmojis[id]; return b ? fileUrl(b.fileId) : null; }
+  const bmAdj = id => Object.assign({ scale: 100, dx: 0 }, T.bmAdj[id] || {});
+  /* ---------- formatted text: keep only bold, italic, underline, color, font, and size ---------- */
+  const FONTS = { chelsea: '"Chelsea Market"', architect: '"Architects Daughter"', georgia: 'Georgia' };
+  const KEY_SIZES = { 'x-small': .7, small: .85, medium: 1, large: 1.15, 'x-large': 1.35, 'xx-large': 1.6, 'xxx-large': 1.9 }, NUM_SIZES = { 1: .7, 2: .85, 3: 1, 4: 1.15, 5: 1.35, 6: 1.6, 7: 1.9 };
+  const safeColor = c => /^(#[0-9a-f]{3,8}|rgba?\([\d\s,.%]+\)|[a-z]+)$/i.test((c || '').trim()) ? c.trim() : '';
+  const safeFont = f => { f = (f || '').toLowerCase(); return f.includes('chelsea') ? FONTS.chelsea : f.includes('architect') ? FONTS.architect : f.includes('georgia') ? FONTS.georgia : ''; };
+  function clean(html){
+    const t = document.createElement('template'); t.innerHTML = html || '';
+    const out = document.createElement('div');
+    const walk = (src, dst) => src.childNodes.forEach(n => {
+      if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.textContent)); return; }
+      if (n.nodeType !== 1 || n.tagName === 'BR' || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
+      let el = null; const tag = n.tagName;
+      if (tag === 'B' || tag === 'STRONG') el = document.createElement('b');
+      else if (tag === 'I' || tag === 'EM') el = document.createElement('i');
+      else if (tag === 'U') el = document.createElement('u');
+      else if (tag === 'SPAN' || tag === 'FONT' || tag === 'DIV') {
+        const st = [], col = safeColor(n.getAttribute('color') || n.style.color), face = safeFont(n.getAttribute('face') || n.style.fontFamily);
+        const sz = n.getAttribute('size'), fs = n.style.fontSize;
+        if (col) st.push('color:' + col);
+        if (face) st.push('font-family:' + face);
+        if (sz && NUM_SIZES[sz]) st.push('font-size:' + NUM_SIZES[sz] + 'em'); else if (KEY_SIZES[fs]) st.push('font-size:' + KEY_SIZES[fs] + 'em'); else if (/^[\d.]+em$/.test(fs || '')) st.push('font-size:' + fs);
+        if (n.style.fontWeight === 'bold' || +n.style.fontWeight >= 600) st.push('font-weight:700');
+        if (n.style.fontStyle === 'italic') st.push('font-style:italic');
+        if (/underline/.test(n.style.textDecoration || n.style.textDecorationLine || '')) st.push('text-decoration:underline');
+        if (st.length) { el = document.createElement('span'); el.setAttribute('style', st.join(';')); }
+      }
+      if (el) { walk(n, el); dst.appendChild(el); } else walk(n, dst);
+    });
+    walk(t.content, out);
+    return out.innerHTML;
+  }
+  const lineInner = l => l.html ? clean(l.html) : esc(l.text || '').replace(/\*([^*]+)\*/g, '<span class="emph">$1</span>');
 
   async function render(){
     document.body.classList.toggle('full', full);
     const cid = activeId(), list = classes();
     if (!cid) { $('#stage').innerHTML = '<div class="lesson"><div class="lesson-empty"><p class="t">Add your classes first</p><p>Today uses your classes and bell schedule.</p></div></div>'; renderRail(null); return; }
-    const S = screens(viewDate, cid), rec = dayFor(viewDate, cid), u = usual(cid), L = lookOf(cid);
+    const S = screens(viewDate, cid), rec = dayFor(viewDate, cid), u = usual(cid), room = roomFor(viewDate, cid), L = lookById(room.look);
+    const bmUrl = await bmSrc(room.bitmoji), adj = bmAdj(room.bitmoji);
     if (screen >= S.length) screen = Math.max(0, S.length - 1);
     const type = S[screen] || 'welcome';
     let html = '';
@@ -256,26 +325,31 @@ details.sec>summary .muted{font-weight:400}
       const lines = boardLines(viewDate, cid, type, rec), b = (rec.boards || {})[type] || {};
       let shown = 0;
       const items = lines.map(l => { const hid = l.reveal && type === 'warmup' ? (shown++ >= reveal) : false; return lineHtml(l, hid); }).join('');
-      html = `<div class="region date" style="${place(L.date)}"><span id="dateText">${esc(longDate(viewDate))}</span></div>
+      html = `${L.basic ? basicRoom(L) : ''}${bmUrl && L.bm ? `<div class="region bm" style="${place([L.bm[0] + adj.dx, L.bm[1] + L.bm[3] * (1 - adj.scale / 100), L.bm[2], L.bm[3] * adj.scale / 100])}"><img src="${bmUrl}" alt=""></div>` : ''}
+        <div class="region date" style="${place(L.date)}"><span id="dateText">${esc(longDate(viewDate))}</span></div>
         <div class="region board" style="${place(L.board)}"><div class="board-fit" id="boardFit"><h1 class="heading">${esc(b.heading || BOARDS[type].heading)}</h1><ul class="lines">${items}</ul></div></div>
         <div class="region cork" style="${place(L.cork)}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list">${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></div>
-        ${L.timer && (u.timer.on || L.coverTimer) ? `<button class="region timer" id="rTimer" style="${place(L.timer)}" aria-label="Warm-up timer. Click to start or pause."><span class="bulbs" id="timerText">${timerText()}</span></button>` : ''}`;
+        ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer" id="rTimer" style="${place(L.timer)}" aria-label="Warm-up timer. Click to start or pause."><span class="bulbs" id="timerText">${timerText()}</span></button>` : ''}`;
     }
     const st = $('#stage');
     st.innerHTML = html;
-    st.style.backgroundImage = lesson || type === 'flag' ? 'none' : `url("${L.custom ? (await fileUrl(L.custom.fileId)) || L.bg : L.bg}")`;
+    const roomImg = !lesson && type !== 'flag' && L.custom ? await fileUrl(L.custom.fileId) : null;
+    st.style.backgroundImage = roomImg ? `url("${roomImg}")` : 'none';
     renderRail(cid, S);
     requestAnimationFrame(fitAll);
   }
+  const grow = (b, n) => [b[0] - n, b[1] - n, b[2] + 2 * n, b[3] + 2 * n];
+  const basicRoom = L => `<div class="basicroom" aria-hidden="true"><div class="br-floor"></div>
+    <div class="br-banner" style="${place(grow(L.date, 18))}"></div><div class="br-board" style="${place(grow(L.board, 22))}"></div><div class="br-cork" style="${place(grow(L.cork, 18))}"></div></div>`;
   function fitAll(){ ['#dateText', '#boardFit', '#corkFit'].forEach(sel => { const el = document.querySelector(sel); if (!el) return; el.style.setProperty('--fit', 1); let f = 1; const box = sel === '#dateText' ? el.parentElement : el;
     while ((box.scrollHeight > box.clientHeight + 1 || box.scrollWidth > box.clientWidth + 1) && f > .45) { f -= .04; el.style.setProperty('--fit', f.toFixed(2)); } }); }
   async function flagHtml(){
     const f = flagFor(viewDate) || {}, img = await fileUrl(f.fileId), bg = await fileUrl(T.flagBg), friday = isRevealDay(viewDate), shown = friday && reveal > 0;
     return `<div class="flagboard${bg ? '' : ' plain'}" style="${bg ? `background-image:url('${bg}')` : ''}">
       ${bg ? '' : '<div class="qmark" aria-hidden="true">?</div>'}
-      <div class="fbox" style="${place([200, 85, 950, 235])}"><div class="f-title">FLAG OF THE WEEK</div><div class="f-sub${shown ? ' answer' : ''}">${shown ? esc(f.answer ? "It's " + f.answer + '!' : 'The answer') : friday ? 'Last day to guess!' : 'Guess TODAY'}</div></div>
-      <div class="fimg" style="${place([195, 368, 965, 590])}">${img ? `<img src="${img}" alt="Flag of the week">` : '<div class="noimg">Add this week\'s flag in Edit day, under Flag of the Week.</div>'}</div>
-      <div class="fbox" style="${place([200, 998, 950, 130])}"><div class="f-prompt">${esc(shown ? 'Did you guess right? Time for the drawing!' : f.prompt || 'Submit your guess using the form on Google Classroom.')}</div></div>
+      <div class="fbox" style="${place([170, 55, 923, 233])}"><div class="f-title">FLAG OF THE WEEK</div><div class="f-sub${shown ? ' answer' : ''}">${shown ? esc(f.answer ? "It's " + f.answer + '!' : 'The answer') : friday ? 'Last day to guess!' : 'Guess TODAY'}</div></div>
+      <div class="fimg" style="${place([164, 326, 916, 563])}">${img ? `<img src="${img}" alt="Flag of the week">` : '<div class="noimg">Add this week\'s flag in Edit day, under Flag of the Week.</div>'}</div>
+      <div class="fbox" style="${place([170, 920, 923, 133])}"><div class="f-prompt">${esc(shown ? 'Did you guess right? Time for the drawing!' : f.prompt || 'Submit your guess before the reveal day.')}</div></div>
       ${shown ? '<button class="f-draw" data-a="drawing">Start the drawing</button>' : ''}
     </div>`;
   }
@@ -343,7 +417,7 @@ details.sec>summary .muted{font-weight:400}
     S = S || (cid ? screens(viewDate, cid) : []);
     const list = classes(), today = Suite.dateKey(new Date()), auto = T.mode === 'auto' ? autoPick() : null;
     const seen = new Set(), picks = list.filter(c => { const k = rowKeyOf(c.id); if (seen.has(k + c.id)) return false; seen.add(k + c.id); return true; });
-    const u = cid ? usual(cid) : null, L = cid ? lookOf(cid) : null;
+    const u = cid ? usual(cid) : null, L = cid ? lookOf(cid, viewDate) : null;
     $('#rail').innerHTML = `<div class="pills" role="radiogroup" aria-label="Which class to show">
         <button role="radio" data-a="mode" data-id="auto" aria-checked="${T.mode === 'auto'}" title="Follow the bell schedule">Auto</button>
         ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${T.mode === c.id}">${esc(c.name)}</button>`).join('')}</div>
@@ -351,7 +425,7 @@ details.sec>summary .muted{font-weight:400}
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(BOARDS[t].label)}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       <div class="bar">
         <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
-        ${!lesson && S[screen] !== 'flag' && L && L.timer && u.timer.on ? `<button class="btn" data-a="timer" title="T to start or pause, R to reset">${timer.running ? 'Pause timer' : timer.left <= 0 ? 'Restart timer' : 'Start timer'}</button>` : ''}
+        ${!lesson && S[screen] === 'welcome' && L && L.timer && u.timer.on ? `<button class="btn" data-a="timer" title="T to start or pause, R to reset">${timer.running ? 'Pause timer' : timer.left <= 0 ? 'Restart timer' : 'Start timer'}</button>` : ''}
         ${lesson ? '<button class="btn" data-a="boards">Back to boards</button><button class="btn" data-a="openslides" title="If the deck won\'t show here, open it in Google Slides">Open in Slides</button>' : '<button class="btn" data-a="lesson" title="L">Lesson</button>'}
         <button class="btn" data-a="edit" title="E">Edit day</button><button class="btn" data-a="full" title="F">Full screen</button></div>`;
     document.documentElement.style.setProperty('--railh', $('#rail').offsetHeight + 'px');
@@ -363,14 +437,17 @@ details.sec>summary .muted{font-weight:400}
   function lineEditor(type, lines, canReveal){
     return `${lines.map((l, i) => `<div class="lrow lv${l.level || 0}" data-type="${type}" data-i="${i}">
         <button class="sw" data-d="color" style="background:${INK[l.color] || INK.blue}" aria-label="Color: ${l.color || 'blue'}. Click to change."></button>
-        <input class="field" data-d="text" value="${esc(l.text || '')}" aria-label="Line ${i + 1}" placeholder="Type a line. Tab makes it a sub-point.">
+        <div class="rline" contenteditable="true" role="textbox" data-d="rich" aria-label="Line ${i + 1}" data-ph="Type a line. Tab makes it a sub-point.">${lineInner(l)}</div>
         ${canReveal ? `<label class="rv" title="Stays hidden until you click Next"><input type="checkbox" data-d="reveal"${l.reveal ? ' checked' : ''}> on click</label>` : '<span></span>'}
         <button class="btn quiet x" data-d="rm" aria-label="Remove line">×</button></div>`).join('')}
       <div class="bar" style="margin-top:6px"><button class="btn small" data-d="add" data-type="${type}">Add a line</button></div>`;
   }
   function renderDrawer(){
     const cid = activeId(); if (!cid) return;
-    const rec = dayFor(viewDate, cid), u = usual(cid), co = Suite.courseOf(cid), c = classes().find(x => x.id === cid);
+    const rec = dayFor(viewDate, cid), u = usual(cid), co = Suite.courseOf(cid), c = classes().find(x => x.id === cid), room = roomFor(viewDate, cid);
+    const dayOwn = (T.days[viewDate] || {})[scope === 'period' ? cid : rowKeyOf(cid)] || {};
+    const lookOpts = (v, blank) => (blank ? `<option value="">${blank}</option>` : '') + Object.entries(LOOKS).concat(Object.entries(T.custom)).map(([k, x]) => `<option value="${k}"${v === k ? ' selected' : ''}>${esc(x.name)}</option>`).join('');
+    const bmOpts = (v, blank) => (blank ? `<option value="">${blank}</option>` : '') + `<option value="none"${v === 'none' ? ' selected' : ''}>No bitmoji</option>` + Object.keys(BITMOJI).concat(Object.keys(T.bitmojis)).map(k => `<option value="${k}"${v === k ? ' selected' : ''}>${esc(bmName(k))}</option>`).join('');
     const ownExists = !!((T.days[viewDate] || {})[cid]);
     if (!co) scope = 'course';
     const plan = Suite.agendaFor(viewDate, cid) || {};
@@ -388,6 +465,14 @@ details.sec>summary .muted{font-weight:400}
     };
     $('#drawer').innerHTML = `<div class="dhead"><h2>Edit ${esc(rowName(cid))}</h2><button class="btn quiet" data-d="close" aria-label="Close">×</button></div>
       <div class="dbody">
+        <div class="rtb" role="toolbar" aria-label="Text formatting">
+          <button data-x="bold" title="Bold (Ctrl+B)"><b>B</b></button><button data-x="italic" title="Italic (Ctrl+I)"><i>I</i></button><button data-x="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <span class="sep"></span>
+          ${[['#27468a', 'Blue'], ['#c4281c', 'Red'], ['#3f7d2b', 'Green'], ['#1b1b1b', 'Black'], ['#6a3d9a', 'Purple'], ['#d2691e', 'Orange']].map(([c, n]) => `<button class="cdot" data-x="color" data-v="${c}" style="background:${c}" title="${n}" aria-label="${n} text"></button>`).join('')}
+          <span class="sep"></span>
+          <select data-x="font" aria-label="Font"><option value="">Font</option><option value="Chelsea Market">Chelsea Market</option><option value="Architects Daughter">Architect's Daughter</option><option value="Georgia">Georgia</option></select>
+          <button data-x="smaller" title="Smaller text">A−</button><button data-x="bigger" title="Bigger text">A+</button><button data-x="clear" title="Remove formatting">Clear</button>
+        </div>
         <div class="daynav"><button class="btn small" data-d="day" data-dir="-1" aria-label="Previous school day">‹</button><b>${esc(longDate(viewDate))}</b><button class="btn small" data-d="day" data-dir="1" aria-label="Next school day">›</button>${viewDate !== Suite.dateKey(new Date()) ? '<button class="btn quiet small" data-d="today">Today</button>' : ''}</div>
         ${co ? `<div class="scope">Changes apply to <select data-d="scope"><option value="course"${scope === 'course' ? ' selected' : ''}>all of ${esc(co.name)}</option><option value="period"${scope === 'period' ? ' selected' : ''}>${esc(c.name)} only</option></select>${ownExists ? `<div class="hintline">${esc(c.name)} has its own setup this day. <a href="#" data-d="unown">Use the course setup again</a></div>` : ''}</div>` : ''}
         <details class="sec" open><summary>Boards and order <span class="muted small">${rec.lineup.length} boards</span></summary>
@@ -402,20 +487,32 @@ details.sec>summary .muted{font-weight:400}
         <details class="sec"><summary>Flag of the Week <span class="muted small">${f.fileId ? 'this week: ' + esc(f.answer || 'set') : 'not set this week'}</span></summary>
           <p class="hintline" style="margin-top:0">One flag for the whole week, shown in every class that has the Flag board. On the reveal day, Next shows the answer, then you can start the spinner drawing.</p>
           <div class="bar" style="margin-top:6px"><label class="btn small">${f.fileId ? 'Change the flag picture' : 'Add the flag picture'}<input type="file" accept="image/*" data-d="flagimg" hidden></label>${f.fileId ? '<button class="btn quiet danger small" data-d="flagclear">Remove this week\'s flag</button>' : ''}</div>
-          <label class="lb">Answer<input class="field wide" data-d="flagans" value="${esc(f.answer || '')}" placeholder="South Korea"></label>
-          <label class="lb">Instructions<input class="field wide" data-d="flagprompt" value="${esc(f.prompt || 'Submit your guess using the form on Google Classroom.')}"></label>
+          <label class="lb">Answer<input class="field wide" data-d="flagans" value="${esc(f.answer || '')}" placeholder="The country's name"></label>
+          <label class="lb">Instructions<input class="field wide" data-d="flagprompt" value="${esc(f.prompt || 'Submit your guess before the reveal day.')}"></label>
           <label class="lb">Reveal day<select data-d="flagday">${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((n, i) => `<option value="${i + 1}"${(f.revealDay || 5) === i + 1 ? ' selected' : ''}>${n}</option>`).join('')}</select></label></details>
         <details class="sec"><summary>Lesson slides</summary>
           <label class="lb">Published deck link <span class="muted small">(set once for ${esc(rowName(cid))})</span><input class="field wide" data-d="deck" value="${esc(u.deckUrl || '')}" placeholder="From File, Share, Publish to the web"></label>
           <label class="lb">This day's first lesson slide <span class="muted small">(click the slide in Google Slides, then copy the address bar)</span><input class="field wide" data-d="slide" value="${esc(rec.slideLink || '')}" placeholder="https://docs.google.com/presentation/d/…#slide=id.…"></label>
           <p class="note${u.deckUrl && !publishedId(u.deckUrl) ? ' warn' : ''}">${u.deckUrl && !publishedId(u.deckUrl) ? 'That looks like an editing link. Use the link from Publish to the web so it can show here; "Open in Slides" still works.' : 'If your district limits published decks, use Open in Slides during the lesson instead.'}</p></details>
-        <details class="sec"><summary>Background and timer</summary>
-          <label class="lb">Background<select data-d="look">${Object.entries(LOOKS).map(([k, v]) => `<option value="${k}"${u.look === k ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}${Object.entries(T.custom).map(([k, v]) => `<option value="${k}"${u.look === k ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
-          <div class="bar" style="margin-top:6px"><label class="btn small">Upload a background<input type="file" accept="image/*" data-d="lookup" hidden></label><span class="muted small">Uses the text spots of the background chosen above.</span></div>
-          <div class="bar" style="margin-top:10px"><label class="rv"><input type="checkbox" data-d="ton"${u.timer.on ? ' checked' : ''}> Warm-up timer</label><input class="field num" type="number" min="1" max="30" data-d="tmin" value="${u.timer.min}" style="width:70px"> minutes</div>
-          <label class="rv" style="margin-top:6px;display:flex;gap:6px"><input type="checkbox" data-d="tauto"${u.timer.auto ? ' checked' : ''}> Start automatically when the bell rings</label>
-          <div class="bar" style="margin-top:10px"><label class="btn small">Flag of the Week background<input type="file" accept="image/*" data-d="flagbg" hidden></label>${T.flagBg ? '<button class="btn quiet small" data-d="flagbgclear">Use the plain one</button>' : ''}</div></details>
-        <p class="hintline">Lines: press <b>Tab</b> to make a sub-point and <b>Shift+Tab</b> to undo it; <b>Enter</b> adds a line. Put *asterisks* around words to underline them in red.</p>
+        <details class="sec"><summary>Room and bitmoji <span class="muted small">${esc(lookById(room.look).name)} · ${room.bitmoji === 'none' ? 'no bitmoji' : esc(bmName(room.bitmoji))}</span></summary>
+          <span class="lb">Just this day</span>
+          <div class="bmrow"><select data-d="daylook" aria-label="Room this day">${lookOpts(dayOwn.look || '', 'Usual room')}</select><select data-d="daybm" aria-label="Bitmoji this day">${bmOpts(dayOwn.bitmoji || '', 'Usual bitmoji')}</select></div>
+          <span class="lb">Unit changes <span class="muted small">(switch on a date and stay until the next change)</span></span>
+          <ul class="sched">${(u.schedule || []).map((x, k) => `<li><input type="date" class="field" data-d="schfrom" data-k="${k}" value="${esc(x.from || '')}" aria-label="Starting date"><select data-d="schlook" data-k="${k}" aria-label="Room">${lookOpts(x.look || '', 'Usual room')}</select><select data-d="schbm" data-k="${k}" aria-label="Bitmoji">${bmOpts(x.bitmoji || '', 'Usual bitmoji')}</select><button class="btn quiet danger small" data-d="schrm" data-k="${k}" aria-label="Remove">×</button></li>`).join('') || '<li class="muted small" style="display:block">None yet.</li>'}</ul>
+          <button class="btn small" data-d="schadd">Add a unit change</button>
+          <span class="lb">Usual for ${esc(rowName(cid))}</span>
+          <div class="bmrow"><select data-d="look" aria-label="Usual room">${lookOpts(u.look)}</select><select data-d="bm" aria-label="Usual bitmoji">${bmOpts(u.bitmoji || 'none')}</select></div>
+          ${room.bitmoji !== 'none' ? `<span class="lb">Fit ${esc(bmName(room.bitmoji))} <span class="muted small">(saved for this bitmoji)</span></span>
+          <div class="bmrow"><label class="small">Size <input type="range" min="60" max="130" data-d="bmscale" value="${bmAdj(room.bitmoji).scale}"></label><label class="small">Left or right <input type="range" min="-200" max="300" data-d="bmdx" value="${bmAdj(room.bitmoji).dx}"></label></div>` : ''}
+          <div class="bar" style="margin-top:10px"><label class="btn small">Add a room background<input type="file" accept="image/*" data-d="lookup" hidden></label><label class="btn small">Add a bitmoji<input type="file" accept="image/png,image/webp,image/*" data-d="bmup" hidden></label>
+            ${T.custom[room.look] ? '<button class="btn small" data-d="rsetup">Set where text goes</button>' : ''}</div>
+          <div class="bar" style="margin-top:6px"><label class="btn quiet small">Import a room pack<input type="file" accept=".json,application/json" data-d="packin" hidden></label></div>
+          <p class="hintline">Pictures you add are saved in this browser and in your backups, never on the website. After adding a room, drag boxes onto it to show where the date, whiteboard, Have Out list, timer, and bitmoji go. Bitmojis work best as PNGs with a see-through background.</p>
+          <div class="bar" style="margin-top:8px"><label class="btn small">Flag of the Week background<input type="file" accept="image/*" data-d="flagbg" hidden></label>${T.flagBg ? '<button class="btn quiet small" data-d="flagbgclear">Use the plain background</button>' : ''}</div></details>
+        <details class="sec"><summary>Warm-up timer</summary>
+          <div class="bar"><label class="rv"><input type="checkbox" data-d="ton"${u.timer.on ? ' checked' : ''}> Warm-up timer</label><input class="field num" type="number" min="1" max="30" data-d="tmin" value="${u.timer.min}" style="width:70px"> minutes</div>
+          <label class="rv" style="margin-top:6px;display:flex;gap:6px"><input type="checkbox" data-d="tauto"${u.timer.auto ? ' checked' : ''}> Start automatically when the bell rings</label></details>
+        <p class="hintline">Select words, then use the toolbar (or Ctrl+B, Ctrl+I, Ctrl+U) to format them. <b>Tab</b> makes a line a sub-point and <b>Shift+Tab</b> undoes it; <b>Enter</b> adds a line. The dot beside a line sets its color.</p>
       </div>
       <div class="dfoot"><button class="btn small" data-d="copyprev">Copy the previous day</button><button class="btn small" data-d="saveusual">Save as the usual setup</button><button class="btn quiet small" data-d="reset">Reset day to usual</button></div>`;
   }
@@ -430,12 +527,15 @@ details.sec>summary .muted{font-weight:400}
     if (d === 'today') { viewDate = Suite.dateKey(new Date()); render(); renderDrawer(); return; }
     if (d === 'unown') { e.preventDefault(); delete T.days[viewDate][cid]; scope = 'course'; commit(true); return; }
     if (d === 'up' || d === 'down') { const r = editable(viewDate, cid), i = r.lineup.indexOf(el.dataset.t), j = i + (d === 'up' ? -1 : 1); if (j >= 0 && j < r.lineup.length) [r.lineup[i], r.lineup[j]] = [r.lineup[j], r.lineup[i]]; commit(true); return; }
-    if (d === 'add') { const b = boardRec(el.dataset.type); b.lines.push({ text: '', color: 'blue', level: 0 }); commit(true); const inp = [...document.querySelectorAll(`.lrow[data-type="${el.dataset.type}"] input[data-d="text"]`)].pop(); if (inp) inp.focus(); return; }
+    if (d === 'add') { const b = boardRec(el.dataset.type); b.lines.push({ text: '', html: '', color: 'blue', level: 0 }); commit(true); const inp = [...document.querySelectorAll(`.lrow[data-type="${el.dataset.type}"] .rline`)].pop(); if (inp) inp.focus(); return; }
     if (row && d === 'color') { const b = boardRec(row.dataset.type), l = b.lines[+row.dataset.i]; l.color = INK_ORDER[(INK_ORDER.indexOf(l.color || 'blue') + 1) % 3]; commit(true); return; }
     if (row && d === 'rm') { boardRec(row.dataset.type).lines.splice(+row.dataset.i, 1); commit(true); return; }
     if (d === 'have') { const r = editable(viewDate, cid), v = el.dataset.v, i = r.haveOut.indexOf(v); if (i > -1) r.haveOut.splice(i, 1); else r.haveOut.push(v); commit(true); return; }
     if (d === 'haveadd') { const v = $('#haveNew').value.trim(); if (!v) return; const r = editable(viewDate, cid); if (!r.haveOut.includes(v)) r.haveOut.push(v); commit(true); return; }
     if (d === 'flagclear') { delete T.flags[weekKey(viewDate)]; commit(true); return; }
+    if (d === 'rsetup') { openRoomSetup(roomFor(viewDate, cid).look); return; }
+    if (d === 'schadd') { const u = usual(cid), r = roomFor(viewDate, cid); (u.schedule = u.schedule || []).push({ from: viewDate, look: r.look, bitmoji: r.bitmoji }); commit(true); return; }
+    if (d === 'schrm') { usual(cid).schedule.splice(+el.dataset.k, 1); commit(true); return; }
     if (d === 'flagbgclear') { T.flagBg = null; commit(true); return; }
     if (d === 'copyprev') {
       const prevDay = shiftDay(viewDate, -1), p = dayFor(prevDay, cid), r = editable(viewDate, cid);
@@ -446,7 +546,8 @@ details.sec>summary .muted{font-weight:400}
   });
   $('#drawer').addEventListener('input', e => {
     const el = e.target, row = el.closest('.lrow'), cid = activeId();
-    if (row && el.dataset.d === 'text') { boardRec(row.dataset.type).lines[+row.dataset.i].text = el.value; commit(false); return; }
+    if (row && el.dataset.d === 'rich') { const l = boardRec(row.dataset.type).lines[+row.dataset.i]; l.html = clean(el.innerHTML); l.text = el.textContent; commit(false); return; }
+    if (el.dataset.d === 'bmscale' || el.dataset.d === 'bmdx') { const id = roomFor(viewDate, cid).bitmoji; T.bmAdj[id] = Object.assign(bmAdj(id), { [el.dataset.d === 'bmscale' ? 'scale' : 'dx']: +el.value }); save(); render(); return; }
     if (el.dataset.h) { boardRec(el.dataset.h).heading = el.value; commit(false); return; }
     if (el.dataset.d === 'slide') { editable(viewDate, cid).slideLink = el.value.trim(); commit(false); return; }
     if (el.dataset.d === 'deck') { usual(cid).deckUrl = el.value.trim(); commit(false); return; }
@@ -461,6 +562,16 @@ details.sec>summary .muted{font-weight:400}
       if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
       commit(true); return; }
     if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (d === 'bm') { usual(cid).bitmoji = el.value; commit(true); return; }
+    if (d === 'daylook' || d === 'daybm') { const r = editable(viewDate, cid), k = d === 'daylook' ? 'look' : 'bitmoji'; if (el.value) r[k] = el.value; else delete r[k]; commit(true); return; }
+    if (d === 'schfrom' || d === 'schlook' || d === 'schbm') { const x = usual(cid).schedule[+el.dataset.k], k = d === 'schfrom' ? 'from' : d === 'schlook' ? 'look' : 'bitmoji'; if (el.value) x[k] = el.value; else delete x[k]; commit(true); return; }
+    if (d === 'packin' && el.files[0]) { await importPack(el.files[0]); el.value = ''; return; }
+    if (d === 'bmup' && el.files[0]) {
+      const f = el.files[0], name = await Suite.dialog({ title: 'Name this bitmoji', input: f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '), ok: 'Add bitmoji' });
+      if (!name) { el.value = ''; return; }
+      try { const meta = await Suite.files.put(f), id = 'bm-' + Suite.uid(); T.bitmojis[id] = { name, fileId: meta.id }; commit(true); Suite.toast(name + ' added'); } catch (err) { Suite.toast(err.message || "Couldn't add that picture"); }
+      return;
+    }
     if (d === 'ton' || d === 'tauto') { usual(cid).timer[d === 'ton' ? 'on' : 'auto'] = el.checked; if (d === 'ton') resetTimer(cid); commit(true); return; }
     if (d === 'tmin') { usual(cid).timer.min = Math.max(1, Math.min(30, parseInt(el.value, 10) || 3)); if (!timer.running) resetTimer(cid); commit(false); return; }
     if (d === 'flagday') { const f = T.flags[weekKey(viewDate)] = T.flags[weekKey(viewDate)] || {}; f.revealDay = +el.value; commit(false); return; }
@@ -469,20 +580,96 @@ details.sec>summary .muted{font-weight:400}
         const meta = await Suite.files.put(el.files[0]);
         if (d === 'flagimg') { const f = T.flags[weekKey(viewDate)] = T.flags[weekKey(viewDate)] || { revealDay: 5 }; f.fileId = meta.id; }
         else if (d === 'flagbg') T.flagBg = meta.id;
-        else { const u = usual(cid), id = 'custom-' + Suite.uid(), base = LOOKS[u.look] ? u.look : (T.custom[u.look] || {}).base || 'history'; T.custom[id] = { name: el.files[0].name.replace(/\.[^.]+$/, ''), fileId: meta.id, base }; u.look = id; }
+        else {
+          const u = usual(cid), id = 'room-' + Suite.uid();
+          T.custom[id] = { name: el.files[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '), fileId: meta.id, layout: layoutOf(lookById(roomFor(viewDate, cid).look)) };
+          u.look = id; commit(true); openRoomSetup(id); return;
+        }
         commit(true); Suite.toast('Picture added');
       } catch (err) { Suite.toast(err.message || "Couldn't add that picture"); }
     }
   });
+  let lastLine = null;
+  $('#drawer').addEventListener('focusin', e => { if (e.target.classList && e.target.classList.contains('rline')) lastLine = e.target; });
+  $('#drawer').addEventListener('mousedown', e => { if (e.target.closest('.rtb button')) e.preventDefault(); });
+  const fmt = (cmd, val) => {
+    if (!lastLine || !document.body.contains(lastLine)) { Suite.toast('Click in a line first'); return; }
+    lastLine.focus(); document.execCommand('styleWithCSS', false, true);
+    if (cmd === 'bigger' || cmd === 'smaller') {
+      const cur = parseInt(document.queryCommandValue('fontSize'), 10) || 3; document.execCommand('fontSize', false, String(Math.max(1, Math.min(7, cur + (cmd === 'bigger' ? 1 : -1)))));
+    } else if (cmd === 'clear') document.execCommand('removeFormat');
+    else if (cmd === 'color') document.execCommand('foreColor', false, val);
+    else if (cmd === 'font') document.execCommand('fontName', false, val);
+    else document.execCommand(cmd);
+  };
+  $('#drawer').addEventListener('click', e => { const b = e.target.closest('.rtb button'); if (b) fmt(b.dataset.x, b.dataset.v); });
+  $('#drawer').addEventListener('change', e => { if (e.target.dataset.x === 'font' && e.target.value) { fmt('font', e.target.value); e.target.value = ''; } });
   // Tab / Shift+Tab change a line's level; Enter adds a line below
   $('#drawer').addEventListener('keydown', e => {
-    const el = e.target, row = el.closest && el.closest('.lrow'); if (!row || el.dataset.d !== 'text') return;
+    const el = e.target, row = el.closest && el.closest('.lrow'); if (!row || el.dataset.d !== 'rich') return;
     const b = boardRec(row.dataset.type), i = +row.dataset.i, l = b.lines[i];
     // the drawer redraws right away, so put the cursor back right away too (no gap for typing to fall through)
-    const focusLine = (n, end) => { const inp = document.querySelector(`.lrow[data-type="${row.dataset.type}"][data-i="${n}"] input[data-d="text"]`); if (inp) { inp.focus(); if (end) inp.setSelectionRange(inp.value.length, inp.value.length); } };
+    const focusLine = (n, end) => { const inp = document.querySelector(`.lrow[data-type="${row.dataset.type}"][data-i="${n}"] .rline`); if (!inp) return; inp.focus(); if (end) { const r = document.createRange(); r.selectNodeContents(inp); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } };
     if (e.key === 'Tab') { e.preventDefault(); l.level = Math.max(0, Math.min(2, (l.level || 0) + (e.shiftKey ? -1 : 1))); commit(true); focusLine(i, true); }
-    else if (e.key === 'Enter') { e.preventDefault(); b.lines.splice(i + 1, 0, { text: '', color: l.color || 'blue', level: l.level || 0 }); commit(true); focusLine(i + 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); b.lines.splice(i + 1, 0, { text: '', html: '', color: l.color || 'blue', level: l.level || 0 }); commit(true); focusLine(i + 1); }
   });
+
+  /* ---------- room setup: drag boxes to show where the text goes ---------- */
+  const SPOTS = [['date', 'Date', '#d94b3d'], ['board', 'Whiteboard', '#2f6fd0'], ['cork', 'Have Out', '#b0279a'], ['timer', 'Timer', '#d99a1e'], ['bm', 'Bitmoji', '#2e9a5a']];
+  async function openRoomSetup(id){
+    const c = T.custom[id]; if (!c) return;
+    const lay = Object.assign(layoutOf(LOOKS.basic), clone(c.layout || {})), hadTimer = !!lay.timer;
+    if (!lay.timer) lay.timer = LOOKS.basic.timer.slice();
+    const img = await fileUrl(c.fileId);
+    const ov = document.createElement('div'); ov.className = 'rs';
+    ov.innerHTML = `<div class="rs-head"><h2>Where the text goes: ${esc(c.name)}</h2><span class="bar"><label style="color:#fff;display:flex;gap:6px;align-items:center"><input type="checkbox" id="rs-timer"${hadTimer ? ' checked' : ''}> Timer spot</label>
+        <button class="btn" data-r="name">Rename</button><button class="btn" data-r="cancel">Cancel</button><button class="btn primary" data-r="save">Save</button></span></div>
+      <div class="rs-stage" style="background-image:url('${img}')">${SPOTS.map(([k, n, col]) => `<div class="rsbox${k === 'timer' && !hadTimer ? ' off' : ''}" data-k="${k}" style="--c:${col};${place(lay[k])}"><span>${n}</span><i data-h="1"></i></div>`).join('')}</div>
+      <p class="rs-note">Drag each box onto its spot. Drag the round corner to resize. The bitmoji stands on the bottom of its box.</p>`;
+    document.body.appendChild(ov);
+    const stage = ov.querySelector('.rs-stage');
+    let drag = null;
+    ov.addEventListener('pointerdown', e => {
+      const box = e.target.closest('.rsbox'); if (!box) return;
+      const r = stage.getBoundingClientRect(), k = box.dataset.k;
+      drag = { k, box, resize: !!e.target.dataset.h, x: e.clientX, y: e.clientY, sx: 1920 / r.width, sy: 1080 / r.height, start: lay[k].slice() };
+      box.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    ov.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const dx = (e.clientX - drag.x) * drag.sx, dy = (e.clientY - drag.y) * drag.sy, b = drag.start.slice();
+      if (drag.resize) { b[2] = Math.max(60, b[2] + dx); b[3] = Math.max(40, b[3] + dy); }
+      else { b[0] = Math.min(1920 - 40, Math.max(-b[2] + 40, b[0] + dx)); b[1] = Math.min(1080 - 30, Math.max(-b[3] + 30, b[1] + dy)); }
+      lay[drag.k] = b.map(Math.round); drag.box.setAttribute('style', `--c:${SPOTS.find(x => x[0] === drag.k)[2]};${place(lay[drag.k])}`);
+    });
+    ov.addEventListener('pointerup', () => { drag = null; });
+    ov.querySelector('#rs-timer').addEventListener('change', e => ov.querySelector('[data-k="timer"]').classList.toggle('off', !e.target.checked));
+    const close = () => ov.remove();
+    ov.addEventListener('click', async e => {
+      const b = e.target.closest('[data-r]'); if (!b) return;
+      if (b.dataset.r === 'cancel') close();
+      else if (b.dataset.r === 'name') { const n = await Suite.dialog({ title: 'Name this room', input: c.name, ok: 'Save name' }); if (n) { c.name = n; save(); ov.querySelector('h2').textContent = 'Where the text goes: ' + n; } }
+      else if (b.dataset.r === 'save') { if (!ov.querySelector('#rs-timer').checked) lay.timer = null; c.layout = lay; close(); commit(true); Suite.toast('Room saved'); }
+    });
+  }
+  /* ---------- room packs: rooms, text spots, and bitmojis in one file (kept off the website) ---------- */
+  async function importPack(file){
+    let pack;
+    try { pack = JSON.parse(await file.text()); } catch (e) { Suite.toast("That file isn't a room pack"); return; }
+    if (!pack || pack.app !== 'classroom-suite-room-pack') { Suite.toast("That file isn't a room pack"); return; }
+    const toFile = async (dataUrl, name) => new File([await (await fetch(dataUrl)).blob()], name);
+    const lookMap = {}, bmMap = {};
+    for (const r of pack.rooms || []) { const meta = await Suite.files.put(await toFile(r.image, r.name + '.jpg')), id = 'room-' + Suite.uid(); T.custom[id] = { name: r.name, fileId: meta.id, layout: r.layout }; if (r.replaces) lookMap[r.replaces] = id; }
+    for (const b of pack.bitmojis || []) { const meta = await Suite.files.put(await toFile(b.image, b.name + '.webp')), id = 'bm-' + Suite.uid(); T.bitmojis[id] = { name: b.name, fileId: meta.id }; if (b.adj) T.bmAdj[id] = b.adj; if (b.replaces) bmMap[b.replaces] = id; }
+    if (pack.flagBackground) { const meta = await Suite.files.put(await toFile(pack.flagBackground, 'flag-background.jpg')); T.flagBg = meta.id; }
+    // point existing setups that used the old built-in rooms and bitmojis at the imported ones
+    const fix = o => { if (!o) return; if (lookMap[o.look]) o.look = lookMap[o.look]; if (bmMap[o.bitmoji]) o.bitmoji = bmMap[o.bitmoji]; };
+    Object.values(T.rows).forEach(u => { const hadLegacy = !!lookMap[u.look]; fix(u); (u.schedule || []).forEach(fix); if (hadLegacy && !u.bitmoji && pack.defaultBitmoji && bmMap[pack.defaultBitmoji]) u.bitmoji = bmMap[pack.defaultBitmoji]; });
+    Object.values(T.days).forEach(day => Object.values(day).forEach(fix));
+    Object.keys(T.bmAdj).forEach(k => { if (bmMap[k]) { T.bmAdj[bmMap[k]] = T.bmAdj[bmMap[k]] || T.bmAdj[k]; delete T.bmAdj[k]; } });
+    commit(true);
+    Suite.toast(`Imported ${(pack.rooms || []).length} rooms and ${(pack.bitmojis || []).length} bitmojis`);
+  }
 
   /* ---------- buttons and keys ---------- */
   function openDrawing(){
@@ -514,7 +701,7 @@ details.sec>summary .muted{font-weight:400}
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && full) { full = false; render(); } });
   document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('.suite-dialog') || document.querySelector('.overlay') || document.body.classList.contains('timer-open')) return;
-    if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) return;
+    if (/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '') || (e.target && e.target.isContentEditable)) return;
     const k = e.key;
     if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); next(); }
     else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); prev(); }
@@ -527,7 +714,7 @@ details.sec>summary .muted{font-weight:400}
     else if (k === 'Escape') { if (editing) { editing = false; $('#drawer').hidden = true; } else if (full) { full = false; render(); } }
   });
   window.addEventListener('resize', () => requestAnimationFrame(fitAll));
-  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { T = Object.assign({ mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {} }, Suite.get('today', {})); render(); } });
+  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { T = Object.assign(clone(BLANK), Suite.get('today', {})); render(); } });
   Suite.mountNav('today');
   resetTimer(activeId()); lastCid = activeId();
   render();

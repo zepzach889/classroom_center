@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02d">
-<script src="shared/core.js?v=2026-10-02d"></script>
-<script>window.PAGE_VERSION = '2026-10-02d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-03b">
+<script src="shared/core.js?v=2026-10-03b"></script>
+<script>window.PAGE_VERSION = '2026-10-03b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -205,7 +205,7 @@ body.proj .group li{font-size:24px}
         <label class="lb" for="gname">Game name</label><input id="gname" class="field" style="width:100%" data-c="gname" value="${esc(g.name)}">
         <label class="lb" for="gtext">Questions</label>
         <p class="hint" style="margin-top:0">One question per line: <b>Category | Question | Answer</b>. Up to 6 categories with 5 questions each. Within a category, the first question is worth 100, the next 200, and so on.</p>
-        <textarea id="gtext" rows="12" placeholder="Egypt | What river flooded every year and made farming possible? | The Nile&#10;Egypt | What were Egyptian kings called? | Pharaohs&#10;Mesopotamia | What is the oldest known writing system? | Cuneiform">${esc(gameText(g))}</textarea>
+        <textarea id="gtext" rows="12" placeholder="Vocabulary | A word that means the opposite of another word | Antonym&#10;Vocabulary | A word that sounds like another word | Homophone&#10;Science | The force that pulls objects toward Earth | Gravity">${esc(gameText(g))}</textarea>
         <div class="bar" style="margin-top:8px"><button class="btn primary" data-a="gsave">Save questions</button><span class="sp"></span>
           <button class="btn danger" data-a="gdel">Delete this game</button></div>
         <p class="hint" style="margin-top:10px">Clicking a square that was already played opens it again, in case you need to redo it.</p>

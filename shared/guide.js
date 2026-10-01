@@ -4,7 +4,6 @@
   'use strict';
   const S = window.Suite, esc = S.esc;
   const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink', 'Gray', 'Brown', 'Navy', 'Gold'];
-  const ALMOST_STATES = ['Sequoyah', 'Delmarva', 'Franklin', 'Jefferson', 'Metropotamia', 'Deseret', 'Absaroka', 'Superior', 'Lincoln', 'Westsylvania', 'Nickajack', 'Vandalia'];
   const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['present', 'Present (Google Slides)']];
 
   const G = {
@@ -21,7 +20,6 @@
   function tableNames(){
     const n = G.tables, word = (G.team.charAt(0).toUpperCase() + G.team.slice(1));
     if (G.naming === 'colors') return COLORS.slice(0, n).concat(Array.from({ length: Math.max(0, n - COLORS.length) }, (_, i) => word + ' ' + (COLORS.length + i + 1)));
-    if (G.naming === 'states') return ALMOST_STATES.slice(0, n).concat(Array.from({ length: Math.max(0, n - ALMOST_STATES.length) }, (_, i) => word + ' ' + (ALMOST_STATES.length + i + 1)));
     if (G.naming === 'custom') { const c = G.custom.split('\n').map(x => x.trim()).filter(Boolean); return Array.from({ length: n }, (_, i) => c[i] || word + ' ' + (i + 1)); }
     return Array.from({ length: n }, (_, i) => word + ' ' + (i + 1));
   }
@@ -68,7 +66,6 @@
             <label class="g-l">Names<select data-k="naming">
               <option value="numbers"${G.naming === 'numbers' ? ' selected' : ''}>Numbers (Table 1, Table 2...)</option>
               <option value="colors"${G.naming === 'colors' ? ' selected' : ''}>Colors (Red, Blue...)</option>
-              <option value="states"${G.naming === 'states' ? ' selected' : ''}>States that almost were (Sequoyah, Franklin...)</option>
               <option value="custom"${G.naming === 'custom' ? ' selected' : ''}>My own names</option></select></label>
           </div>
           ${G.naming === 'custom' ? `<label class="g-l">Your names, one per line<textarea rows="4" data-k="custom">${esc(G.custom)}</textarea></label>` : ''}
@@ -123,10 +120,9 @@
     const P = S.PRESETS.school2627;
     let tables;
     if (G.room === 'tables') {
-      const tn = tableNames(), known = G.naming === 'states';
+      const tn = tableNames();
       tables = tn.map((name, i) => {
         const t = { id: S.uid(), name, seats: G.seats, open: true, color: S.PALETTE[i % S.PALETTE.length], seatCols: G.seatCols };
-        if (!(known && i < 5)) { t.row = Math.floor(i / 3) + 1; t.col = i % 3 + 1; }
         return t;
       });
     } else {

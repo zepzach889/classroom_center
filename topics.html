@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-02d">
-<script src="shared/core.js?v=2026-10-02d"></script>
-<script>window.PAGE_VERSION = '2026-10-02d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-03b">
+<script src="shared/core.js?v=2026-10-03b"></script>
+<script>window.PAGE_VERSION = '2026-10-03b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -167,9 +167,9 @@ body.proj .dot{width:20px;height:20px}
           <label for="lname">List name</label>
           <input id="lname" class="field" style="width:100%" data-c="lname" value="${esc(list.name)}">
           <label for="ltopics">Topics</label>
-          <p class="hint" style="margin-top:0">One per line. Add a number after a colon to change how many students can take it, like "Ancient Egypt: 4". Otherwise each topic takes
+          <p class="hint" style="margin-top:0">One per line. Add a number after a colon to change how many students can take it, like "Volcanoes: 4". Otherwise each topic takes
             <input class="field num" type="number" min="1" max="40" data-c="cap" value="${TP.defaultCap}" aria-label="Default spots per topic"> students.</p>
-          <textarea id="ltopics" rows="9" placeholder="Ancient Egypt&#10;Mesopotamia: 4&#10;The Indus Valley">${esc(topicsText(list))}</textarea>
+          <textarea id="ltopics" rows="9" placeholder="Volcanoes&#10;Earthquakes: 4&#10;Tsunamis">${esc(topicsText(list))}</textarea>
           <div class="bar" style="margin-top:8px"><button class="btn primary" data-a="savetopics">Save topics</button></div>
           <div class="bar" style="margin-top:18px">
             <button class="btn" data-a="clearclass">Clear ${esc(c.name)}'s picks</button>
