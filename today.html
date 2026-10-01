@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-04c">
-<script src="shared/core.js?v=2026-10-04c"></script>
-<script>window.PAGE_VERSION = '2026-10-04c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-05a">
+<script src="shared/core.js?v=2026-10-05a"></script>
+<script>window.PAGE_VERSION = '2026-10-05a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -49,9 +49,9 @@ body.full #suite-nav,body.full .rail{display:none}
 .lines .emph{color:var(--ink-red);text-decoration:underline;text-decoration-thickness:.08em}
 .cork{padding:1cqw 1.2cqw}
 .cork-fit{height:100%;overflow:hidden;font-size:calc(1.9cqw * var(--fit,1))}
-.have-out{margin:0 0 .2em;font-family:"Chelsea Market","Arial Rounded MT Bold",sans-serif;font-weight:400;font-size:1.45em;line-height:1.05;color:var(--ink-green);text-transform:uppercase;white-space:nowrap}
+.have-out{margin:0 0 .2em;font-family:"Chelsea Market","Arial Rounded MT Bold",sans-serif;font-weight:400;font-size:1.45em;line-height:1.05;white-space:normal;color:var(--ink-green);text-transform:uppercase}
 .have-list{margin:0;padding-left:1.1em;font-family:"Chelsea Market","Arial Rounded MT Bold",sans-serif;font-weight:400;line-height:1.35;color:var(--ink-blue);text-transform:uppercase}
-.have-list li{white-space:nowrap}
+.have-list li{white-space:normal;overflow-wrap:normal;word-break:normal}
 .rs{position:fixed;inset:0;z-index:90;background:rgba(10,16,24,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}
 .rs-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;width:min(1200px,96vw);color:#fff}
 .rs-head h2{color:#fff;font-size:22px}
@@ -159,6 +159,36 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 /* lesson and overlay */
 .lesson{position:absolute;inset:0;background:#0f1720;z-index:5}
 .lesson iframe{width:100%;height:100%;border:0;display:block}
+.tmenu{position:relative;display:inline-flex}
+.tmenu-list{position:absolute;right:0;top:calc(100% + 6px);z-index:80;min-width:200px;background:var(--sheet);border:2px solid var(--edge);border-radius:14px;padding:6px;display:flex;flex-direction:column;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.tmenu-list[hidden]{display:none}
+.tmenu-list button{font:inherit;font-size:15px;font-weight:600;text-align:left;background:none;border:0;border-radius:10px;padding:8px 12px;color:var(--ink);cursor:pointer}
+.tmenu-list button:hover{background:var(--wash)}
+.fstools{position:absolute;right:1cqw;bottom:1cqw;z-index:6;opacity:.35;transition:opacity .15s}
+.fstools:hover,.fstools:focus-within{opacity:1}
+.fstools .tmenu-list{top:auto;bottom:calc(100% + 6px)}
+.tool{container-type:size;background:rgba(255,255,255,.92);border-radius:1cqw;box-shadow:0 .3cqw 1cqw rgba(0,0,0,.2);display:grid;place-items:center;overflow:hidden;color:#1f2a33}
+.w-btn{font:700 max(12px,9cqh) var(--sans);background:#2f6fd0;color:#fff;border:0;border-radius:999px;padding:3cqh 8cqh;cursor:pointer}
+.w-btn.sm{font-size:max(11px,8cqh);padding:2.5cqh 5cqh}
+.w-pick{display:flex;flex-direction:column;align-items:center;gap:5cqh;width:100%;padding:0 4cqw;text-align:center}
+.w-name{font:700 min(26cqh,14cqw) var(--sans);min-height:30cqh;line-height:1.1}
+.w-name.pop{animation:wpop .35s ease}
+@keyframes wpop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.w-noise{width:88%;display:flex;flex-direction:column;align-items:center;gap:5cqh}
+.w-nlab{font:700 min(18cqh,10cqw) var(--sans)}
+.w-meter{position:relative;width:100%;height:22cqh;border:2px solid #1f2a33;border-radius:999px;background:#eef1f3;overflow:hidden}
+.w-meter span{position:absolute;inset:0 auto 0 0;width:0;background:#5e806b;transition:width .08s linear}
+.w-noise[data-z="warn"] .w-meter span{background:#c99a3e}.w-noise[data-z="loud"] .w-meter span{background:#c4281c}
+.w-meter i{position:absolute;top:0;bottom:0;width:3px;background:#1f2a33}
+.w-timer{display:flex;flex-direction:column;align-items:center;gap:4cqh}
+.w-time{font:700 min(40cqh,22cqw)/1 var(--sans);font-variant-numeric:tabular-nums}
+.w-row{display:flex;gap:2cqw}
+.w-pts{width:88%;font:600 min(9cqh,6cqw) var(--sans)}
+.w-ph{font-weight:800;margin-bottom:2cqh}
+.w-pr{display:flex;align-items:center;gap:3cqw;padding:1.2cqh 0;border-top:1px solid #dfe3e6}
+.w-pr span:nth-child(2){flex:1}.w-pr .dot{width:1.1em;height:1.1em;border-radius:50%;border:1.5px solid #1f2a33}
+.backboards{position:absolute;left:1cqw;bottom:1cqw;z-index:6;font:700 1.1cqw var(--sans);background:rgba(15,23,32,.55);color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:999px;padding:.5cqw 1.2cqw;cursor:pointer;opacity:.35;transition:opacity .15s}
+.backboards:hover,.backboards:focus{opacity:1}
 .lesson-empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:.6em;padding:0 12cqw;font-size:1.6cqw;color:#f4efe4}
 .lesson-empty .t{font-family:var(--serif);font-size:2.4em;color:var(--land)}
 .overlay{position:fixed;inset:0;z-index:60;background:var(--paper)}
@@ -439,6 +469,8 @@ details.sec>summary .muted{font-weight:400}
         <div class="region board ${pn('board')}${E ? ' ed' : ''}" data-k="board" style="${place(L.board)};${boxStyle(L, 'board')}"><div class="board-fit" id="boardFit"><h1 class="heading"${ce('heading', ` data-t="${type}"`)}>${clean(b.heading != null ? b.heading : (BOARDS[type] || {}).heading || '')}</h1><ul class="lines"${planBoard ? '' : ce('lines', ` data-t="${type}"`)}>${items}</ul>${E && planBoard ? `<p class="planned">This board comes from your Planner. To type your own version, choose "Write for students" in Day settings.</p>` : ''}</div>${handles('board')}</div>
         <div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>
         ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer tm-${u.timer.style || 'digital'}${dark ? ' on-dark' : ''}${E ? ' ed' : ''}" id="rTimer" data-k="timer" style="${place(L.timer)};--tc:${esc(u.timer.color || '#2f6fd0')}"${E ? ' data-g="move" tabindex="-1"' : ''} aria-label="Warm-up timer. Click to start or pause.">${timerInner(u.timer.style)}${handles('timer')}</button>` : ''}
+        ${!E && full ? `<span class="fstools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span>` : ''}
+        ${(b.tools || []).map(w => `<div class="region tool tool-${w.kind}${E ? ' ed' : ''}" data-k="t:${esc(w.id)}" style="${place(w.box)}">${widgetHtml(w.kind, w)}${handles('t:' + w.id)}${E ? `<button class="xdel" data-g="tdel" data-x="${esc(w.id)}" aria-label="Remove this tool">×</button>` : ''}</div>`).join('')}
         ${(L.extras || []).map(x => `<div class="region xbox pn-${x.panel || 'none'}${(x.panel === 'dark' || ((x.panel || 'none') === 'none' && dark)) ? ' ink-light' : ''}${E ? ' ed' : ''}" data-k="x:${esc(x.id)}" style="${place(x.box)};${x.style || ''}"><div class="x-fit"${ce('x', ` data-x="${esc(x.id)}"`)}>${clean(x.html || '')}</div>${handles('x:' + x.id)}${E ? `<button class="xdel" data-g="xdel" data-x="${esc(x.id)}" aria-label="Remove this text box">×</button>` : ''}</div>`).join('')}`;
     }
     const st = $('#stage');
@@ -449,7 +481,10 @@ details.sec>summary .muted{font-weight:400}
     st.style.backgroundColor = !lesson && L.bgStyle === 'solid' ? (u.bgColor || '#dfe8ee') : '';
     st.dataset.look = lookId; st.dataset.type = type;
     renderRail(cid, S);
-    requestAnimationFrame(fitAll);
+    requestAnimationFrame(fitAll); setTimeout(fitAll, 350);
+    // the lesson: give the slides keyboard focus right away, so a clicker drives them without a mouse click
+    const deck = st.querySelector('.lesson iframe');
+    if (deck) { const grab = () => { try { deck.focus(); deck.contentWindow && deck.contentWindow.focus(); } catch (x) {} }; deck.addEventListener('load', () => { grab(); setTimeout(grab, 600); setTimeout(grab, 1500); }); grab(); }
   }
   function fitAll(){ document.querySelectorAll('.x-fit').forEach(el => { el.style.setProperty('--fit', 1); let f = 1; while ((el.scrollHeight > el.clientHeight + 1) && f > .35) { f -= .05; el.style.setProperty('--fit', f.toFixed(2)); } });
     ['#dateText', '#boardFit', '#corkFit'].forEach(sel => { const el = document.querySelector(sel); if (!el) return; el.style.setProperty('--fit', 1); let f = 1; const box = sel === '#dateText' ? el.parentElement : el;
@@ -471,7 +506,7 @@ details.sec>summary .muted{font-weight:400}
   function lessonHtml(cid, rec){
     const u = usual(cid), pid = publishedId(u.deckUrl), slide = slideParam(rec.slideLink);
     if (!pid) return `<div class="lesson"><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Open <b>Edit day</b> and paste this class's published deck link under Lesson slides.</p></div></div>`;
-    return `<div class="lesson"><iframe title="Lesson slides" allowfullscreen src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
+    return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><iframe title="Lesson slides" allowfullscreen src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
   }
   function openInSlides(cid){
     const rec = dayFor(viewDate, cid), u = usual(cid), id = docId(rec.slideLink) || docId(u.deckUrl), slide = slideParam(rec.slideLink);
@@ -542,10 +577,11 @@ details.sec>summary .muted{font-weight:400}
         ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${T.mode === c.id}">${esc(c.name)}</button>`).join('')}</div>
       <div class="status">${cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
-      ${editMode ? `<div class="bar"><span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span><button class="btn" data-a="xaddbox">Add a text box</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="bar">
+      ${editMode ? `<div class="bar"><span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}<button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="bar">
         <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
         ${!lesson && S[screen] === 'welcome' && L && L.timer && u.timer.on ? `<button class="btn" data-a="timer" title="T to start or pause, R to reset">${timer.running ? 'Pause timer' : timer.left <= 0 ? 'Restart timer' : 'Start timer'}</button>` : ''}
         ${lesson ? '<button class="btn" data-a="boards">Back to boards</button><button class="btn" data-a="openslides" title="If the deck won\'t show here, open it in Google Slides">Open in Slides</button>' : '<button class="btn" data-a="lesson" title="L">Lesson</button>'}
+        ${toolMenu('opentool', 'Open a tool on top of the board', TOOL_PAGES)}
         ${!lesson ? '<button class="btn primary" data-a="startedit" title="E: click text to type, drag boxes to move">Edit on screen</button>' : ''}<button class="btn" data-a="edit" title="Boards, lesson slides, backgrounds, and timer">Day settings</button><button class="btn" data-a="full" title="F">Full screen</button></div>`}`;
     document.documentElement.style.setProperty('--railh', $('#rail').offsetHeight + 'px');
   }
@@ -796,7 +832,8 @@ details.sec>summary .muted{font-weight:400}
     const h = e.target.closest('[data-g]'); if (!h || h.dataset.g === 'xdel') return;
     if (e.target.closest('[data-f]')) return;
     const region = h.closest('.region'), k = h.dataset.k || region.dataset.k, r = stageEl.getBoundingClientRect(), look = stageEl.dataset.look, lay = ownLayout(look);
-    const box = k.startsWith('x:') ? lay.extras.find(x => 'x:' + x.id === k).box : (lay.boxes[k] || getLayout(look).boxes[k]);
+    const toolBox = k.startsWith('t:') ? ((boardOf(dayFor(viewDate, activeId()), stageEl.dataset.type).tools || []).find(w => 't:' + w.id === k) || {}).box : null;
+    const box = toolBox || (k.startsWith('x:') ? lay.extras.find(x => 'x:' + x.id === k).box : (lay.boxes[k] || getLayout(look).boxes[k]));
     drag = { k, region, look, resize: h.dataset.g === 'size', x: e.clientX, y: e.clientY, sx: 1920 / r.width, sy: 1080 / r.height, start: box.slice() };
     hideBar(); try { region.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault();
   });
@@ -804,17 +841,88 @@ details.sec>summary .muted{font-weight:400}
     if (!drag) return;
     const dx = (e.clientX - drag.x) * drag.sx, dy = (e.clientY - drag.y) * drag.sy, b = drag.start.slice();
     if (drag.resize) { b[2] = Math.max(80, b[2] + dx); b[3] = Math.max(50, b[3] + dy); } else { b[0] = Math.min(1880, Math.max(-b[2] + 40, b[0] + dx)); b[1] = Math.min(1050, Math.max(-b[3] + 30, b[1] + dy)); }
-    drag.box = b.map(Math.round); const keep = drag.region.getAttribute('style').replace(/left:[^;]*;top:[^;]*;width:[^;]*;height:[^;]*/, ''); drag.region.setAttribute('style', place(drag.box) + ';' + keep.replace(/^;/, ''));
+    drag.box = b.map(Math.round); if (drag.resize) requestAnimationFrame(fitAll); const keep = drag.region.getAttribute('style').replace(/left:[^;]*;top:[^;]*;width:[^;]*;height:[^;]*/, ''); drag.region.setAttribute('style', place(drag.box) + ';' + keep.replace(/^;/, ''));
   });
   stageEl.addEventListener('pointerup', () => {
     if (!drag) return; const d = drag; drag = null; if (!d.box) return;
     const lay = ownLayout(d.look);
-    if (d.k.startsWith('x:')) lay.extras.find(x => 'x:' + x.id === d.k).box = d.box;
+    if (d.k.startsWith('t:')) { const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); const w = (bd.tools || []).find(x => 't:' + x.id === d.k); if (w) w.box = d.box; }
+    else if (d.k.startsWith('x:')) lay.extras.find(x => 'x:' + x.id === d.k).box = d.box;
     else if (d.k === 'bm') { const id = roomFor(viewDate, activeId()).bitmoji, adj = bmAdj(id), base = getLayout(d.look).boxes.bm; lay.boxes.bm = [d.box[0] - adj.dx, d.box[1] - base[3] * (1 - adj.scale / 100) + (base[3] - d.box[3] * 100 / adj.scale) * (1 - adj.scale / 100) * 0, d.box[2], Math.round(d.box[3] * 100 / adj.scale)]; lay.boxes.bm[1] = Math.round(d.box[1] + d.box[3] - lay.boxes.bm[3]); }
     else lay.boxes[d.k] = d.box;
     save(); render();
   });
+  stageEl.addEventListener('click', e => { const td = e.target.closest('[data-g="tdel"]'); if (td && editMode) { const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.tools = (bd.tools || []).filter(w => w.id !== td.dataset.x); save(); render(); return; } });
   stageEl.addEventListener('click', e => { const x = e.target.closest('[data-g="xdel"]'); if (!x || !editMode) return; const lay = ownLayout(stageEl.dataset.look); lay.extras = lay.extras.filter(y => y.id !== x.dataset.x); save(); render(); });
+
+  /* ---------- suite tools: open one on top, or place one on a board ---------- */
+  const TOOL_PAGES = { spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
+  const WIDGETS = { picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
+  function openTool(kind){
+    if (kind === 'timer') { Suite.openTimer(); return; }
+    const t = TOOL_PAGES[kind], cid = activeId();
+    const ov = document.createElement('div'); ov.className = 'overlay';
+    ov.innerHTML = `<button class="btn close" data-o="close">Back to the board</button><iframe title="${esc(t[0])}" src="${t[1]}?embed&proj#${t[2] ? t[2] + '&' : ''}class=${encodeURIComponent(cid || '')}"></iframe>`;
+    document.body.appendChild(ov);
+    const close = () => { ov.remove(); window.removeEventListener('message', onMsg); };
+    const onMsg = ev => { if (ev.origin === location.origin && ev.data && ev.data.suite === 'close') close(); };
+    window.addEventListener('message', onMsg);
+    ov.addEventListener('click', ev => { if (ev.target.closest('[data-o="close"]')) close(); });
+  }
+  const toolMenu = (act, title, list) => `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="${title}">${act === 'addtool' ? 'Add a tool' : 'Tools'} ▾</button><span class="tmenu-list" hidden>${Object.entries(list).map(([k, v]) => `<button data-a="${act}" data-id="${k}">${esc(v[0])}</button>`).join('')}</span></span>`;
+  // the widgets themselves
+  const picked = {};   // names already picked this session, per class
+  function widgetHtml(kind, w){
+    if (kind === 'picker') return `<div class="w-pick"><div class="w-name" data-w="name">${esc(w.last || '')}</div><button class="w-btn" data-w="pick">Pick a name</button></div>`;
+    if (kind === 'noise') return `<div class="w-noise"><div class="w-nlab" data-w="nlab">${mic ? '' : 'Noise meter'}</div><div class="w-meter"><span data-w="nbar"></span><i style="left:${(Suite.get('noise', {}) || {}).line || 60}%"></i></div>${mic ? '' : '<button class="w-btn" data-w="mic">Start listening</button>'}</div>`;
+    if (kind === 'timer') { const t = Suite.timerState(); return `<div class="w-timer"><div class="w-time" data-w="time">${Suite.fmtDuration(t.left || 0)}</div><div class="w-row">${[1, 3, 5].map(m => `<button class="w-btn sm" data-w="tstart" data-m="${m}">${m} min</button>`).join('')}<button class="w-btn sm" data-w="ttog">${t.state === 'running' ? 'Pause' : 'Go'}</button></div></div>`; }
+    if (kind === 'points') {
+      const c = classes().find(x => x.id === activeId()), T0 = Object.assign({ quarter: 1, week: 1, log: [] }, Suite.get('tracker', {}));
+      if (!c || !Suite.feature('points')) return '<div class="w-pts muted">Points are turned off.</div>';
+      const rows = Suite.activeTables(c).map(t => ({ t, n: T0.log.reduce((a, e) => a + (e.c === c.id && e.t === t.id && e.q === T0.quarter && e.w === T0.week ? e.d : 0), 0) })).sort((a, b) => b.n - a.n);
+      return `<div class="w-pts"><div class="w-ph">${esc(Suite.word('team', { cap: true }))} points</div>${rows.map(r => `<div class="w-pr"><span class="dot" style="background:${esc(r.t.color)}"></span><span>${esc(r.t.name)}</span><b>${r.n}</b></div>`).join('')}</div>`;
+    }
+    return '';
+  }
+  // the noise meter widget shares the Noise meter page's calibration
+  let mic = null;
+  async function startMic(){
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      const ctx = new (window.AudioContext || window.webkitAudioContext)(), an = ctx.createAnalyser(); an.fftSize = 2048;
+      const h1 = ctx.createBiquadFilter(), h2 = ctx.createBiquadFilter(); [h1, h2].forEach(f => { f.type = 'highpass'; f.frequency.value = 300; });
+      ctx.createMediaStreamSource(stream).connect(h1); h1.connect(h2); h2.connect(an);
+      mic = { stream, ctx, an, buf: new Float32Array(an.fftSize), level: 0 }; render(); micTick();
+    } catch (e) { Suite.toast("The microphone isn't available here"); }
+  }
+  function micTick(){
+    if (!mic) return;
+    mic.an.getFloatTimeDomainData(mic.buf); let sum = 0; for (let i = 0; i < mic.buf.length; i++) sum += mic.buf[i] * mic.buf[i];
+    const db = 20 * Math.log10(Math.sqrt(sum / mic.buf.length) + 1e-9), N = Object.assign({ line: 60, sens: 5, base: null }, Suite.get('noise', {}) || {});
+    const floor = N.base != null ? N.base + 3 : -66 - (N.sens - 1) * 4, range = N.base != null ? 20 + (10 - N.sens) * 6 : 60;
+    mic.level = mic.level * .88 + Math.max(0, Math.min(100, (db - floor) / range * 100)) * .12;
+    document.querySelectorAll('[data-w="nbar"]').forEach(b => { b.style.width = mic.level.toFixed(1) + '%'; b.parentElement.parentElement.dataset.z = mic.level < N.line * .7 ? 'ok' : mic.level < N.line ? 'warn' : 'loud'; });
+    document.querySelectorAll('[data-w="nlab"]').forEach(l => { l.textContent = mic.level < N.line * .7 ? 'Nice and quiet' : mic.level < N.line ? 'Getting loud' : 'Too loud'; });
+    requestAnimationFrame(micTick);
+  }
+  window.addEventListener('pagehide', () => { if (mic) { mic.stream.getTracks().forEach(t => t.stop()); try { mic.ctx.close(); } catch (e) {} } });
+  setInterval(() => { const t = Suite.timerState(); document.querySelectorAll('[data-w="time"]').forEach(el => { el.textContent = Suite.fmtDuration(t.left || 0); }); document.querySelectorAll('[data-w="ttog"]').forEach(b => { b.textContent = t.state === 'running' ? 'Pause' : 'Go'; }); }, 300);
+  window.addEventListener('suite:change', e => { if (e.detail && e.detail.key === 'tracker' && document.querySelector('.w-pts')) render(); });
+  $('#stage').addEventListener('click', e => {
+    const b = e.target.closest('[data-w]'); if (!b || editMode) return;
+    const w = b.dataset.w;
+    if (w === 'pick') {
+      const c = classes().find(x => x.id === activeId()); if (!c || !c.students.length) { Suite.toast('No students in this class yet'); return; }
+      const sp = Suite.get('spinner', {}) || {}, a = sp.absent && sp.absent[c.id], away = a && a.date === Suite.dateKey(new Date()) ? new Set(a.ids) : new Set();
+      const used = picked[c.id] = picked[c.id] || new Set(); let pool = c.students.filter(s => !away.has(s.id) && !used.has(s.id));
+      if (!pool.length) { used.clear(); pool = c.students.filter(s => !away.has(s.id)); }
+      const s = pool[Math.floor(Math.random() * pool.length)]; used.add(s.id);
+      const box = b.closest('.w-pick').querySelector('[data-w="name"]'); box.textContent = s.name; box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
+    }
+    else if (w === 'mic') startMic();
+    else if (w === 'tstart') Suite.timerStart(+b.dataset.m * 60000);
+    else if (w === 'ttog') Suite.timerToggle();
+  });
 
   /* ---------- room packs: rooms, text spots, and bitmojis in one file (kept off the website) ---------- */
   async function importPack(file){
@@ -846,6 +954,7 @@ details.sec>summary .muted{font-weight:400}
     window.addEventListener('message', onMsg);
     ov.addEventListener('click', ev => { if (ev.target.closest('[data-o="close"]')) close(); });
   }
+  document.addEventListener('click', e => { if (!e.target.closest('.tmenu')) document.querySelectorAll('.tmenu-list').forEach(x => { x.hidden = true; }); }, true);
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-a]');
     if (!el) { if (!editMode && e.target.closest('#rTimer')) toggleTimer(); return; }
@@ -862,6 +971,13 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'full') { full = !full; if (full && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); else if (!full && document.fullscreenElement) document.exitFullscreen().catch(() => {}); render(); }
     else if (a === 'drawing') openDrawing();
     else if (a === 'startedit') startEdit();
+    else if (a === 'tmenu') { const l = el.parentElement.querySelector('.tmenu-list'); document.querySelectorAll('.tmenu-list').forEach(x => { if (x !== l) x.hidden = true; }); l.hidden = !l.hidden; return; }
+    else if (a === 'opentool') { el.closest('.tmenu-list').hidden = true; openTool(el.dataset.id); }
+    else if (a === 'addtool') { el.closest('.tmenu-list').hidden = true; const r = editable(viewDate, cid), t = $('#stage').dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.tools = bd.tools || [];
+      // find an open spot so new tools don't stack on top of each other
+      const over = (a, b2) => a[0] < b2[0] + b2[2] && b2[0] < a[0] + a[2] && a[1] < b2[1] + b2[3] && b2[1] < a[1] + a[3];
+      const box = WIDGETS[el.dataset.id][1].slice(); for (let n = 0; n < 12 && bd.tools.some(w => over(box, w.box)); n++) { box[0] -= box[2] + 20; if (box[0] < 0) { box[0] = 1920 - box[2] - 40; box[1] = Math.max(20, box[1] - box[3] - 20); } }
+      bd.tools.push({ id: Suite.uid(), kind: el.dataset.id, box }); save(); render(); Suite.toast(WIDGETS[el.dataset.id][0] + ' added to this board. Drag it into place.'); }
     else if (a === 'editdone') endEdit();
     else if (a === 'settings') { editing = true; $('#drawer').hidden = false; renderDrawer(); }
     else if (a === 'xaddbox') { const lay = ownLayout($('#stage').dataset.look); lay.extras.push({ id: Suite.uid(), box: [760, 420, 460, 200], panel: 'none', html: 'Type here' }); save(); render().then(() => { const x = [...document.querySelectorAll('.x-fit[contenteditable]')].pop(); if (x) { x.focus(); document.execCommand('selectAll'); } }); }
@@ -883,6 +999,8 @@ details.sec>summary .muted{font-weight:400}
     else if (k === 'Escape') { if (editing) { editing = false; $('#drawer').hidden = true; } else if (full) { full = false; render(); } }
   });
   window.addEventListener('resize', () => requestAnimationFrame(fitAll));
+  // refit whenever the slide or any box changes size, and once more after fonts finish loading
+  if (window.ResizeObserver) { let rq = 0; const ro = new ResizeObserver(() => { cancelAnimationFrame(rq); rq = requestAnimationFrame(fitAll); }); ro.observe($('#stage')); }
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { T = Object.assign(clone(BLANK), Suite.get('today', {})); render(); } });
   Suite.mountNav('today');
   resetTimer(activeId()); lastCid = activeId();

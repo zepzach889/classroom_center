@@ -37,7 +37,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-04c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-05a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -490,6 +490,7 @@
   }
   S.openTimer = () => { if (!tEl) tEl = timerMarkup(); tEl.hidden = false; tOpen = true; document.body.classList.add('timer-open'); timerDraw(); const g = document.getElementById('st-go'); if (g) g.focus(); };
   S.hideTimer = () => { if (tEl) tEl.hidden = true; tOpen = false; document.body.classList.remove('timer-open'); timerDraw(); };
+  S.timerStart = ms => tStart(ms); S.timerToggle = () => tToggle(); S.timerState = () => { const t = tget(); return { state: t.state, left: tleft(t), total: t.total || 0 }; };
   function tStart(ms){ wakeAudio(); const t = tget(); t.total = ms; t.last = ms; t.left = ms; t.end = Date.now() + ms; t.state = 'running'; tsave(t); timerDraw(); }
   function tToggle(){
     const t = tget();
