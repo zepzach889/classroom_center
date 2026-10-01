@@ -77,7 +77,7 @@ textarea{width:100%;resize:vertical}
 
 /* dialog + toast */
 .suite-dialog-back{position:fixed;inset:0;background:rgba(12,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
-.suite-dialog{background:var(--sheet);color:var(--ink);border:2px solid var(--edge);border-radius:22px;padding:22px;width:100%;max-width:440px}
+.suite-dialog{background:var(--sheet);color:var(--ink);border:2px solid var(--edge);border-radius:22px;padding:22px;width:100%;max-width:440px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
 .suite-dialog h2{font-size:23px;margin-bottom:8px}
 .suite-dialog p{color:var(--ink-2);font-size:15px}
 .suite-dialog .field{width:100%;margin-top:4px}

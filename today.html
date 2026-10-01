@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-05d">
-<script src="shared/core.js?v=2026-10-05d"></script>
-<script>window.PAGE_VERSION = '2026-10-05d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-06b">
+<script src="shared/core.js?v=2026-10-06b"></script>
+<script>window.PAGE_VERSION = '2026-10-06b';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -210,6 +210,10 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .bellslot .bell .b-next{font-size:min(8.5cqh,4.6cqw)}.bellslot .bell .b-msg{font-size:min(9cqh,4.8cqw);line-height:1.2;margin-top:2.5cqh;padding-top:2.5cqh}
 .bellbox{border:2px dashed #b57914;background:rgba(181,121,20,.15);display:grid;place-items:center;text-align:center;font:700 1.2cqw var(--sans);color:#7a520e}
 .bmsg{display:grid;grid-template-columns:64px auto 1fr auto auto;gap:6px;align-items:center;margin-top:6px}
+.evs{display:flex;flex-wrap:wrap;gap:.6cqw;align-items:center;justify-content:center;container-type:size}
+.evtag{background:#2f6fd0;color:#fff;border-radius:999px;padding:.35cqw 1.2cqw;font:700 min(58cqh,2.2cqw) var(--sans)}
+.evtag small{font-weight:500;margin-left:.6cqw;opacity:.9}
+.evtag.ph{background:rgba(47,111,208,.25);color:#1f3f75}
 .backboards{position:absolute;left:1cqw;bottom:1cqw;z-index:6;font:700 1.1cqw var(--sans);background:rgba(15,23,32,.55);color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:999px;padding:.5cqw 1.2cqw;cursor:pointer;opacity:.35;transition:opacity .15s}
 .backboards:hover,.backboards:focus{opacity:1}
 .lesson-empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:.6em;padding:0 12cqw;font-size:1.6cqw;color:#f4efe4}
@@ -281,7 +285,7 @@ details.sec>summary .muted{font-weight:400}
     cork:  { name: 'Corkboard', bgStyle: 'cork' },
     solid: { name: 'Solid color', bgStyle: 'solid' }
   };
-  const NEUTRAL = { date: [460, 40, 1000, 100], board: [440, 170, 1040, 600], cork: [1540, 170, 330, 600], timer: [760, 800, 400, 190], bm: [60, 250, 360, 800], pic: [980, 320, 470, 420], bell: [1400, 30, 480, 130] };
+  const NEUTRAL = { date: [460, 40, 1000, 100], board: [440, 170, 1040, 600], cork: [1540, 170, 330, 600], timer: [760, 800, 400, 190], bm: [60, 250, 360, 800], pic: [980, 320, 470, 420], bell: [1400, 30, 480, 130], events: [460, 140, 1000, 54] };
   const NEUTRAL_PANELS = {};
   const PANELS = ['none', 'card', 'dark'], PANEL_NAMES = { none: 'No box', card: 'White card', dark: 'Dark card' };
   const BITMOJI = {};
@@ -339,7 +343,8 @@ details.sec>summary .muted{font-weight:400}
   function dayFor(date, cid){
     const d = T.days[date] || {}, own = d[cid], co = d[rowKeyOf(cid)];
     const u = usual(cid), rec = own || co;
-    return rec ? Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' }, rec) : { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' };
+    if (!rec) return { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' };
+    return Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
   }
   let scope = 'course';   // edit for the course, or just this period
   function editable(date, cid){
@@ -493,6 +498,7 @@ details.sec>summary .muted{font-weight:400}
         <div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>
         ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer tm-${u.timer.style || 'digital'}${dark ? ' on-dark' : ''}${E ? ' ed' : ''}" id="rTimer" data-k="timer" style="${place(L.timer)};--tc:${esc(u.timer.color || '#2f6fd0')}"${E ? ' data-g="move" tabindex="-1"' : ''} aria-label="Warm-up timer. Click to start or pause.">${timerInner(u.timer.style)}${handles('timer')}</button>` : ''}
         ${!E && full ? `<span class="fstools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span>` : ''}
+        ${u.showEvents ? (() => { const ev = Suite.eventsOn(viewDate); return ev.length || E ? `<div class="region evs${E ? ' ed' : ''}" data-k="events" style="${place(L.events || NEUTRAL.events)}"${E ? ' data-g="move"' : ''}>${ev.length ? ev.map(x => `<span class="evtag">${esc(x.title)}${x.note ? `<small>${esc(x.note)}</small>` : ''}</span>`).join('') : '<span class="evtag ph">School events from your Planner show here</span>'}${handles('events')}</div>` : ''; })() : ''}
         ${(b.tools || []).map(w => `<div class="region tool tool-${w.kind}${E ? ' ed' : ''}" data-k="t:${esc(w.id)}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>${handles('t:' + w.id)}${E ? `<button class="xdel" data-g="tdel" data-x="${esc(w.id)}" aria-label="Remove this tool">×</button>` : ''}</div>`).join('')}
         ${(L.extras || []).map(x => `<div class="region xbox pn-${x.panel || 'none'}${(x.panel === 'dark' || ((x.panel || 'none') === 'none' && dark)) ? ' ink-light' : ''}${E ? ' ed' : ''}" data-k="x:${esc(x.id)}" style="${place(x.box)};${x.style || ''}"><div class="x-fit"${ce('x', ` data-x="${esc(x.id)}"`)}>${clean(x.html || '')}</div>${handles('x:' + x.id)}${E ? `<button class="xdel" data-g="xdel" data-x="${esc(x.id)}" aria-label="Remove this text box">×</button>` : ''}</div>`).join('')}`;
     }
@@ -534,15 +540,18 @@ details.sec>summary .muted{font-weight:400}
   const publishedId = url => ((url || '').match(/\/presentation\/d\/e\/([\w-]+)/) || [])[1] || null;
   const docId = url => ((url || '').match(/\/presentation\/d\/(?!e\/)([\w-]+)/) || [])[1] || null;
   const slideParam = url => ((url || '').match(/slide=(id\.[\w-]+)/) || [])[1] || null;
+  const planSlides = cid => ((Suite.agendaFor(viewDate, cid) || {}).materials || []).filter(m => m.kind === 'link' && /docs\.google\.com\/presentation/.test(m.url || ''));
+  const slideLinkFor = (cid, rec) => rec.slideLink || ((planSlides(cid).find(m => !publishedId(m.url)) || {}).url) || '';
+  const deckFor = (cid) => usual(cid).deckUrl || ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || '';
   function lessonHtml(cid, rec){
-    const u = usual(cid), pid = publishedId(u.deckUrl), slide = slideParam(rec.slideLink);
+    const u = usual(cid), pid = publishedId(deckFor(cid)), slide = slideParam(slideLinkFor(cid, rec));
     if (!pid) return `<div class="lesson"><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Open <b>Edit day</b> and paste this class's published deck link under Lesson slides.</p></div></div>`;
     return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><iframe title="Lesson slides" allowfullscreen src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
   }
   function openInSlides(cid){
-    const rec = dayFor(viewDate, cid), u = usual(cid), id = docId(rec.slideLink) || docId(u.deckUrl), slide = slideParam(rec.slideLink);
+    const rec = dayFor(viewDate, cid), u = usual(cid), link = slideLinkFor(cid, rec), deck = deckFor(cid), id = docId(link) || docId(deck), slide = slideParam(link);
     if (id) window.open(`https://docs.google.com/presentation/d/${id}/present${slide ? '?slide=' + slide : ''}`, '_blank');
-    else if (publishedId(u.deckUrl)) window.open(u.deckUrl, '_blank');
+    else if (publishedId(deck)) window.open(deck, '_blank');
     else Suite.toast('Add a slide link in Edit day first');
   }
 
@@ -655,7 +664,8 @@ details.sec>summary .muted{font-weight:400}
           <div class="bar" style="margin-top:8px"><input class="field" id="haveNew" placeholder="Add another item"><button class="btn small" data-d="haveadd">Add</button></div></details>
         <details class="sec"><summary>Lesson slides</summary>
           <label class="lb">Published deck link <span class="muted small">(set once for ${esc(rowName(cid))})</span><input class="field wide" data-d="deck" value="${esc(u.deckUrl || '')}" placeholder="From File, Share, Publish to the web"></label>
-          <label class="lb">This day's first lesson slide <span class="muted small">(click the slide in Google Slides, then copy the address bar)</span><input class="field wide" data-d="slide" value="${esc(rec.slideLink || '')}" placeholder="https://docs.google.com/presentation/d/…#slide=id.…"></label>
+          <label class="lb">This day's first lesson slide <span class="muted small">(click the slide in Google Slides, then copy the address bar)</span><input class="field wide" data-d="slide" value="${esc(rec.slideLink || '')}" placeholder="${planSlides(cid).length ? 'Using the Slides link from your plan' : 'https://docs.google.com/presentation/d/…#slide=id.…'}"></label>
+          ${!rec.slideLink && planSlides(cid).length ? '<p class="note">Using the Google Slides link from this day\'s plan. Paste a link here to use a different slide.</p>' : ''}
           <p class="note${u.deckUrl && !publishedId(u.deckUrl) ? ' warn' : ''}">${u.deckUrl && !publishedId(u.deckUrl) ? 'That looks like an editing link. Use the link from Publish to the web so it can show here; "Open in Slides" still works.' : 'If your district limits published decks, use Open in Slides during the lesson instead.'}</p></details>
         <details class="sec"><summary>Background and bitmoji <span class="muted small">${esc(lookById(room.look).name)} · ${room.bitmoji === 'none' ? 'no bitmoji' : esc(bmName(room.bitmoji))}</span></summary>
           <span class="lb">Usual for ${esc(rowName(cid))}</span>
@@ -670,6 +680,9 @@ details.sec>summary .muted{font-weight:400}
           <div class="bmrow"><label class="small">Size <input type="range" min="60" max="130" data-d="bmscale" value="${bmAdj(room.bitmoji).scale}"></label><label class="small">Left or right <input type="range" min="-200" max="300" data-d="bmdx" value="${bmAdj(room.bitmoji).dx}"></label></div>` : ''}
           <div class="bar" style="margin-top:10px"><label class="btn small">Add a background<input type="file" accept="image/*" data-d="lookup" hidden></label><label class="btn small">Add a bitmoji<input type="file" accept="image/png,image/webp,image/*" data-d="bmup" hidden></label><label class="btn quiet small">Import a room pack<input type="file" accept=".json,application/json" data-d="packin" hidden></label></div>
           <p class="hintline">Pictures you add are saved in this browser and in your backups, never on the website. Bitmojis work best as PNGs with a see-through background.</p></details>
+        <details class="sec"><summary>School events <span class="muted small">${u.showEvents ? 'shown' : 'off'}</span></summary>
+          <label class="rv" style="display:flex;gap:6px"><input type="checkbox" data-d="evon"${u.showEvents ? ' checked' : ''}> Show today's school events from the Planner (like picture day) on the boards</label>
+          <p class="hintline">Optional. Place the events strip with Edit on screen.</p></details>
         <details class="sec"><summary>Bell reminder <span class="muted small">${bellCfg().on ? 'last ' + bellCfg().minutes + ' minutes' : 'off'}</span></summary>
           ${(() => { const B = bellCfg(); return `<label class="rv" style="display:flex;gap:6px"><input type="checkbox" data-d="bon"${B.on ? ' checked' : ''}> Show a countdown near the end of class and during passing time</label>
           <div class="bmrow" style="margin-top:8px"><label class="small">Look <select data-d="bstyle"><option value="badge"${B.style === 'badge' ? ' selected' : ''}>Corner badge</option><option value="strip"${B.style === 'strip' ? ' selected' : ''}>Strip across the screen</option><option value="box"${B.style === 'box' ? ' selected' : ''}>A box I place</option></select></label>
@@ -746,6 +759,7 @@ details.sec>summary .muted{font-weight:400}
       if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
       commit(true); return; }
     if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (d === 'evon') { usual(cid).showEvents = el.checked; commit(true); return; }
     if (['bon', 'bstyle', 'bcorner', 'bstrip', 'bmin', 'bover', 'bmmin', 'bmchime'].includes(d)) {
       const B = T.bell = bellCfg();
       if (d === 'bon') B.on = el.checked; else if (d === 'bstyle') B.style = el.value; else if (d === 'bcorner') B.corner = el.value; else if (d === 'bstrip') B.strip = el.value;
@@ -1094,6 +1108,9 @@ details.sec>summary .muted{font-weight:400}
   // refit whenever the slide or any box changes size, and once more after fonts finish loading
   if (window.ResizeObserver) { let rq = 0; const ro = new ResizeObserver(() => { cancelAnimationFrame(rq); rq = requestAnimationFrame(fitAll); }); ro.observe($('#stage')); }
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { T = Object.assign(clone(BLANK), Suite.get('today', {})); render(); } });
+  { const md = location.hash.match(/date=(\d{4}-\d{2}-\d{2})/), mc = location.hash.match(/class=([\w-]+)/);
+    if (md) viewDate = md[1];
+    if (mc && classes().some(c => c.id === decodeURIComponent(mc[1]))) T.mode = decodeURIComponent(mc[1]); }
   Suite.mountNav('today');
   resetTimer(activeId()); lastCid = activeId();
   render();

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-05d">
-<script src="shared/core.js?v=2026-10-05d"></script>
-<script>window.PAGE_VERSION = '2026-10-05d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-06b">
+<script src="shared/core.js?v=2026-10-06b"></script>
+<script>window.PAGE_VERSION = '2026-10-06b';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -23,6 +23,10 @@ table.plan th{font-weight:600;text-align:left;vertical-align:bottom;padding:4px 
 table.plan th.day{font-size:15px}
 table.plan th.day span{display:block;font-size:12px;font-weight:500;color:var(--ink-2)}
 table.plan th.day.today{color:var(--land)}
+.tday{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.04em;background:#2f6fd0;color:#fff;border-radius:999px;padding:1px 8px}
+details.students{margin-top:14px;border:1.5px solid var(--rule);border-radius:12px;padding:8px 12px;background:var(--paper)}
+details.students summary{cursor:pointer;font-weight:700}
+details.students textarea{width:100%}
 .dayoff{display:block;margin-top:3px;font:600 11px var(--sans);color:var(--ink-2);background:none;border:1px dashed var(--rule);border-radius:999px;padding:1px 8px;cursor:pointer}
 .dayoff:hover{border-color:var(--edge);color:var(--ink)}
 table.plan th.rowh{width:170px;vertical-align:top;background:var(--sheet);border:2px solid var(--edge);border-radius:14px;padding:10px 12px}
@@ -73,7 +77,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   .rowh .btn{display:none}
   .cellbtn{min-height:0;border:1px solid #999;border-radius:6px;padding:5px 6px;background:#fff;color:#111}
   .cellbtn.empty{visibility:hidden}
-  .cellbtn .own{background:#fff;color:#111;border:1px solid #111}
+  .cellbtn .own,.cellbtn .tday{background:#fff;color:#111;border:1px solid #111}
   .evchip{background:#fff;color:#111;border:1px solid #111}
   .cellbtn ol,.cellbtn .tg{font-size:11px}
 }
@@ -126,7 +130,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         if (!sc.periods.length) return `<td class="cell"><div class="cellbtn off">${esc(sc.label)}</div></td>`;
         const e = day[r.key], own = r.kind === 'course' ? r.classes.filter(c => day[c.id]) : [];
         return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn${e || own.length ? '' : ' empty'}" data-a="edit" data-row="${esc(r.key)}" data-date="${k}" aria-label="Plan for ${esc(r.name)} on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">
-          ${e ? summary(e) : own.length ? '' : '+ Plan'}${own.length ? `<span class="own" title="These periods have their own plan this day instead of the course plan">Own plan: ${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))}</span>` : ''}</button></td>`;
+          ${e ? summary(e) : own.length || boardHasText(todayRec(k, r.key)) ? '' : '+ Plan'}${boardHasText(todayRec(k, r.key)) ? '<span class="tday" title="Student boards are ready for the Today screen">Today ready</span>' : ''}${own.length ? `<span class="own" title="These periods have their own plan this day instead of the course plan">Own plan: ${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))}</span>` : ''}</button></td>`;
       }).join('')}</tr>`).join('');
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
@@ -138,6 +142,38 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       ${R.length ? `<div class="gridwrap"><table class="plan"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>`
         : '<div class="banner"><span>Add your classes in Classes and rosters first.</span><a class="btn primary" href="settings.html#classes">Classes and rosters</a></div>'}
       <p class="hint noprint" style="margin-top:12px">Click any day to plan it. Plans show on the dashboard for the class in session and print on the substitute page. An <span class="own" style="display:inline-block">Own plan</span> tag means those periods have their own plan that day instead of the course plan; open the day to see it or switch them back.</p>`;
+  }
+
+  /* ---------- the Today screen's student boards, prepared from here ---------- */
+  const TODAY_BOARDS = [['warmup', 'Warm-up', 'WARM-UP'], ['returned', 'Returned work', 'Returned Work']];
+  const todayStore = () => Object.assign({ rows: {}, days: {} }, Suite.get('today', {}) || {});
+  const todayRec = (date, key) => ((todayStore().days || {})[date] || {})[key] || null;
+  const linesToText = lines => (lines || []).map(l => '-'.repeat(Math.min(2, l.level || 0)) + (l.level ? ' ' : '') + (l.reveal ? '? ' : '') + (l.text || '').trim()).join('\n');
+  function textToLines(txt, old){
+    return txt.split('\n').map(x => x.replace(/\s+$/, '')).filter(x => x.trim()).map((x, i) => {
+      const m = x.match(/^\s*(-{0,2})\s*(\?\s+)?(.*)$/), text = m[3].trim(), prev = (old || [])[i];
+      const line = { text, level: m[1].length, color: prev && prev.color || 'blue', reveal: !!m[2] };
+      if (prev && (prev.text || '').trim() === text && prev.html) line.html = prev.html;   // keep formatting added on the Today screen
+      return line;
+    });
+  }
+  function boardHasText(rec){ return !!rec && Object.values(rec.boards || {}).some(b => (b.lines || []).some(l => (l.text || '').trim())); }
+  function saveStudents(date, key, values){
+    const T = todayStore(); T.days = T.days || {}; const day = T.days[date] = T.days[date] || {};
+    const rec = day[key] = day[key] || {}; rec.boards = rec.boards || {};
+    let changed = false;
+    values.forEach(([id, heading, txt]) => {
+      const cur = rec.boards[id], before = linesToText(cur && cur.lines);
+      if (txt.trim() === before.trim()) return;
+      rec.boards[id] = Object.assign({ heading }, cur || {}, { lines: textToLines(txt, cur && cur.lines) }); changed = true;
+    });
+    if (!changed) { if (!Object.keys(rec.boards).length && Object.keys(rec).length === 1) delete day[key]; return; }
+    // make sure boards with something on them are in the day's lineup
+    const base = rec.lineup || ((T.rows || {})[key] || {}).lineup || ['welcome', 'agenda'];
+    const lineup = base.slice();
+    values.forEach(([id]) => { if ((rec.boards[id].lines || []).length && !lineup.includes(id)) { const at = Math.max(lineup.indexOf('welcome') + 1, 0); lineup.splice(at + (id === 'returned' && lineup.includes('warmup') ? 1 : 0), 0, id); } });
+    rec.lineup = lineup;
+    Suite.set('today', T);
   }
 
   /* ---------- editing a day ---------- */
@@ -160,6 +196,12 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       <span class="lb">Links and files <span class="muted small">(slides, docs, handouts; they show on the dashboard and the sub packet)</span></span>
       <div id="ed-mats"></div>
       <div class="bar" style="margin-top:6px"><button class="btn small" data-e="addlink">Add a link</button><label class="btn small">Attach a file<input type="file" id="ed-file" multiple hidden></label></div>
+      <details class="students"${boardHasText(todayRec(dateKey, target)) ? ' open' : ''}><summary>Students see (Today screen)</summary>
+        <p class="hintline">One line per bullet. Start a line with <b>-</b> for a sub-point (<b>--</b> for a third level) and with <b>?</b> to keep it hidden until you click, like a warm-up answer. Due and Agenda come from the plan above.</p>
+        ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="3" data-sb="${id}">${esc(linesToText(((todayRec(dateKey, target) || {}).boards || {})[id] && todayRec(dateKey, target).boards[id].lines))}</textarea>`).join('')}
+        ${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id)).map(([id, bd]) => `<label class="lb" for="st-${id}">${esc(String(bd.heading || 'Custom board').replace(/<[^>]+>/g, ''))} <span class="muted small">(custom board)</span></label><textarea id="st-${id}" rows="3" data-sb="${id}" data-h="${esc(bd.heading || '')}">${esc(linesToText(bd.lines))}</textarea>`).join('')}
+        <div class="bar" style="margin-top:6px"><a class="btn small" href="today.html#date=${dateKey}&class=${encodeURIComponent((r.classes[0] || {}).id || '')}" title="See this day's Today screen">Open in Today</a></div>
+      </details>
       <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
         <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
         <span class="bar"><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
@@ -208,6 +250,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         const links = mats.filter(m => m.kind === 'file' || (m.url || '').trim()).map(m => m.kind === 'link' ? Object.assign(m, { url: /^https?:\/\//i.test(m.url.trim()) ? m.url.trim() : 'https://' + m.url.trim() }) : m);
         const entry = { target: q('ed-target').value.trim(), items: q('ed-items').value.split('\n').map(x => x.trim()).filter(Boolean), homework: q('ed-hw').value.trim(), materials: links };
         Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework || links.length ? entry : null);
+        saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].map(t => [t.dataset.sb, t.dataset.h || (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || 'MY BOARD', t.value]));
         close(); dropUnused(removed); render(); Suite.toast('Plan saved');
       }
     });
