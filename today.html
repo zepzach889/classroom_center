@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-04b">
-<script src="shared/core.js?v=2026-10-04b"></script>
-<script>window.PAGE_VERSION = '2026-10-04b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-04c">
+<script src="shared/core.js?v=2026-10-04c"></script>
+<script>window.PAGE_VERSION = '2026-10-04c';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -689,7 +689,7 @@ details.sec>summary .muted{font-weight:400}
         else if (d === 'flagbg') T.flagBg = meta.id;
         else {
           const u = usual(cid), id = 'room-' + Suite.uid();
-          T.custom[id] = { name: el.files[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '), fileId: meta.id, layout: layoutOf(lookById(roomFor(viewDate, cid).look)) };
+          T.custom[id] = { name: el.files[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '), fileId: meta.id, layout: clone(getLayout(roomFor(viewDate, cid).look).boxes) };
           u.look = id; commit(true); startEdit(); return;
         }
         commit(true); Suite.toast('Picture added');
