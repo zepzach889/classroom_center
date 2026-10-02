@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-09b">
-<script src="shared/core.js?v=2026-10-09b"></script>
-<script>window.PAGE_VERSION = '2026-10-09b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-09d">
+<script src="shared/core.js?v=2026-10-09d"></script>
+<script>window.PAGE_VERSION = '2026-10-09d';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -35,11 +35,11 @@ body.full .stage{width:min(100vw,100vh * 16 / 9);border-radius:0}
 body.full #suite-nav,body.full .rail{display:none}
 .region{position:absolute}
 .region[hidden]{display:none}
-.date{display:grid;place-items:center;text-align:center}
+.date{display:grid;place-items:center;justify-items:var(--tj,center);text-align:var(--ta,center)}
 #dateText{font-family:var(--bf,Georgia),"Times New Roman",serif;font-weight:700;font-size:calc(3.05cqw * var(--fit,1) * var(--sz,1));color:var(--bc,var(--ink-date));text-decoration:underline;text-decoration-thickness:.06em;text-underline-offset:.12em;white-space:nowrap}
 .board{padding:1.2cqw 3cqw 1.4cqw}
 .board-fit{height:100%;overflow:hidden;font-size:calc(2.2cqw * var(--fit,1))}
-.heading{margin:0 0 .25em;text-align:center;font-family:"Architects Daughter","Comic Sans MS",cursive;font-weight:400;-webkit-text-stroke:.035em currentColor;font-size:2.1em;line-height:1.1;color:var(--ink-green);letter-spacing:.02em}
+.heading{margin:0 0 .25em;text-align:var(--hta,center);font-family:"Architects Daughter","Comic Sans MS",cursive;font-weight:400;-webkit-text-stroke:.035em currentColor;font-size:2.1em;line-height:1.1;color:var(--ink-green);letter-spacing:.02em}
 .lines{margin:0;padding:0 0 0 1.1em;font-family:"Chelsea Market","Trebuchet MS",sans-serif;font-weight:400;line-height:1.4;list-style:disc}
 .lines b{font-weight:700}
 .lines li{margin-bottom:.2em;padding-left:.15em}
@@ -61,6 +61,18 @@ body.full #suite-nav,body.full .rail{display:none}
 .rsbox i{position:absolute;right:-8px;bottom:-8px;width:18px;height:18px;border-radius:50%;background:var(--c);border:2px solid #fff;cursor:nwse-resize}
 .rsbox.off{display:none}
 .rs-note{color:#dfe6ec;font-size:14px;margin:0}
+.lines{text-align:var(--ta,left)}
+.region[style*="--ta:center"] .lines,.region[style*="--ta:right"] .lines{list-style:none;padding-left:0}
+.region[style*="--ta:center"] .lines li,.region[style*="--ta:right"] .lines li{list-style:none;margin-left:0;padding-left:0}
+.region[style*="--ta:center"] .lines li::before,.region[style*="--ta:right"] .lines li::before{content:"\2022\00a0";}
+.region[style*="--ta:center"] .lines li.lv1::before,.region[style*="--ta:right"] .lines li.lv1::before{content:"\25E6\00a0"}
+.region[style*="--ta:center"] .lines li.lv2::before,.region[style*="--ta:right"] .lines li.lv2::before{content:"\25AA\00a0"}
+.have-out,.have-list{text-align:var(--ta,left)}
+.region[style*="--ta:center"] .have-list,.region[style*="--ta:right"] .have-list{list-style:none;padding-left:0}
+.region[style*="--ta:center"] .have-list li::before,.region[style*="--ta:right"] .have-list li::before{content:"\2022\00a0"}
+.x-fit{text-align:var(--ta,left)}
+/* Chelsea Market and Architect's Daughter have no bold of their own, so give bold a little more weight */
+#stage b,#stage strong,#stage [style*="font-weight:700"],#stage [style*="font-weight: bold"]{-webkit-text-stroke:.035em currentColor}
 .bm{pointer-events:none}
 .pic img{width:100%;height:100%;object-fit:contain}
 .region{--sz:1}
@@ -81,12 +93,14 @@ body.full #suite-nav,body.full .rail{display:none}
 .stage.editing [contenteditable]:focus{background:rgba(47,111,208,.06);border-radius:4px}
 .stage.editing .lines li.rv{border-bottom:2px dashed rgba(196,40,28,.5)}
 .stage.editing .lines li.rv::after{content:" (hidden until click)";font-size:.55em;color:#c4281c;font-family:var(--sans)}
-.stage.editing .lines:empty::before,.stage.editing .have-list:empty::before{content:"Type here";opacity:.5}
+.stage.editing .lines:empty::before,.stage.editing .have-list:empty::before,.stage.editing .x-fit:empty::before{content:"Type here";opacity:.5}
 .planned{font:600 1cqw var(--sans);color:#555;background:rgba(255,255,255,.85);border-radius:8px;padding:.4em .7em;margin-top:.6em}
 .ftb{position:fixed;z-index:95;display:flex;flex-wrap:wrap;gap:4px;align-items:center;max-width:min(760px,96vw);background:var(--sheet);color:var(--ink);border:2px solid var(--edge);border-radius:14px;padding:6px 8px;box-shadow:0 10px 26px rgba(0,0,0,.25)}
 .ftb[hidden]{display:none}
 .ftb button{font:inherit;font-size:13px;min-width:30px;height:30px;border:1.5px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;padding:0 7px;white-space:nowrap}
 .ftb button:hover{border-color:var(--edge)}
+.ftb button[aria-pressed="true"]{background:var(--sea);color:var(--on-sea);border-color:var(--sea)}
+.ftb button svg{display:block}
 .ftb .cdot{width:22px;min-width:22px;height:22px;border-radius:50%;padding:0;border:2px solid var(--edge)}
 .ftb select{font:inherit;font-size:13px;height:30px;border-radius:8px}
 .ftb .sep{width:1px;height:22px;background:var(--rule);margin:0 2px}
@@ -422,7 +436,8 @@ details.sec>summary .muted{font-weight:400}
     return longDate(k);
   }
   // a box's text style: font, size, and color, saved per background
-  const boxStyle = (L, k) => { const st = (L.styles || {})[k] || {}; return `${st.font ? `--bf:${st.font};` : ''}${st.size ? `--sz:${st.size};` : ''}${st.color ? `--bc:${st.color};` : ''}`; };
+  const JUST = { left: 'start', center: 'center', right: 'end' };
+  const boxStyle = (L, k) => { const st = (L.styles || {})[k] || {}; return `${st.font ? `--bf:${st.font};` : ''}${st.size ? `--sz:${st.size};` : ''}${st.color ? `--bc:${st.color};` : ''}${st.align ? `--ta:${st.align};--tj:${JUST[st.align]};` : ''}${st.halign ? `--hta:${st.halign};` : ''}`; };
   const ordinal = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
   const longDate = k => { const [y, m, d] = k.split('-').map(Number), x = new Date(y, m - 1, d); return `${x.toLocaleDateString('en-US', { weekday: 'long' })}, ${x.toLocaleDateString('en-US', { month: 'long' })} ${ordinal(d)}, ${y}`; };
   function roomFor(date, cid){
@@ -863,13 +878,24 @@ details.sec>summary .muted{font-weight:400}
     ftb.innerHTML = `<button data-x="bold" title="Bold (Ctrl+B)"><b>B</b></button><button data-x="italic" title="Italic (Ctrl+I)"><i>I</i></button><button data-x="underline" title="Underline (Ctrl+U)"><u>U</u></button><span class="sep"></span>
       ${[['#27468a', 'Blue'], ['#c4281c', 'Red'], ['#3f7d2b', 'Green'], ['#1b1b1b', 'Black'], ['#6a3d9a', 'Purple'], ['#d2691e', 'Orange'], ['#ffffff', 'White']].map(([c, n]) => `<button class="cdot" data-x="color" data-v="${c}" style="background:${c}" title="${n}" aria-label="${n}"></button>`).join('')}<span class="sep"></span>
       <select data-x="font" aria-label="Font" title="Font (select words first, or it changes the whole box)"><option value="">Font</option><option value="Chelsea Market">Chelsea Market</option><option value="Architects Daughter">Architect's Daughter</option><option value="Georgia">Georgia</option></select>
-      <button data-x="smaller" title="Smaller">A−</button><button data-x="bigger" title="Bigger">A+</button>
+      <button data-x="smaller" title="Smaller">A−</button><button data-x="bigger" title="Bigger">A+</button><span class="sep"></span>
+      <button data-x="align" data-v="left" title="Align left" aria-label="Align left"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button><button data-x="align" data-v="center" title="Center" aria-label="Center"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="3.5" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="3.5" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button><button data-x="align" data-v="right" title="Align right" aria-label="Align right"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="6" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="6" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button>
       ${f === 'lines' ? `<span class="sep"></span><button data-x="outdent" title="Less indented (Shift+Tab)">⇤</button><button data-x="indent" title="Sub-point (Tab)">⇥</button><button data-x="reveal" title="Keep this line hidden until you press Next">Hide until click</button>` : ''}
       ${f === 'date' ? `<span class="sep"></span><select data-x="datefmt" aria-label="Date style">${Object.entries(DATE_FORMATS).map(([v, n]) => `<option value="${v}"${fmt === v ? ' selected' : ''}>${n}</option>`).join('')}</select><button data-x="autodate" title="Go back to the automatic date">Automatic date</button>` : ''}
       <span class="sep"></span><select data-x="panel" aria-label="Box background">${PANELS.map(p => `<option value="${p}"${panel === p ? ' selected' : ''}>${PANEL_NAMES[p]}</option>`).join('')}</select>`;
-    ftb.hidden = false; placeBar();
+    ftb.hidden = false; placeBar(); syncBar();
   }
   // the toolbar docks in a strip just above the slide, so it never covers anything on the board
+  function syncBar(){
+    if (!active || ftb.hidden) return;
+    ['bold', 'italic', 'underline'].forEach(c => { const b = ftb.querySelector(`[data-x="${c}"]`); if (b) { let on = false; try { on = document.queryCommandState(c); } catch (e) {} b.setAttribute('aria-pressed', on); } });
+    const k = active.closest('.region').dataset.k, f = active.dataset.f, lay = getLayout($('#stage').dataset.look);
+    const cur = k.startsWith('x:') ? ((((lay.extras || []).find(x => 'x:' + x.id === k) || {}).style || '').match(/--ta:(\w+)/) || [])[1] || 'left'
+      : f === 'heading' ? ((lay.styles || {}).board || {}).halign || 'center'
+      : ((lay.styles || {})[k] || {}).align || (k === 'date' ? 'center' : 'left');
+    ftb.querySelectorAll('[data-x="align"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === cur));
+  }
+  document.addEventListener('selectionchange', () => { if (active) syncBar(); });
   function placeBar(){ if (!active || ftb.hidden) return; const r = $('#stage').getBoundingClientRect(), w = ftb.offsetWidth;
     ftb.style.left = Math.max(8, r.left + (r.width - w) / 2) + 'px'; ftb.style.top = Math.max(4, r.top - ftb.offsetHeight - 8) + 'px'; }
   function hideBar(){ ftb.hidden = true; active = null; }
@@ -877,7 +903,7 @@ details.sec>summary .muted{font-weight:400}
   const curLi = () => { const n = getSelection().anchorNode; const el = n && (n.nodeType === 1 ? n : n.parentElement); return el && el.closest ? el.closest('ul.lines > li') : null; };
   const collapsed = () => { const sel = getSelection(); return !sel.rangeCount || sel.getRangeAt(0).collapsed; };
   function setBoxStyle(k, patch){ const look = $('#stage').dataset.look, lay = ownLayout(look);
-    if (k.startsWith('x:')) { const x = lay.extras.find(y => 'x:' + y.id === k); if (!x) return; const cur = {}; (x.style || '').split(';').forEach(p => { const [a, b] = p.split(':'); if (a && b) cur[a.trim()] = b.trim(); }); const m = { font: '--bf', size: '--sz', color: '--bc' }; Object.entries(patch).forEach(([a, b]) => { if (b == null) delete cur[m[a]]; else cur[m[a]] = b; }); x.style = Object.entries(cur).map(([a, b]) => a + ':' + b).join(';'); }
+    if (k.startsWith('x:')) { const x = lay.extras.find(y => 'x:' + y.id === k); if (!x) return; const cur = {}; (x.style || '').split(';').forEach(p => { const [a, b] = p.split(':'); if (a && b) cur[a.trim()] = b.trim(); }); const m = { font: '--bf', size: '--sz', color: '--bc', align: '--ta', tj: '--tj' }; if (patch.align) patch.tj = JUST[patch.align]; Object.entries(patch).forEach(([a, b]) => { if (b == null) delete cur[m[a]]; else cur[m[a]] = b; }); x.style = Object.entries(cur).map(([a, b]) => a + ':' + b).join(';'); }
     else { lay.styles[k] = Object.assign({}, lay.styles[k] || {}, patch); }
     save(); }
   const fontStack = f => f === 'Georgia' ? 'Georgia' : `"${f}"`;
@@ -889,6 +915,12 @@ details.sec>summary .muted{font-weight:400}
     const k = el.closest('.region').dataset.k, f = el.dataset.f;
     el.focus(); document.execCommand('styleWithCSS', false, true);
     if (cmd === 'panel') { const look = $('#stage').dataset.look, lay = ownLayout(look); if (k.startsWith('x:')) lay.extras.find(x => 'x:' + x.id === k).panel = val; else lay.panels[k] = val; save(); return rerender(el); }
+    if (cmd === 'align') {
+      if (k.startsWith('x:')) setBoxStyle(k, { align: val });
+      else if (f === 'heading') { const lay = ownLayout($('#stage').dataset.look); lay.styles.board = Object.assign({}, lay.styles.board || {}, { halign: val }); save(); }
+      else setBoxStyle(k, { align: val });
+      return rerender(el);
+    }
     if (cmd === 'datefmt') { const look = $('#stage').dataset.look, lay = ownLayout(look); lay.styles.date = Object.assign({}, lay.styles.date || {}, { format: val }); const r = editable(viewDate, activeId()); delete r.dateText; save(); return rerender(el); }
     if (cmd === 'autodate') { const r = editable(viewDate, activeId()); delete r.dateText; save(); return rerender(el); }
     if (cmd === 'indent' || cmd === 'outdent') { const li = curLi(); if (li) { const lv = Math.max(0, Math.min(2, (+((li.className.match(/lv(\d)/) || [])[1] || 0)) + (cmd === 'indent' ? 1 : -1))); li.className = li.className.replace(/lv\d/, 'lv' + lv); syncNow(el); } return; }
@@ -906,7 +938,7 @@ details.sec>summary .muted{font-weight:400}
       const cur = parseInt(document.queryCommandValue('fontSize'), 10) || 3; document.execCommand('fontSize', false, String(Math.max(1, Math.min(7, cur + (cmd === 'bigger' ? 1 : -1)))));
     }
     else document.execCommand(cmd);
-    syncNow(el);
+    syncNow(el); syncBar();
   }
   // redraw, then put the cursor back in the same box
   function rerender(el){ const k = el.closest('.region').dataset.k, f = el.dataset.f; return render().then(() => { const again = document.querySelector(`.region[data-k="${CSS.escape(k)}"] [data-f="${f}"]`); if (again) { again.focus(); showBar(again); } }); }
@@ -1140,7 +1172,7 @@ details.sec>summary .muted{font-weight:400}
       bd.tools.push({ id: Suite.uid(), kind: el.dataset.id, box }); save(); render(); Suite.toast(WIDGETS[el.dataset.id][0] + ' added to this board. Drag it into place.'); }
     else if (a === 'editdone') endEdit();
     else if (a === 'settings') { editing = true; $('#drawer').hidden = false; renderDrawer(); }
-    else if (a === 'xaddbox') { const lay = ownLayout($('#stage').dataset.look); lay.extras.push({ id: Suite.uid(), box: [760, 420, 460, 200], panel: 'none', html: 'Type here' }); save(); render().then(() => { const x = [...document.querySelectorAll('.x-fit[contenteditable]')].pop(); if (x) { x.focus(); document.execCommand('selectAll'); } }); }
+    else if (a === 'xaddbox') { const lay = ownLayout($('#stage').dataset.look); lay.extras.push({ id: Suite.uid(), box: [760, 420, 460, 200], panel: 'none', html: '' }); save(); render().then(() => { const x = [...document.querySelectorAll('.x-fit[contenteditable]')].pop(); if (x) { x.focus(); document.execCommand('selectAll'); } }); }
   });
   document.addEventListener('pointerdown', e => {
     if (!editing || $('#drawer').hidden) return;
