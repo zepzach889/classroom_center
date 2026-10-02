@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-08a">
-<script src="shared/core.js?v=2026-10-08a"></script>
-<script>window.PAGE_VERSION = '2026-10-08a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-08c">
+<script src="shared/core.js?v=2026-10-08c"></script>
+<script>window.PAGE_VERSION = '2026-10-08c';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -207,7 +207,7 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .bell-strip{left:0;right:0;border-radius:0;display:flex;align-items:center;justify-content:center;gap:2.5cqw;padding:.7cqw 2cqw}
 .bell-strip .b-next,.bell-strip .b-msg{margin:0;padding:0;border:0}
 .bell-strip.strip-top{top:0}.bell-strip.strip-bottom{bottom:0}
-.bellslot{pointer-events:none;container-type:size}
+.bellslot{pointer-events:none;container-type:size;z-index:9}
 .bellslot .bell{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:4cqh 5cqw;overflow:hidden}
 .bellslot .bell .b-lead{font-size:min(10cqh,5.5cqw)}.bellslot .bell .b-time{font-size:min(24cqh,13cqw);line-height:1.05}
 .bellslot .bell .b-next{font-size:min(8.5cqh,4.6cqw)}.bellslot .bell .b-msg{font-size:min(9cqh,4.8cqw);line-height:1.2;margin-top:2.5cqh;padding-top:2.5cqh}
@@ -217,6 +217,8 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .evtag{background:#2f6fd0;color:#fff;border-radius:999px;padding:.35cqw 1.2cqw;font:700 min(58cqh,2.2cqw) var(--sans)}
 .evtag small{font-weight:500;margin-left:.6cqw;opacity:.9}
 .evtag.ph{background:rgba(47,111,208,.25);color:#1f3f75}
+.lessonbtns{position:absolute;left:1cqw;bottom:1cqw;z-index:6;display:flex;gap:.6cqw}
+.lessonbtns .backboards{position:static}
 .backboards{position:absolute;left:1cqw;bottom:1cqw;z-index:6;font:700 1.1cqw var(--sans);background:rgba(15,23,32,.55);color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:999px;padding:.5cqw 1.2cqw;cursor:pointer;opacity:.35;transition:opacity .15s}
 .backboards:hover,.backboards:focus{opacity:1}
 .lesson-empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:.6em;padding:0 12cqw;font-size:1.6cqw;color:#f4efe4}
@@ -368,7 +370,10 @@ details.sec>summary .muted{font-weight:400}
     if (c) return { cid: c.id, text: cur ? `${same ? '' : p.name + ' '}until ${Suite.fmt12(p.end)}` : `up next${same ? '' : ': ' + p.name} at ${Suite.fmt12(p.start)}`, period: p };
     return { cid: (list[0] || {}).id, text: 'No class right now', period: null };
   }
-  const activeId = () => T.mode === 'auto' ? autoPick().cid : T.mode;
+  // Which class this window shows belongs to this window only, so a planning window can't change a live display.
+  let MODE = (() => { try { return sessionStorage.getItem('suite:today-mode') || 'auto'; } catch (e) { return 'auto'; } })();
+  const setMode = m => { MODE = m; try { sessionStorage.setItem('suite:today-mode', m); } catch (e) {} };
+  const activeId = () => MODE === 'auto' ? autoPick().cid : (classes().some(c => c.id === MODE) ? MODE : autoPick().cid);
 
   /* ---------- which boards show, and their content ---------- */
   const weekKey = date => { const [y, m, d] = date.split('-').map(Number), x = new Date(y, m - 1, d, 12); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return Suite.dateKey(x); };
@@ -549,7 +554,7 @@ details.sec>summary .muted{font-weight:400}
   function lessonHtml(cid, rec){
     const u = usual(cid), pid = publishedId(deckFor(cid)), slide = slideParam(slideLinkFor(cid, rec));
     if (!pid) return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Open <b>Edit day</b> and paste this class's published deck link under Lesson slides.</p></div></div>`;
-    return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><iframe title="Lesson slides" allowfullscreen src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
+    return `<div class="lesson"><span class="lessonbtns"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><button class="backboards" data-a="full" title="Full screen (F). Keeps the bell reminder and tools on top of your slides.">${full ? 'Exit full screen' : '⛶ Full screen'}</button></span><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><iframe title="Lesson slides" src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
   }
   function openInSlides(cid){
     const rec = dayFor(viewDate, cid), u = usual(cid), link = slideLinkFor(cid, rec), deck = deckFor(cid), id = docId(link) || docId(deck), slide = slideParam(link);
@@ -585,9 +590,9 @@ details.sec>summary .muted{font-weight:400}
   setInterval(() => {
     drawTimer();
     const pick = autoPick();
-    if (T.mode === 'auto' && pick.cid !== lastCid) { lastCid = pick.cid; if (!timer.running) resetTimer(pick.cid); screen = 0; reveal = 0; lesson = false; render(); }
+    if (MODE === 'auto' && pick.cid !== lastCid) { lastCid = pick.cid; if (!timer.running) resetTimer(pick.cid); screen = 0; reveal = 0; lesson = false; render(); }
     const p = pick.period, now = new Date(), nowHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    if (p && p.start === nowHM && viewDate === Suite.dateKey(now) && pick.cid && (T.mode === 'auto' || T.mode === pick.cid)) {
+    if (p && p.start === nowHM && viewDate === Suite.dateKey(now) && pick.cid && (MODE === 'auto' || MODE === pick.cid)) {
       const key = Suite.dateKey(now) + p.start, u = usual(pick.cid);
       if (key !== lastAuto && u.timer.on && u.timer.auto && lookOf(pick.cid).timer) { lastAuto = key; resetTimer(pick.cid); toggleTimer(); screen = 0; lesson = false; render(); }
     }
@@ -612,12 +617,12 @@ details.sec>summary .muted{font-weight:400}
   /* ---------- control rail ---------- */
   function renderRail(cid, S){
     S = S || (cid ? screens(viewDate, cid) : []);
-    const list = classes(), today = Suite.dateKey(new Date()), auto = T.mode === 'auto' ? autoPick() : null;
+    const list = classes(), today = Suite.dateKey(new Date()), auto = MODE === 'auto' ? autoPick() : null;
     const seen = new Set(), picks = list.filter(c => { const k = rowKeyOf(c.id); if (seen.has(k + c.id)) return false; seen.add(k + c.id); return true; });
     const u = cid ? usual(cid) : null, L = cid ? lookOf(cid, viewDate) : null;
     $('#rail').innerHTML = `<div class="pills" role="radiogroup" aria-label="Which class to show">
-        <button role="radio" data-a="mode" data-id="auto" aria-checked="${T.mode === 'auto'}" title="Follow the bell schedule">Auto</button>
-        ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${T.mode === c.id}">${esc(c.name)}</button>`).join('')}</div>
+        <button role="radio" data-a="mode" data-id="auto" aria-checked="${MODE === 'auto'}" title="Follow the bell schedule">Auto</button>
+        ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${MODE === c.id}">${esc(c.name)}</button>`).join('')}</div>
       <div class="status">${cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       ${editMode ? `<div class="bar"><span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}<button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="bar">
@@ -1070,7 +1075,7 @@ details.sec>summary .muted{font-weight:400}
     const el = e.target.closest('[data-a]');
     if (!el) { if (!editMode && e.target.closest('#rTimer')) toggleTimer(); return; }
     const a = el.dataset.a, cid = activeId();
-    if (a === 'mode') { T.mode = el.dataset.id; save(); screen = 0; reveal = 0; lesson = false; if (!timer.running) resetTimer(activeId()); render(); if (editing) renderDrawer(); }
+    if (a === 'mode') { setMode(el.dataset.id); screen = 0; reveal = 0; lesson = false; if (!timer.running) resetTimer(activeId()); render(); if (editing) renderDrawer(); }
     else if (a === 'next') next();
     else if (a === 'prev') prev();
     else if (a === 'go') { if (el.dataset.i === 'lesson') lesson = true; else { lesson = false; screen = +el.dataset.i; reveal = 0; } render(); }
@@ -1117,10 +1122,17 @@ details.sec>summary .muted{font-weight:400}
   window.addEventListener('resize', () => requestAnimationFrame(fitAll));
   // refit whenever the slide or any box changes size, and once more after fonts finish loading
   if (window.ResizeObserver) { let rq = 0; const ro = new ResizeObserver(() => { cancelAnimationFrame(rq); rq = requestAnimationFrame(fitAll); }); ro.observe($('#stage')); }
-  window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { T = Object.assign(clone(BLANK), Suite.get('today', {})); render(); } });
+  window.addEventListener('suite:change', e => {
+    if (!e.detail || !(e.detail.external || e.detail.key === '*')) return;
+    if (e.detail.key && e.detail.key !== 'today' && e.detail.key !== '*' && !['classes', 'agenda', 'events', 'schedule', 'courses'].includes(e.detail.key)) return;
+    T = Object.assign(clone(BLANK), Suite.get('today', {})); T.layouts = T.layouts || {};
+    if (lesson) { renderRail(activeId()); updateBell(); return; }         // the slides keep their place
+    if (editMode && document.activeElement && document.activeElement.closest && document.activeElement.closest('#stage [data-f]')) return;   // don't redraw under your cursor
+    render();
+  });
   { const md = location.hash.match(/date=(\d{4}-\d{2}-\d{2})/), mc = location.hash.match(/class=([\w-]+)/);
     if (md) viewDate = md[1];
-    if (mc && classes().some(c => c.id === decodeURIComponent(mc[1]))) T.mode = decodeURIComponent(mc[1]); }
+    if (mc && classes().some(c => c.id === decodeURIComponent(mc[1]))) setMode(decodeURIComponent(mc[1])); }
   Suite.mountNav('today');
   resetTimer(activeId()); lastCid = activeId();
   render();
