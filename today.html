@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-08e">
-<script src="shared/core.js?v=2026-10-08e"></script>
-<script>window.PAGE_VERSION = '2026-10-08e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-09b">
+<script src="shared/core.js?v=2026-10-09b"></script>
+<script>window.PAGE_VERSION = '2026-10-09b';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -93,6 +93,14 @@ body.full #suite-nav,body.full .rail{display:none}
 .edhint{max-width:420px}
 .pieces{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;width:100%;font-size:14px;padding:2px 0}
 .pieces label{display:flex;align-items:center;gap:4px;font-weight:600}
+.daybar{display:inline-flex;align-items:center;gap:2px;border:2px solid var(--edge);border-radius:999px;padding:1px 4px}
+.daybar .btn.quiet{min-height:0;padding:2px 10px;font-size:18px;line-height:1}
+.dpick{position:relative;font-weight:700;font-size:14px;padding:3px 8px;cursor:pointer;white-space:nowrap}
+.dpick input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.dpick input::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+.dnav{display:flex;align-items:center;gap:4px}
+.dnav input{height:34px;font-size:14px;padding:0 8px;width:150px}
+.dnav .btn.quiet{font-size:20px;line-height:1;padding:2px 10px;min-height:34px}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 body.editing-screen .stage-wrap{background:#1b2633;padding-top:64px}
@@ -370,7 +378,7 @@ details.sec>summary .muted{font-weight:400}
     const c = p ? Suite.classForPeriod(p, list) : null;
     const same = c && c.name.trim().toLowerCase() === (p ? p.name : '').trim().toLowerCase();
     if (c) return { cid: c.id, text: cur ? `${same ? '' : p.name + ' '}until ${Suite.fmt12(p.end)}` : `up next${same ? '' : ': ' + p.name} at ${Suite.fmt12(p.start)}`, period: p };
-    return { cid: (list[0] || {}).id, text: 'No class right now', period: null };
+    return { cid: (list[0] || {}).id, text: `no class right now, so showing ${(list[0] || {}).name || 'your first class'}. Pick a class to plan for a different one`, period: null, idle: true };
   }
   // Which class this window shows belongs to this window only, so a planning window can't change a live display.
   let MODE = (() => { try { return sessionStorage.getItem('suite:today-mode') || 'auto'; } catch (e) { return 'auto'; } })();
@@ -395,7 +403,7 @@ details.sec>summary .muted{font-weight:400}
     return rec.lineup.filter(t => {
       if (!BOARDS[t] && !isCustom(t)) return false;            // retired boards (like the old Flag of the Week) are skipped
       if (editMode || t === 'welcome') return true;            // while editing, every board shows so you can type into it
-      if (isCustom(t)) return boardLines(date, cid, t, rec).length || !!boardOf(rec, t).pic;
+      if (isCustom(t)) return true;
       return boardLines(date, cid, t, rec).length;
     });
   }
@@ -561,15 +569,18 @@ details.sec>summary .muted{font-weight:400}
   const docId = url => ((url || '').match(/\/presentation\/d\/(?!e\/)([\w-]+)/) || [])[1] || null;
   const slideParam = url => ((url || '').match(/slide=(id\.[\w-]+)/) || [])[1] || null;
   const planSlides = cid => ((Suite.agendaFor(viewDate, cid) || {}).materials || []).filter(m => m.kind === 'link' && /docs\.google\.com\/presentation/.test(m.url || ''));
-  const slideLinkFor = (cid, rec) => rec.slideLink || ((planSlides(cid).find(m => !publishedId(m.url)) || {}).url) || '';
-  const deckFor = (cid) => usual(cid).deckUrl || ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || '';
+  const slideLinkFor = (cid, rec) => (rec.slideLink && !publishedId(rec.slideLink) ? rec.slideLink : '') || ((planSlides(cid).find(m => !publishedId(m.url)) || {}).url) || '';
+  // the deck to show: a published link saved for this day wins, then one in the plan's links, then the course's usual deck
+  const deckFor = (cid, rec) => (rec && publishedId(rec.slideLink) ? rec.slideLink : '') || ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || usual(cid).deckUrl || '';
   function lessonHtml(cid, rec){
-    const u = usual(cid), pid = publishedId(deckFor(cid)), slide = slideParam(slideLinkFor(cid, rec));
-    if (!pid) return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Open <b>Edit day</b> and paste this class's published deck link under Lesson slides.</p></div></div>`;
-    return `<div class="lesson"><span class="lessonbtns"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><button class="backboards" data-a="full" title="Full screen (F). Keeps the bell reminder and tools on top of your slides.">${full ? 'Exit full screen' : '⛶ Full screen'}</button></span><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><iframe title="Lesson slides" src="https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}"></iframe></div>`;
+    const u = usual(cid), deck = deckFor(cid, rec), pid = publishedId(deck), link = slideLinkFor(cid, rec), did = docId(link) || docId(u.deckUrl), slide = slideParam(link) || slideParam(deck);
+    const src = pid ? `https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}`
+      : did ? `https://docs.google.com/presentation/d/${did}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}` : '';
+    if (!src) return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Add a Google Slides link for this day in the Planner (Students see → Lesson slides), or in Day settings → Lesson slides.</p></div></div>`;
+    return `<div class="lesson"><span class="lessonbtns"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><button class="backboards" data-a="full" title="Full screen (F). Keeps the bell reminder and tools on top of your slides.">${full ? 'Exit full screen' : '⛶ Full screen'}</button></span><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><iframe title="Lesson slides" src="${src}"></iframe></div>`;
   }
   function openInSlides(cid){
-    const rec = dayFor(viewDate, cid), u = usual(cid), link = slideLinkFor(cid, rec), deck = deckFor(cid), id = docId(link) || docId(deck), slide = slideParam(link);
+    const rec = dayFor(viewDate, cid), u = usual(cid), link = slideLinkFor(cid, rec), deck = deckFor(cid, rec), id = docId(link) || docId(deck), slide = slideParam(link) || slideParam(deck);
     if (id) window.open(`https://docs.google.com/presentation/d/${id}/present${slide ? '?slide=' + slide : ''}`, '_blank');
     else if (publishedId(deck)) window.open(deck, '_blank');
     else Suite.toast('Add a slide link in Edit day first');
@@ -635,6 +646,8 @@ details.sec>summary .muted{font-weight:400}
     $('#rail').innerHTML = `<div class="pills" role="radiogroup" aria-label="Which class to show">
         <button role="radio" data-a="mode" data-id="auto" aria-checked="${MODE === 'auto'}" title="Follow the bell schedule">Auto</button>
         ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${MODE === c.id}">${esc(c.name)}</button>`).join('')}</div>
+      <div class="daybar" role="group" aria-label="Which day"><button class="btn quiet small" data-a="dayprev" title="Previous school day" aria-label="Previous school day">‹</button><label class="dpick" title="Pick a date"><span>${esc(fmtDate(viewDate, 'medium'))}</span><input type="date" data-a="daypick" value="${viewDate}" aria-label="Pick a date"></label><button class="btn quiet small" data-a="daynext" title="Next school day" aria-label="Next school day">›</button>${viewDate !== today ? '<button class="btn small" data-a="daytoday">Back to today</button>' : ''}</div>
+      <div class="dnav" role="group" aria-label="Which day"><button class="btn quiet small" data-a="dprev" aria-label="Previous school day" title="Previous school day">‹</button><input type="date" class="field" data-a2="dpick" value="${viewDate}" aria-label="Pick a date"><button class="btn quiet small" data-a="dnext" aria-label="Next school day" title="Next school day">›</button>${viewDate !== today ? '<button class="btn small" data-a="dtoday">Today</button>' : ''}</div>
       <div class="status">${cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       ${editMode && cid && isCustom(S[screen] || '') ? (() => { const bd = boardOf(dayFor(viewDate, cid), S[screen]), h = bd.hide || {};
@@ -753,7 +766,8 @@ details.sec>summary .muted{font-weight:400}
     if (d === 'bmrm') { const B = T.bell = bellCfg(); B.messages.splice(+el.dataset.k, 1); commit(true); return; }
     if (d === 'bprev') { bellPreview = Date.now() + 8000; updateBell(); Suite.toast('Showing a preview for a few seconds'); return; }
     if (d === 'cadd') { const name = await Suite.dialog({ title: 'Name this board', body: 'This becomes the heading. You can change it on screen.', input: 'REMINDERS', ok: 'Add board' }); if (!name) return;
-      const r = editable(viewDate, cid), id = 'c-' + Suite.uid(); r.boards = r.boards || {}; r.boards[id] = { heading: esc(name), lines: [] }; r.lineup = (r.lineup || []).concat(id); commit(true); return; }
+      const r = editable(viewDate, cid), id = 'c-' + Suite.uid(); r.boards = r.boards || {}; r.boards[id] = { heading: esc(name), lines: [] }; r.lineup = (r.lineup || []).concat(id); save();
+      editing = false; $('#drawer').hidden = true; editMode = true; lesson = false; screen = Math.max(0, screens(viewDate, cid).indexOf(id)); render(); Suite.toast('Your new board is ready. Click to type, or use the switches above to choose its pieces.'); return; }
     if (d === 'crm') { if (!await Suite.dialog({ title: 'Delete this board?', body: 'It is removed from this day. Other days keep their copy.', ok: 'Delete', danger: true })) return; const r = editable(viewDate, cid); r.lineup = r.lineup.filter(x => x !== el.dataset.t); delete (r.boards || {})[el.dataset.t]; commit(true); return; }
     if (d === 'cpicrm') { const r = editable(viewDate, cid); const bd = r.boards[el.dataset.t]; if (bd) delete bd.pic; commit(true); return; }
     if (d === 'xadd') { const look = roomFor(viewDate, cid).look, lay = clone(getLayout(look)); lay.extras.push({ id: Suite.uid(), box: [760, 420, 420, 220], panel: 'card', html: '' }); T.layouts[look] = lay; commit(true); return; }
@@ -835,8 +849,10 @@ details.sec>summary .muted{font-weight:400}
     if (bk) { const r = editable(viewDate, activeId()); r.boards = r.boards || {}; const bd = r.boards[bk] = r.boards[bk] || clone(boardOf(r, bk));
       const lay = bd.layout = bd.layout || clone(getLayout(look)); lay.boxes = lay.boxes || {}; lay.panels = lay.panels || {}; lay.extras = lay.extras || []; lay.styles = lay.styles || {}; return lay; }
     const lay = T.layouts[look] = T.layouts[look] || clone(getLayout(look)); lay.boxes = lay.boxes || {}; lay.panels = lay.panels || {}; lay.extras = lay.extras || []; lay.styles = lay.styles || {}; if (!Object.keys(lay.boxes).length) Object.assign(lay.boxes, getLayout(look).boxes); return lay; }
-  function startEdit(){ if (!activeId()) return; editMode = true; lesson = false; editing = false; $('#drawer').hidden = true; render(); }
-  function endEdit(){ const a = document.activeElement; if (a && a.dataset && a.dataset.f) syncNow(a); editMode = false; hideBar(); render(); }
+  // switching in or out of editing keeps you on the same board (editing also lists empty boards, which shifts the order)
+  function keepBoard(fn){ const cid = activeId(); const cur = cid ? (lesson ? null : screens(viewDate, cid)[screen]) : null; fn(); if (cid && cur) { const i = screens(viewDate, cid).indexOf(cur); screen = i > -1 ? i : 0; } }
+  function startEdit(){ if (!activeId()) return; keepBoard(() => { editMode = true; }); lesson = false; editing = false; $('#drawer').hidden = true; render(); }
+  function endEdit(){ const a = document.activeElement; if (a && a.dataset && a.dataset.f) syncNow(a); keepBoard(() => { editMode = false; }); hideBar(); render(); }
   const ftb = document.createElement('div'); ftb.className = 'ftb'; ftb.hidden = true; ftb.setAttribute('role', 'toolbar'); ftb.setAttribute('aria-label', 'Text formatting');
   document.body.appendChild(ftb);
   let active = null;   // the text you're editing
@@ -1112,6 +1128,8 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'full') { full = !full; if (full && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); else if (!full && document.fullscreenElement) document.exitFullscreen().catch(() => {}); render(); }
     else if (a === 'drawing') openDrawing();
     else if (a === 'startedit') startEdit();
+    else if (a === 'dprev' || a === 'dnext' || a === 'dtoday') { viewDate = a === 'dtoday' ? Suite.dateKey(new Date()) : shiftDay(viewDate, a === 'dnext' ? 1 : -1); screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); }
+    else if (a === 'dayprev' || a === 'daynext' || a === 'daytoday') { viewDate = a === 'daytoday' ? Suite.dateKey(new Date()) : shiftDay(viewDate, a === 'dayprev' ? -1 : 1); screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); }
     else if (a === 'piece') { const t = screens(viewDate, cid)[screen], r = editable(viewDate, cid), bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.hide = bd.hide || {}; if (el.checked) delete bd.hide[el.dataset.k]; else bd.hide[el.dataset.k] = true; save(); render(); return; }
     else if (a === 'tmenu') { const l = el.parentElement.querySelector('.tmenu-list'); document.querySelectorAll('.tmenu-list').forEach(x => { if (x !== l) x.hidden = true; }); l.hidden = !l.hidden; return; }
     else if (a === 'opentool') { el.closest('.tmenu-list').hidden = true; openTool(el.dataset.id); }
@@ -1129,6 +1147,8 @@ details.sec>summary .muted{font-weight:400}
     if (e.target.closest('#drawer, .suite-dialog-back, .overlay, [data-a="edit"], [data-a="settings"], .tmenu')) return;
     editing = false; $('#drawer').hidden = true;
   });
+  document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.a === 'daypick' && e.target.value) { viewDate = e.target.value; screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); } });
+  document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.a2 === 'dpick' && e.target.value) { viewDate = e.target.value; screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); } });
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && full) { full = false; render(); } });
   document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('.suite-dialog') || document.querySelector('.overlay') || document.body.classList.contains('timer-open')) return;

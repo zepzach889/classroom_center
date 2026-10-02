@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-08e">
-<script src="shared/core.js?v=2026-10-08e"></script>
-<script>window.PAGE_VERSION = '2026-10-08e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-09b">
+<script src="shared/core.js?v=2026-10-09b"></script>
+<script>window.PAGE_VERSION = '2026-10-09b';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -165,6 +165,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     let changed = false;
     values.forEach(([id, heading, txt, custom]) => {
       const cur = rec.boards[id], before = linesToText(cur && cur.lines);
+      if (custom && !cur) { rec.boards[id] = { heading, lines: textToLines(txt, []) }; changed = true; return; }   // a new custom board counts, even before it has lines
       if (custom && cur && cur.heading !== heading) { cur.heading = heading; changed = true; }
       if (txt.trim() === before.trim() && !(custom && !cur && txt.trim())) return;
       if (!cur && !txt.trim()) return;
@@ -179,7 +180,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     // make sure boards with something on them are in the day's lineup
     const base = rec.lineup || ((T.rows || {})[key] || {}).lineup || ['welcome', 'agenda'];
     const lineup = base.slice();
-    values.forEach(([id]) => { if (rec.boards[id] && (rec.boards[id].lines || []).length && !lineup.includes(id)) { const at = Math.max(lineup.indexOf('welcome') + 1, 0); lineup.splice(at + (id === 'returned' && lineup.includes('warmup') ? 1 : 0), 0, id); } });
+    values.forEach(([id, , , custom]) => { if (rec.boards[id] && ((rec.boards[id].lines || []).length || custom) && !lineup.includes(id)) { const at = Math.max(lineup.indexOf('welcome') + 1, 0); lineup.splice(at + (id === 'returned' && lineup.includes('warmup') ? 1 : 0), 0, id); } });
     rec.lineup = lineup;
     Suite.set('today', T);
   }
