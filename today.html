@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-08c">
-<script src="shared/core.js?v=2026-10-08c"></script>
-<script>window.PAGE_VERSION = '2026-10-08c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-08e">
+<script src="shared/core.js?v=2026-10-08e"></script>
+<script>window.PAGE_VERSION = '2026-10-08e';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -91,6 +91,8 @@ body.full #suite-nav,body.full .rail{display:none}
 .ftb select{font:inherit;font-size:13px;height:30px;border-radius:8px}
 .ftb .sep{width:1px;height:22px;background:var(--rule);margin:0 2px}
 .edhint{max-width:420px}
+.pieces{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;width:100%;font-size:14px;padding:2px 0}
+.pieces label{display:flex;align-items:center;gap:4px;font-weight:600}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 body.editing-screen .stage-wrap{background:#1b2633;padding-top:64px}
@@ -312,7 +314,7 @@ details.sec>summary .muted{font-weight:400}
   const COMMON = ['Pen or pencil', 'Notebook', 'Binder', 'Textbook', 'Laptop', 'Planner', 'Colored pencils', 'Calculator'];
   const INK = { blue: 'var(--ink-blue)', red: 'var(--ink-red)', green: 'var(--ink-green)' }, INK_ORDER = ['blue', 'red', 'green'];
 
-  const BLANK = { mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {}, bitmojis: {}, bmAdj: {}, layouts: {}, bell: null };
+  const BLANK = { mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {}, bitmojis: {}, bmAdj: {}, layouts: {}, bell: null, library: [] };
   let T = Object.assign(clone(BLANK), Suite.get('today', {}));
   T.layouts = T.layouts || {};
   const save = () => Suite.set('today', T);
@@ -423,7 +425,14 @@ details.sec>summary .muted{font-weight:400}
     return { look: LOOKS[lk] || T.custom[lk] ? lk : 'paper', bitmoji: own.bitmoji || (unit && unit.bitmoji) || u.bitmoji || 'none', unit };
   }
   const fixLook = id => id === 'basic' ? 'paper' : id;
+  // a custom board's own layout: its background's layout, plus anything moved on that board
+  const boardKey = id => String(id).startsWith('board:') ? id.slice(6) : null;
+  function boardLookOf(t){ const r = dayFor(viewDate, activeId()), b = boardOf(r, t); return b.look || roomFor(viewDate, activeId()).look; }
   function getLayout(id){
+    const bk = boardKey(id);
+    if (bk) { const base = getLayout(boardLookOf(bk)), own = boardOf(dayFor(viewDate, activeId()), bk).layout;
+      if (!own) return Object.assign(clone(base), { extras: [] });
+      return { boxes: Object.assign({}, base.boxes, own.boxes || {}), panels: Object.assign({}, base.panels, own.panels || {}), extras: own.extras || [], styles: Object.assign({}, base.styles, own.styles || {}) }; }
     id = fixLook(id);
     const c = T.custom[id], own = T.layouts[id];
     const base = c ? { boxes: Object.assign({}, NEUTRAL, c.layout || {}), panels: {}, extras: [], styles: {} } : { boxes: clone(NEUTRAL), panels: clone(NEUTRAL_PANELS), extras: [], styles: {} };
@@ -483,6 +492,9 @@ details.sec>summary .muted{font-weight:400}
     if (screen >= S.length) screen = Math.max(0, S.length - 1);
     const type = S[screen] || 'welcome', b = boardOf(rec, type);
     const lookId = isCustom(type) && b.look ? b.look : room.look, L = lookById(lookId);
+    const layId = isCustom(type) ? 'board:' + type : lookId;
+    if (isCustom(type)) { const bl = getLayout(layId); Object.assign(L, bl.boxes, { panels: bl.panels, extras: bl.extras, styles: bl.styles }); }
+    const hide = isCustom(type) ? (b.hide || {}) : {};
     const bmUrl = isCustom(type) && b.look ? null : await bmSrc(room.bitmoji), adj = bmAdj(room.bitmoji);
     const E = editMode && !lesson;
     const dark = L.bgStyle === 'chalk' || (L.bgStyle === 'solid' && lumOfHex(u.bgColor) < .45);
@@ -499,11 +511,11 @@ details.sec>summary .muted{font-weight:400}
       const items = lines.map(l => { const hid = !E && l.reveal ? (shown++ >= reveal) : false; return lineHtml(l, hid); }).join('');
       const autoDate = fmtDate(viewDate, ((L.styles || {}).date || {}).format);
       const picUrl = isCustom(type) && b.pic ? await fileUrl(b.pic) : null;
-      html = `${bmUrl && L.bm ? `<div class="region bm${E ? ' ed' : ''}" data-k="bm" style="${place([L.bm[0] + adj.dx, L.bm[1] + L.bm[3] * (1 - adj.scale / 100), L.bm[2], L.bm[3] * adj.scale / 100])}"${E ? ' data-g="move"' : ''}><img src="${bmUrl}" alt="">${handles('bm')}</div>` : ''}
-        ${picUrl ? `<div class="region pic${E ? ' ed' : ''}" data-k="pic" style="${place(L.pic)}"${E ? ' data-g="move"' : ''}><img src="${picUrl}" alt="">${handles('pic')}</div>` : ''}
-        <div class="region date ${pn('date')}${E ? ' ed' : ''}" data-k="date" style="${place(L.date)};${boxStyle(L, 'date')}"><span id="dateText"${ce('date')}>${rec.dateText ? clean(rec.dateText) : esc(autoDate)}</span>${handles('date')}</div>
-        <div class="region board ${pn('board')}${E ? ' ed' : ''}" data-k="board" style="${place(L.board)};${boxStyle(L, 'board')}"><div class="board-fit" id="boardFit"><h1 class="heading"${ce('heading', ` data-t="${type}"`)}>${clean(b.heading != null ? b.heading : (BOARDS[type] || {}).heading || '')}</h1><ul class="lines"${planBoard ? '' : ce('lines', ` data-t="${type}"`)}>${items}</ul>${E && planBoard ? `<p class="planned">This board comes from your Planner. To type your own version, choose "Write for students" in Day settings.</p>` : ''}</div>${handles('board')}</div>
-        <div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>
+      html = `${bmUrl && L.bm && !hide.bm ? `<div class="region bm${E ? ' ed' : ''}" data-k="bm" style="${place([L.bm[0] + adj.dx, L.bm[1] + L.bm[3] * (1 - adj.scale / 100), L.bm[2], L.bm[3] * adj.scale / 100])}"${E ? ' data-g="move"' : ''}><img src="${bmUrl}" alt="">${handles('bm')}</div>` : ''}
+        ${picUrl && !hide.pic ? `<div class="region pic${E ? ' ed' : ''}" data-k="pic" style="${place(L.pic)}"${E ? ' data-g="move"' : ''}><img src="${picUrl}" alt="">${handles('pic')}</div>` : ''}
+        ${hide.date ? '' : `<div class="region date ${pn('date')}${E ? ' ed' : ''}" data-k="date" style="${place(L.date)};${boxStyle(L, 'date')}"><span id="dateText"${ce('date')}>${rec.dateText ? clean(rec.dateText) : esc(autoDate)}</span>${handles('date')}</div>`}
+        ${hide.board ? '' : `<div class="region board ${pn('board')}${E ? ' ed' : ''}" data-k="board" style="${place(L.board)};${boxStyle(L, 'board')}"><div class="board-fit" id="boardFit"><h1 class="heading"${ce('heading', ` data-t="${type}"`)}>${clean(b.heading != null ? b.heading : (BOARDS[type] || {}).heading || '')}</h1><ul class="lines"${planBoard ? '' : ce('lines', ` data-t="${type}"`)}>${items}</ul>${E && planBoard ? `<p class="planned">This board comes from your Planner. To type your own version, choose "Write for students" in Day settings.</p>` : ''}</div>${handles('board')}</div>`}
+        ${hide.cork ? '' : `<div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>`}
         ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer tm-${u.timer.style || 'digital'}${dark ? ' on-dark' : ''}${E ? ' ed' : ''}" id="rTimer" data-k="timer" style="${place(L.timer)};--tc:${esc(u.timer.color || '#2f6fd0')}"${E ? ' data-g="move" tabindex="-1"' : ''} aria-label="Warm-up timer. Click to start or pause."><span class="tm-in" id="timerIn">${timerInner(u.timer.style)}</span>${handles('timer')}</button>` : ''}
         ${!E && full ? `<span class="fstools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span>` : ''}
         ${u.showEvents ? (() => { const ev = Suite.eventsOn(viewDate); return ev.length || E ? `<div class="region evs${E ? ' ed' : ''}" data-k="events" style="${place(L.events || NEUTRAL.events)}"${E ? ' data-g="move"' : ''}>${ev.length ? ev.map(x => `<span class="evtag">${esc(x.title)}${x.note ? `<small>${esc(x.note)}</small>` : ''}</span>`).join('') : '<span class="evtag ph">School events from your Planner show here</span>'}${handles('events')}</div>` : ''; })() : ''}
@@ -521,7 +533,7 @@ details.sec>summary .muted{font-weight:400}
     st.style.backgroundImage = roomImg ? `url("${roomImg}")` : '';
     st.className = 'stage' + (!lesson && !L.custom ? ' bg-' + (L.bgStyle || 'paper') : '') + (E ? ' editing' : '');
     st.style.backgroundColor = !lesson && L.bgStyle === 'solid' ? (u.bgColor || '#dfe8ee') : '';
-    st.dataset.look = lookId; st.dataset.type = type;
+    st.dataset.look = layId; st.dataset.type = type;
     renderRail(cid, S);
     requestAnimationFrame(fitAll); setTimeout(fitAll, 350);
     // the lesson: give the slides keyboard focus right away, so a clicker drives them without a mouse click
@@ -625,6 +637,8 @@ details.sec>summary .muted{font-weight:400}
         ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${MODE === c.id}">${esc(c.name)}</button>`).join('')}</div>
       <div class="status">${cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
+      ${editMode && cid && isCustom(S[screen] || '') ? (() => { const bd = boardOf(dayFor(viewDate, cid), S[screen]), h = bd.hide || {};
+          return `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">On this board:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>`; })() : ''}
       ${editMode ? `<div class="bar"><span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}<button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="bar">
         <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
         ${!lesson && S[screen] === 'welcome' && L && L.timer && u.timer.on ? `<button class="btn" data-a="timer" title="T to start or pause, R to reset">${timer.running ? 'Pause timer' : timer.left <= 0 ? 'Restart timer' : 'Start timer'}</button>` : ''}
@@ -632,6 +646,7 @@ details.sec>summary .muted{font-weight:400}
         ${toolMenu('opentool', 'Open a tool on top of the board', TOOL_PAGES)}
         ${!lesson ? '<button class="btn primary" data-a="startedit" title="E: click text to type, drag boxes to move">Edit on screen</button>' : ''}<button class="btn" data-a="edit" title="Boards, lesson slides, backgrounds, and timer">Day settings</button><button class="btn" data-a="full" title="F">Full screen</button></div>`}`;
     document.documentElement.style.setProperty('--railh', $('#rail').offsetHeight + 'px');
+    const nav = document.getElementById('suite-nav'); document.documentElement.style.setProperty('--navh', (nav && !full ? nav.offsetHeight : 0) + 'px');
   }
 
   /* ---------- the editing drawer ---------- */
@@ -658,15 +673,17 @@ details.sec>summary .muted{font-weight:400}
           <ul class="lineup">${all.map(t => { const on = lineup.includes(t); return `<li>
             <input type="checkbox" data-d="lineup" data-t="${esc(t)}"${on ? ' checked' : ''} aria-label="Show ${esc(boardLabel(rec, t))}"><span>${esc(boardLabel(rec, t))}${isCustom(t) ? ' <span class="muted small">(custom)</span>' : ''}</span>
             ${on ? `<button class="btn quiet" data-d="up" data-t="${esc(t)}" aria-label="Move up">↑</button><button class="btn quiet" data-d="down" data-t="${esc(t)}" aria-label="Move down">↓</button>` : ''}${isCustom(t) ? `<button class="btn quiet danger" data-d="crm" data-t="${esc(t)}" aria-label="Delete this board">×</button>` : ''}</li>`; }).join('')}</ul>
-          <div class="bar" style="margin-top:6px"><button class="btn small" data-d="cadd">Add a custom board</button></div>
+          <div class="bar" style="margin-top:6px"><button class="btn small" data-d="cadd">Add a custom board</button>${(T.library || []).length ? `<select data-d="libadd" aria-label="Add a saved board"><option value="">Add a saved board…</option>${T.library.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join('')}</select>` : ''}</div>
           <p class="hintline">Empty boards are skipped in class. Custom boards can have a picture and their own background, and any line can stay hidden until you click (in Edit on screen, use "Hide until click").</p></details>
         ${['due', 'agenda'].filter(t => lineup.includes(t)).length ? `<details class="sec"><summary>Due and agenda</summary>
           ${['due', 'agenda'].filter(t => lineup.includes(t)).map(t => { const bd = boardOf(rec, t); return `<span class="lb">${esc(BOARDS[t].label)}</span><div class="src"><label><input type="radio" name="src-${t}" data-src="${t}" value="plan"${bd.source !== 'custom' ? ' checked' : ''}> From my plan</label><label><input type="radio" name="src-${t}" data-src="${t}" value="custom"${bd.source === 'custom' ? ' checked' : ''}> Write for students</label></div>`; }).join('')}
           <p class="hintline"><a href="planner.html#date=${viewDate}&class=${encodeURIComponent(cid)}">Open the Planner</a>. "Write for students" starts from your plan so you can trim it on screen.</p></details>` : ''}
         ${customs.length ? `<details class="sec"><summary>Custom boards</summary>${customs.map(t => { const bd = boardOf(rec, t); return `<div class="cboard"><b>${esc(boardLabel(rec, t))}</b>
             <div class="bar" style="margin-top:4px"><label class="btn small">${bd.pic ? 'Change picture' : 'Add a picture'}<input type="file" accept="image/*" data-d="cpic" data-t="${esc(t)}" hidden></label>${bd.pic ? `<button class="btn quiet small" data-d="cpicrm" data-t="${esc(t)}">Remove picture</button>` : ''}</div>
+            <div class="bar" style="margin-top:4px"><button class="btn small" data-d="libsave" data-t="${esc(t)}">${(T.library || []).some(x => x.from === t) ? 'Update in My boards' : 'Save to My boards'}</button></div>
             <label class="lb">Background for this board<select data-d="clook" data-t="${esc(t)}"><option value="">Same as the other boards</option>${Object.entries(LOOKS).concat(Object.entries(T.custom)).map(([k, x]) => `<option value="${k}"${bd.look === k ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label></div>`; }).join('')}
-          <p class="hintline">To use a custom board every week, set it up once and press "Save as the usual setup," or copy it forward with "Copy the previous day."</p></details>` : ''}
+          <p class="hintline"><b>Save to My boards</b> keeps a board, with its layout, text, and picture, so you can add it to any day later. To show it every day, use "Save as the usual setup."</p>
+          ${(T.library || []).length ? `<span class="lb">My boards</span><ul class="lineup">${T.library.map((x, i) => `<li><span>${esc(x.name)}</span><button class="btn quiet danger" data-d="librm" data-i="${i}" aria-label="Delete ${esc(x.name)} from My boards">×</button></li>`).join('')}</ul>` : ''}</details>` : ''}
         <details class="sec"><summary>Have out <span class="muted small">${(rec.haveOut || []).length} items</span></summary>
           <div class="chips">${[...new Set(COMMON.concat(rec.haveOut || []))].map(x => `<button class="chip" data-d="have" data-v="${esc(x)}" aria-pressed="${(rec.haveOut || []).includes(x)}">${esc(x)}</button>`).join('')}</div>
           <div class="bar" style="margin-top:8px"><input class="field" id="haveNew" placeholder="Add another item"><button class="btn small" data-d="haveadd">Add</button></div></details>
@@ -728,6 +745,9 @@ details.sec>summary .muted{font-weight:400}
     if (d === 'haveadd') { const v = $('#haveNew').value.trim(); if (!v) return; const r = editable(viewDate, cid); if (!r.haveOut.includes(v)) r.haveOut.push(v); commit(true); return; }
     if (d === 'flagclear') { delete T.flags[weekKey(viewDate)]; commit(true); return; }
     if (d === 'movetext') { startEdit(); return; }
+    if (d === 'libsave') { const r = dayFor(viewDate, cid), bd = clone(boardOf(r, el.dataset.t)), name = plainOf(bd.heading) || 'My board'; T.library = T.library || [];
+      const i = T.library.findIndex(x => x.from === el.dataset.t); const item = { name, from: el.dataset.t, board: bd }; if (i > -1) T.library[i] = item; else T.library.push(item); commit(true); Suite.toast(name + ' saved to My boards'); return; }
+    if (d === 'librm') { if (!await Suite.dialog({ title: 'Delete from My boards?', body: 'Days that already use it keep their copy.', ok: 'Delete', danger: true })) return; T.library.splice(+el.dataset.i, 1); commit(true); return; }
     if (d === 'taddspot') { const lay = ownLayout(roomFor(viewDate, cid).look); lay.boxes.timer = NEUTRAL.timer.slice(); commit(true); Suite.toast('Timer spot added. Move it with Edit on screen.'); return; }
     if (d === 'bmadd') { const B = T.bell = bellCfg(); B.messages = (B.messages || []).concat({ min: 2, text: '', chime: true }); commit(true); return; }
     if (d === 'bmrm') { const B = T.bell = bellCfg(); B.messages.splice(+el.dataset.k, 1); commit(true); return; }
@@ -769,6 +789,7 @@ details.sec>summary .muted{font-weight:400}
       if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
       commit(true); return; }
     if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (d === 'libadd' && el.value !== '') { const src = T.library[+el.value]; if (!src) return; const r = editable(viewDate, cid), id = 'c-' + Suite.uid(); r.boards = r.boards || {}; r.boards[id] = clone(src.board); r.lineup = (r.lineup || []).concat(id); commit(true); Suite.toast(src.name + ' added to this day'); return; }
     if (d === 'evon') { usual(cid).showEvents = el.checked; commit(true); return; }
     if (['bon', 'bstyle', 'bcorner', 'bstrip', 'bmin', 'bover', 'bmmin', 'bmchime'].includes(d)) {
       const B = T.bell = bellCfg();
@@ -809,7 +830,11 @@ details.sec>summary .muted{font-weight:400}
     }
   });
   /* ---------- edit on screen: type into the boards, drag and resize boxes ---------- */
-  function ownLayout(look){ const lay = T.layouts[look] = T.layouts[look] || clone(getLayout(look)); lay.boxes = lay.boxes || {}; lay.panels = lay.panels || {}; lay.extras = lay.extras || []; lay.styles = lay.styles || {}; if (!Object.keys(lay.boxes).length) Object.assign(lay.boxes, getLayout(look).boxes); return lay; }
+  function ownLayout(look){
+    const bk = boardKey(look);
+    if (bk) { const r = editable(viewDate, activeId()); r.boards = r.boards || {}; const bd = r.boards[bk] = r.boards[bk] || clone(boardOf(r, bk));
+      const lay = bd.layout = bd.layout || clone(getLayout(look)); lay.boxes = lay.boxes || {}; lay.panels = lay.panels || {}; lay.extras = lay.extras || []; lay.styles = lay.styles || {}; return lay; }
+    const lay = T.layouts[look] = T.layouts[look] || clone(getLayout(look)); lay.boxes = lay.boxes || {}; lay.panels = lay.panels || {}; lay.extras = lay.extras || []; lay.styles = lay.styles || {}; if (!Object.keys(lay.boxes).length) Object.assign(lay.boxes, getLayout(look).boxes); return lay; }
   function startEdit(){ if (!activeId()) return; editMode = true; lesson = false; editing = false; $('#drawer').hidden = true; render(); }
   function endEdit(){ const a = document.activeElement; if (a && a.dataset && a.dataset.f) syncNow(a); editMode = false; hideBar(); render(); }
   const ftb = document.createElement('div'); ftb.className = 'ftb'; ftb.hidden = true; ftb.setAttribute('role', 'toolbar'); ftb.setAttribute('aria-label', 'Text formatting');
@@ -1087,6 +1112,7 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'full') { full = !full; if (full && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); else if (!full && document.fullscreenElement) document.exitFullscreen().catch(() => {}); render(); }
     else if (a === 'drawing') openDrawing();
     else if (a === 'startedit') startEdit();
+    else if (a === 'piece') { const t = screens(viewDate, cid)[screen], r = editable(viewDate, cid), bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.hide = bd.hide || {}; if (el.checked) delete bd.hide[el.dataset.k]; else bd.hide[el.dataset.k] = true; save(); render(); return; }
     else if (a === 'tmenu') { const l = el.parentElement.querySelector('.tmenu-list'); document.querySelectorAll('.tmenu-list').forEach(x => { if (x !== l) x.hidden = true; }); l.hidden = !l.hidden; return; }
     else if (a === 'opentool') { el.closest('.tmenu-list').hidden = true; openTool(el.dataset.id); }
     else if (a === 'addtool') { el.closest('.tmenu-list').hidden = true; const r = editable(viewDate, cid), t = $('#stage').dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.tools = bd.tools || [];
@@ -1120,6 +1146,8 @@ details.sec>summary .muted{font-weight:400}
     else if (k === 'Escape') { if (editing) { editing = false; $('#drawer').hidden = true; } else if (full) { full = false; render(); } }
   });
   window.addEventListener('resize', () => requestAnimationFrame(fitAll));
+  // the Today page never scrolls; if typing nudges it, put it back so the bar above the slide stays visible
+  window.addEventListener('scroll', () => { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });
   // refit whenever the slide or any box changes size, and once more after fonts finish loading
   if (window.ResizeObserver) { let rq = 0; const ro = new ResizeObserver(() => { cancelAnimationFrame(rq); rq = requestAnimationFrame(fitAll); }); ro.observe($('#stage')); }
   window.addEventListener('suite:change', e => {
