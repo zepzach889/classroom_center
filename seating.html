@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-07c">
-<script src="shared/core.js?v=2026-10-07c"></script>
-<script>window.PAGE_VERSION = '2026-10-07c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-08a">
+<script src="shared/core.js?v=2026-10-08a"></script>
+<script>window.PAGE_VERSION = '2026-10-08a';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -45,6 +45,14 @@ body.printing #printarea{width:1100px}
 .loose{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:6px}
 .loose:empty{display:none}
 .chip{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--rule);border-radius:999px;background:var(--paper);color:var(--ink);padding:3px 12px;cursor:pointer}
+.rsk{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.rsk label{border:2px solid var(--rule);border-radius:14px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.rsk label.on{border-color:var(--sea);background:var(--wash)}
+.rsk input{position:absolute;opacity:0;pointer-events:none}
+.rsk span{font-size:13px;color:var(--ink-2)}
+.rsg{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:8px}
+.rsg label{display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:700}
+label.rv{display:flex;gap:6px;align-items:center;margin-top:6px;font-size:15px}
 .roomsz{display:inline-flex;align-items:center;gap:4px;font-size:14px;color:var(--ink-2);margin-right:6px}
 .roomsz .btn{min-height:0;padding:2px 9px}
 .modes{display:inline-flex;border:2px solid var(--edge);border-radius:999px;overflow:hidden;margin:0 0 12px}
@@ -167,7 +175,7 @@ body.proj .tbl h2{font-size:28px}
     $('#app').innerHTML = `
       ${topTabs(list, c)}
       <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} seating chart</div>
-        <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="shuffle">Shuffle seats</button>${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="unshuffle">Undo shuffle</button>' : ''}
+        <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="shuffle" title="Mix students into new ${esc(TEAMS())} and seats, with rules for who sits apart">Shuffle into new ${esc(TEAMS())}</button>${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="unshuffle">Undo shuffle</button>' : ''}
           <button class="btn" data-a="print">Print</button><button class="btn quiet" data-a="savepic" title="Save the chart as a picture you can print or share">Save as picture</button><button class="btn" data-a="proj">Projector view</button></div></div>
       ${needSeats(c) ? `<p class="needs ctl"><b>${needSeats(c)} student${needSeats(c) === 1 ? ' needs' : 's need'} a seat.</b> Drag them into place, or press Fill empty seats.</p>` : ''}
       <p class="help ctl">${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
@@ -209,7 +217,7 @@ body.proj .tbl h2{font-size:28px}
     const front = `<div class="front${UI.front === 'bottom' ? ' bottom' : ''}">Front of the room</div>`;
     $('#app').innerHTML = `${topTabs(list, c)}
       <div class="toolbar ctl"><div class="tooltitle">${esc(c.name)} room</div>
-        <div class="bar"><span class="roomsz">Room: ${gc} across, ${gr} deep <button class="btn quiet small" data-a="rsz" data-d="c-" aria-label="Remove a column"${gc <= Math.max(1, lay.cols) ? ' disabled' : ''}>− column</button><button class="btn quiet small" data-a="rsz" data-d="c+" aria-label="Add a column">+ column</button><button class="btn quiet small" data-a="rsz" data-d="r-" aria-label="Remove a row"${gr <= Math.max(1, lay.rows) ? ' disabled' : ''}>− row</button><button class="btn quiet small" data-a="rsz" data-d="r+" aria-label="Add a row">+ row</button></span><button class="btn" data-a="tadd">Add a ${esc(TEAM())}</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>${list.length > 1 ? `<button class="btn" data-a="tcopy">Use this room in every class</button>` : ''}</div></div>
+        <div class="bar"><span class="roomsz">Room: ${gc} across, ${gr} deep <button class="btn quiet small" data-a="rsz" data-d="c-" aria-label="Remove a column"${gc <= Math.max(1, lay.cols) ? ' disabled' : ''}>− column</button><button class="btn quiet small" data-a="rsz" data-d="c+" aria-label="Add a column">+ column</button><button class="btn quiet small" data-a="rsz" data-d="r-" aria-label="Remove a row"${gr <= Math.max(1, lay.rows) ? ' disabled' : ''}>− row</button><button class="btn quiet small" data-a="rsz" data-d="r+" aria-label="Add a row">+ row</button></span><button class="btn" data-a="resetup" title="Switch between groups and rows, or start over with a new number of groups">Set up the room again</button><button class="btn" data-a="tadd">Add a ${esc(TEAM())}</button><button class="btn" data-a="flip">Front of room: ${UI.front === 'top' ? 'top' : 'bottom'}</button>${list.length > 1 ? `<button class="btn" data-a="tcopy">Use this room in every class</button>` : ''}</div></div>
       <p class="help ctl">Drag ${esc(TEAMS())} into the spots that match your room. Press Edit on a ${esc(TEAM())} to rename it, change its color or seats, or turn it off for ${esc(c.name)}.</p>
       ${UI.front === 'top' ? front : ''}<div class="roomgrid" style="grid-template-columns:repeat(${gc},minmax(0,1fr))">${cells}</div>${UI.front === 'bottom' ? front : ''}`;
   }
@@ -262,6 +270,7 @@ body.proj .tbl h2{font-size:28px}
   }
 
   /* ---------- Shuffle seats ---------- */
+  const isRows = c => c.tables.length > 0 && c.tables.every(t => Suite.seatLayout(t).rows === 1 && t.seats > 2);
   function openShuffle(c, list){
     let proposal = null;
     const back = document.createElement('div'); back.className = 'suite-dialog-back';
@@ -271,16 +280,16 @@ body.proj .tbl h2{font-size:28px}
       const pinned = new Set(c.pinned || []), apart = c.apart || [], tables = c.tables.filter(t => t.open);
       const opts = kids.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
       back.innerHTML = `<div class="suite-dialog shdlg" role="dialog" aria-modal="true" aria-labelledby="sh-t">
-        <h2 id="sh-t">Shuffle seats for ${esc(c.name)}</h2>
+        <h2 id="sh-t">Shuffle ${esc(c.name)} into new ${esc(TEAMS())}</h2>
         <p>Students are spread across the ${esc(TEAMS())} in use, in proportion to their seats. Nothing changes until you press Apply.</p>
         <div class="shgrid">
           <div><b class="small">Keep apart</b>
-            ${apart.length ? `<ul class="pairs">${apart.map((p, i) => `<li>${esc(nm(p[0]))} and ${esc(nm(p[1]))} <button class="btn quiet danger small" data-h="aprm" data-i="${i}" aria-label="Stop keeping them apart">×</button></li>`).join('')}</ul>` : '<p class="muted small" style="margin:4px 0">No pairs yet.</p>'}
-            <div class="bar"><select id="ap1" aria-label="First student">${opts}</select><select id="ap2" aria-label="Second student">${opts}</select><button class="btn small" data-h="apadd">Keep apart</button></div></div>
+            ${apart.length ? `<ul class="pairs">${apart.map((p, i) => `<li>${esc(nm(p[0]))} and ${esc(nm(p[1]))} <span class="muted small">${p[2] === 'near' ? 'not next to each other' : 'not in the same ' + esc(TEAM())}</span> <button class="btn quiet danger small" data-h="aprm" data-i="${i}" aria-label="Stop keeping them apart">×</button></li>`).join('')}</ul>` : '<p class="muted small" style="margin:4px 0">No pairs yet.</p>'}
+            <div class="bar"><select id="ap1" aria-label="First student">${opts}</select><select id="ap2" aria-label="Second student">${opts}</select><select id="ap3" aria-label="How far apart"><option value="group"${isRows(c) ? '' : ' selected'}>Not in the same ${esc(TEAM())}</option><option value="near"${isRows(c) ? ' selected' : ''}>Not next to each other</option></select><button class="btn small" data-h="apadd">Keep apart</button></div></div>
           <div><b class="small">Stays where they are</b>
             <div class="pins">${kids.map(s => `<label><input type="checkbox" data-pin="${esc(s.id)}"${pinned.has(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">No students yet.</span>'}</div></div>
         </div>
-        ${proposal ? `${proposal.conflicts ? `<p class="warn">${proposal.conflicts} keep-apart pair${proposal.conflicts === 1 ? ' is' : 's are'} still together. Try again, or turn on another ${esc(TEAM())}.</p>` : ''}
+        ${proposal ? `${proposal.conflicts ? `<p class="warn">${proposal.conflicts} keep-apart rule${proposal.conflicts === 1 ? " couldn't" : "s couldn't"} be met with these seats. Try again, add a ${esc(TEAM())}, or loosen a rule.</p>` : ''}
           <div class="preview">${tables.map(t => { const m = kids.filter(s => proposal.assign[s.id] === t.id);
             return `<div class="pv" style="--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)}"><b>${esc(t.name)} <span>${m.length}/${t.seats}</span></b><span>${m.map(s => esc(s.name)).join(', ') || '<span class="muted">Empty</span>'}</span></div>`; }).join('')}</div>` : ''}
         <div class="suite-dialog-actions"><button class="btn" data-h="cancel">Cancel</button><button class="btn${proposal ? '' : ' primary'}" data-h="go"${kids.length && tables.length ? '' : ' disabled'}>${proposal ? 'Shuffle again' : 'Shuffle'}</button>${proposal ? '<button class="btn primary" data-h="apply">Apply these seats</button>' : ''}</div></div>`;
@@ -296,14 +305,69 @@ body.proj .tbl h2{font-size:28px}
       const h = b.dataset.h;
       if (h === 'cancel') return close();
       if (h === 'go') { proposal = Suite.proposeSeats(c); draw(); }
-      else if (h === 'apadd') { const x = back.querySelector('#ap1').value, y = back.querySelector('#ap2').value; if (x === y) { Suite.toast('Pick two different students'); return; } c.apart = (c.apart || []).filter(p => !(p.includes(x) && p.includes(y))); c.apart.push([x, y]); Suite.saveClasses(list); draw(); }
+      else if (h === 'apadd') { const x = back.querySelector('#ap1').value, y = back.querySelector('#ap2').value; if (x === y) { Suite.toast('Pick two different students'); return; } const kind = back.querySelector('#ap3').value; c.apart = (c.apart || []).filter(p => !(p.includes(x) && p.includes(y))); c.apart.push([x, y, kind]); Suite.saveClasses(list); draw(); }
       else if (h === 'aprm') { (c.apart || []).splice(+b.dataset.i, 1); Suite.saveClasses(list); draw(); }
       else if (h === 'apply' && proposal) {
         lastSeats = { classId: c.id, seats: Object.fromEntries(c.students.map(s => [s.id, [s.tableId, s.seat]])) };
-        c.students.forEach(s => { const to = proposal.assign[s.id]; if (to && to !== s.tableId) { s.tableId = to; delete s.seat; } });
+        c.students.forEach(s => { const to = proposal.assign[s.id]; if (to) { s.tableId = to; if (proposal.seats && Number.isInteger(proposal.seats[s.id])) s.seat = proposal.seats[s.id]; else delete s.seat; } });
         c.tables.forEach(t => { const m = seatMap(c, t); m.loose.forEach(s => { const i = m.seats.indexOf(null); if (i > -1) { m.seats[i] = s; s.seat = i; } }); });
         Suite.saveClasses(list); close(); Suite.toast('New seats for ' + c.name);
       }
+    });
+  }
+
+
+  /* ---------- set up the room again: switch between groups and rows, or start fresh ---------- */
+  function openResetup(c, list){
+    const prefs = Suite.get('prefs', {}) || {}, rows = isRows(c);
+    const st = { kind: rows ? 'tables' : 'tables', n: Math.max(1, c.tables.length || 5), seats: 4, cols: 2, word: rows ? 'table' : (Suite.word('team') || 'table'), rowsN: 5, perRow: 6, spread: true, every: false, points: !!(prefs.features || {}).points !== false };
+    st.points = Suite.feature('points');
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const draw = () => {
+      back.innerHTML = `<div class="suite-dialog shdlg" role="dialog" aria-modal="true" aria-labelledby="rs-t">
+        <h2 id="rs-t">Set up the room again</h2>
+        <p>Replace ${esc(c.name)}'s ${esc(TEAMS())} with a new arrangement. Students' current seats are cleared.</p>
+        <div class="rsk"><label class="${st.kind === 'tables' ? 'on' : ''}"><input type="radio" name="rsk" value="tables"${st.kind === 'tables' ? ' checked' : ''}><b>Tables or groups</b><span>Students sit together in groups</span></label>
+          <label class="${st.kind === 'rows' ? 'on' : ''}"><input type="radio" name="rsk" value="rows"${st.kind === 'rows' ? ' checked' : ''}><b>Rows of desks</b><span>Students sit in rows facing the front</span></label></div>
+        ${st.kind === 'tables' ? `<div class="rsg"><label>How many groups?<input class="field num" type="number" min="1" max="20" data-r="n" value="${st.n}"></label><label>Seats in each<input class="field num" type="number" min="1" max="12" data-r="seats" value="${st.seats}"></label>
+            <label>Seats arranged in<select data-r="cols">${[[1, '1 column'], [2, '2 columns (facing)'], [3, '3 columns'], [st.seats, 'one row']].map(([v, n]) => `<option value="${v}"${+st.cols === +v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+            <label>Call them<input class="field" data-r="word" value="${esc(st.word)}" placeholder="table, group, pod"></label></div>
+            <label class="rv"><input type="checkbox" data-r="points"${st.points ? ' checked' : ''}> Use ${esc(st.word || 'team')} points (points, captains, and weekly goals)</label>`
+          : `<div class="rsg"><label>How many rows?<input class="field num" type="number" min="1" max="12" data-r="rowsN" value="${st.rowsN}"></label><label>Desks in each row<input class="field num" type="number" min="1" max="12" data-r="perRow" value="${st.perRow}"></label></div>`}
+        <label class="rv"><input type="checkbox" data-r="spread"${st.spread ? ' checked' : ''}> Mix students into the new ${st.kind === 'rows' ? 'rows' : 'groups'} at random (following keep-apart rules)</label>
+        <label class="rv"><input type="checkbox" data-r="every"${st.every ? ' checked' : ''}> Do this for every class</label>
+        <div class="suite-dialog-actions"><button class="btn" data-x="cancel">Cancel</button><button class="btn primary" data-x="go">Set up the room</button></div></div>`;
+    };
+    document.body.appendChild(back); draw();
+    const close = () => { back.remove(); render(); };
+    back.addEventListener('change', e => { const t = e.target;
+      if (t.name === 'rsk') { st.kind = t.value; draw(); return; }
+      const k = t.dataset.r; if (!k) return;
+      st[k] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? Math.max(1, parseInt(t.value, 10) || 1) : t.value;
+      if (k === 'seats' && ![1, 2, 3].includes(+st.cols)) st.cols = st.seats;
+      if (k === 'seats' || k === 'word') draw(); });
+    back.addEventListener('click', async e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('[data-x]'); if (!b) return;
+      if (b.dataset.x === 'cancel') return close();
+      const targets = st.every ? list : [c];
+      if (!await Suite.dialog({ title: 'Replace the room?', body: `${targets.length === 1 ? esc(c.name) + ' gets' : 'Every class gets'} the new ${st.kind === 'rows' ? 'rows' : 'groups'}, and current seats are cleared. Students, points, and keep-apart rules stay.`, ok: 'Set up the room' })) return;
+      const word = st.kind === 'rows' ? 'row' : (st.word.trim().toLowerCase() || 'table'), Cap = word.charAt(0).toUpperCase() + word.slice(1);
+      targets.forEach(cls => {
+        cls.tables = st.kind === 'rows'
+          ? Array.from({ length: st.rowsN }, (_, i) => ({ id: Suite.uid(), name: 'Row ' + (i + 1), seats: st.perRow, open: true, color: Suite.PALETTE[i % Suite.PALETTE.length], seatCols: st.perRow, row: i + 1, col: 1 }))
+          : Array.from({ length: st.n }, (_, i) => ({ id: Suite.uid(), name: Cap + ' ' + (i + 1), seats: st.seats, open: true, color: Suite.PALETTE[i % Suite.PALETTE.length], seatCols: +st.cols }));
+        delete cls.roomCols; delete cls.roomRows;
+        cls.students.forEach(s => { s.tableId = ''; delete s.seat; });
+        if (st.spread && cls.students.length) { const pr = Suite.proposeSeats(cls); cls.students.forEach(s => { if (pr.assign[s.id]) { s.tableId = pr.assign[s.id]; if (Number.isInteger(pr.seats[s.id])) s.seat = pr.seats[s.id]; } }); }
+      });
+      // words and features follow the new setup
+      const P = Suite.get('prefs', {}) || {};
+      P.words = Object.assign({}, P.words || {}, { team: word });
+      P.features = Object.assign({}, P.features || {});
+      const on = st.kind === 'tables' && st.points; P.features.points = on; P.features.captains = on; P.features.goals = on;
+      Suite.set('prefs', P);
+      Suite.saveClasses(list); close(); Suite.toast('The room is set up');
     });
   }
 
@@ -465,6 +529,7 @@ body.proj .tbl h2{font-size:28px}
     if (c && a === 'shuffle') { openShuffle(c, list); return; }
     if (c && a === 'unshuffle' && lastSeats) { c.students.forEach(s => { const v = lastSeats.seats[s.id]; if (v) { s.tableId = v[0]; if (Number.isInteger(v[1])) s.seat = v[1]; else delete s.seat; } }); lastSeats = null; Suite.saveClasses(list); render(); Suite.toast('Seats put back'); return; }
     if (c && a === 'tadd') { editTable(c, list, null); return; }
+    if (c && a === 'resetup') { openResetup(c, list); return; }
     if (c && a === 'rsz') {
       const lay0 = Suite.roomLayout(c.tables), set = c.roomCols && c.roomRows;
       let cols = set ? c.roomCols : Math.max(3, lay0.cols) + 1, rows = set ? c.roomRows : lay0.rows + 1; pinAll(c);

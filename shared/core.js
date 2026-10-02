@@ -38,7 +38,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-07c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-08a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -128,24 +128,54 @@
     return out;
   };
   // Spread students across the tables in use, in proportion to seats, honoring keep-apart pairs and stay-put students.
+  // Shuffle a class into new groups and seats. Keep-apart rules are [a, b, kind]:
+  // 'group' = not in the same group (and not right next to each other), 'near' = not right next to each other.
   S.proposeSeats = c => {
     const shuf = arr => { const x = arr.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; };
-    const tables = c.tables.filter(t => t.open), pinned = new Set(c.pinned || []), apart = c.apart || [];
-    const assign = {}, count = {}; tables.forEach(t => { count[t.id] = 0; });
-    c.students.forEach(s => { if (pinned.has(s.id) && count[s.tableId] != null) { assign[s.id] = s.tableId; count[s.tableId]++; } });
-    const hasPair = s => apart.some(p => p.includes(s.id));
-    const movers = shuf(c.students.filter(s => !(s.id in assign))).sort((a, b) => hasPair(b) - hasPair(a));
-    const clash = (sid, tid) => apart.some(([a, b]) => (a === sid && assign[b] === tid) || (b === sid && assign[a] === tid));
-    movers.forEach(s => {
-      let open = tables.filter(t => count[t.id] < t.seats); if (!open.length) open = tables.slice();
-      let cand = open.filter(t => !clash(s.id, t.id)); if (!cand.length) cand = open;
-      if (!cand.length) return;
-      const fill = t => count[t.id] / Math.max(1, t.seats), low = Math.min(...cand.map(fill));
-      const best = cand.filter(t => fill(t) === low), t = best[Math.floor(Math.random() * best.length)];
-      assign[s.id] = t.id; count[t.id]++;
-    });
-    const conflicts = apart.filter(([a, b]) => assign[a] && assign[a] === assign[b]).length;
-    return { assign, conflicts, over: c.students.length > tables.reduce((n, t) => n + t.seats, 0) };
+    const tables = c.tables.filter(t => t.open), pinned = new Set(c.pinned || []);
+    const rules = (c.apart || []).map(p => ({ a: p[0], b: p[1], kind: p[2] === 'near' ? 'near' : 'group' }));
+    const byId = Object.fromEntries(tables.map(t => [t.id, t])), lay = S.roomLayout(c.tables);
+    const seatPos = (t, i) => S.seatLayout(t).pos(i);
+    // are two seats right next to each other? (same table: touching seats; rows of desks: also the desk in front or behind)
+    const near = (t1, i1, t2, i2) => {
+      if (t1.id === t2.id) { const p = seatPos(t1, i1), q = seatPos(t2, i2); return Math.abs(p.r - q.r) <= 1 && Math.abs(p.c - q.c) <= 1; }
+      const L1 = S.seatLayout(t1), L2 = S.seatLayout(t2), a = lay.at[t1.id], b = lay.at[t2.id];
+      return L1.rows === 1 && L2.rows === 1 && a && b && a.col === b.col && Math.abs(a.row - b.row) === 1 && Math.abs(i1 - i2) <= 1;
+    };
+    let best = null;
+    for (let attempt = 0; attempt < 80; attempt++) {
+      // 1) groups
+      const assign = {}, count = {}; tables.forEach(t => { count[t.id] = 0; });
+      c.students.forEach(s => { if (pinned.has(s.id) && count[s.tableId] != null) { assign[s.id] = s.tableId; count[s.tableId]++; } });
+      const inRule = s => rules.some(r => r.a === s.id || r.b === s.id);
+      const movers = shuf(c.students.filter(s => !(s.id in assign))).sort((a, b) => inRule(b) - inRule(a));
+      const clash = (sid, tid) => rules.some(r => r.kind === 'group' && ((r.a === sid && assign[r.b] === tid) || (r.b === sid && assign[r.a] === tid)));
+      movers.forEach(s => {
+        let open = tables.filter(t => count[t.id] < t.seats); if (!open.length) open = tables.slice();
+        let cand = open.filter(t => !clash(s.id, t.id)); if (!cand.length) cand = open;
+        if (!cand.length) return;
+        const fill = t => count[t.id] / Math.max(1, t.seats), low = Math.min(...cand.map(fill));
+        const pick = cand.filter(t => fill(t) === low), t = pick[Math.floor(Math.random() * pick.length)];
+        assign[s.id] = t.id; count[t.id]++;
+      });
+      // 2) seats within each group (pinned students keep their seat)
+      const seats = {};
+      tables.forEach(t => {
+        const members = c.students.filter(s => assign[s.id] === t.id), taken = new Set();
+        members.forEach(s => { if (pinned.has(s.id) && s.tableId === t.id && Number.isInteger(s.seat) && s.seat < t.seats && !taken.has(s.seat)) { seats[s.id] = s.seat; taken.add(s.seat); } });
+        const free = shuf(Array.from({ length: t.seats }, (_, i) => i).filter(i => !taken.has(i)));
+        shuf(members.filter(s => !(s.id in seats))).forEach(s => { if (free.length) seats[s.id] = free.shift(); });
+      });
+      // 3) score: every rule that isn't met
+      const broken = rules.filter(r => {
+        const ta = byId[assign[r.a]], tb = byId[assign[r.b]]; if (!ta || !tb) return false;
+        if (r.kind === 'group' && ta.id === tb.id) return true;
+        return seats[r.a] != null && seats[r.b] != null && near(ta, seats[r.a], tb, seats[r.b]);
+      }).length;
+      if (!best || broken < best.conflicts) best = { assign, seats, conflicts: broken };
+      if (!broken) break;
+    }
+    return Object.assign(best || { assign: {}, seats: {}, conflicts: 0 }, { over: c.students.length > tables.reduce((n, t) => n + t.seats, 0) });
   };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
