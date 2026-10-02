@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-07b">
-<script src="shared/core.js?v=2026-10-07b"></script>
-<script>window.PAGE_VERSION = '2026-10-07b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-07c">
+<script src="shared/core.js?v=2026-10-07c"></script>
+<script>window.PAGE_VERSION = '2026-10-07c';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -584,11 +584,10 @@ details.sec>summary .muted{font-weight:400}
   let lastAuto = '', lastCid = null;
   setInterval(() => {
     drawTimer();
-    if (T.mode !== 'auto') return;
     const pick = autoPick();
-    if (pick.cid !== lastCid) { lastCid = pick.cid; if (!timer.running) resetTimer(pick.cid); screen = 0; reveal = 0; lesson = false; render(); }
+    if (T.mode === 'auto' && pick.cid !== lastCid) { lastCid = pick.cid; if (!timer.running) resetTimer(pick.cid); screen = 0; reveal = 0; lesson = false; render(); }
     const p = pick.period, now = new Date(), nowHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    if (p && p.start === nowHM && viewDate === Suite.dateKey(now)) {
+    if (p && p.start === nowHM && viewDate === Suite.dateKey(now) && pick.cid && (T.mode === 'auto' || T.mode === pick.cid)) {
       const key = Suite.dateKey(now) + p.start, u = usual(pick.cid);
       if (key !== lastAuto && u.timer.on && u.timer.auto && lookOf(pick.cid).timer) { lastAuto = key; resetTimer(pick.cid); toggleTimer(); screen = 0; lesson = false; render(); }
     }
@@ -701,7 +700,8 @@ details.sec>summary .muted{font-weight:400}
           <div class="bar"><label class="rv"><input type="checkbox" data-d="ton"${u.timer.on ? ' checked' : ''}> Warm-up timer</label><input class="field num" type="number" min="1" max="30" data-d="tmin" value="${u.timer.min}" style="width:70px"> minutes</div>
           <div class="bmrow" style="margin-top:8px"><label class="small">Style <select data-d="tstyle">${Object.entries(TIMER_STYLES).map(([k, n]) => `<option value="${k}"${(u.timer.style || 'digital') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label><label class="small">Color <input type="color" data-d="tcolor" value="${esc(u.timer.color || '#2f6fd0')}"></label></div>
           <label class="rv" style="margin-top:6px;display:flex;gap:6px"><input type="checkbox" data-d="tauto"${u.timer.auto ? ' checked' : ''}> Start automatically when the bell rings</label>
-          <p class="hintline">The timer shows on the Welcome board. Move it with Edit on screen.</p></details>
+          ${lookById(room.look).timer ? '' : '<p class="note warn">This background has no spot for the timer yet, so it won\'t show.</p><button class="btn small" data-d="taddspot">Add a timer spot</button>'}
+          <p class="hintline">The timer shows on the Welcome board and can start on its own at the bell, in Auto or when you've picked this class. Move it with Edit on screen.</p></details>
       </div>
       <div class="dfoot"><button class="btn small" data-d="copyprev">Copy the previous day</button><button class="btn small" data-d="saveusual">Save as the usual setup</button><button class="btn quiet small" data-d="reset">Reset day to usual</button></div>`;
   }
@@ -723,6 +723,7 @@ details.sec>summary .muted{font-weight:400}
     if (d === 'haveadd') { const v = $('#haveNew').value.trim(); if (!v) return; const r = editable(viewDate, cid); if (!r.haveOut.includes(v)) r.haveOut.push(v); commit(true); return; }
     if (d === 'flagclear') { delete T.flags[weekKey(viewDate)]; commit(true); return; }
     if (d === 'movetext') { startEdit(); return; }
+    if (d === 'taddspot') { const lay = ownLayout(roomFor(viewDate, cid).look); lay.boxes.timer = NEUTRAL.timer.slice(); commit(true); Suite.toast('Timer spot added. Move it with Edit on screen.'); return; }
     if (d === 'bmadd') { const B = T.bell = bellCfg(); B.messages = (B.messages || []).concat({ min: 2, text: '', chime: true }); commit(true); return; }
     if (d === 'bmrm') { const B = T.bell = bellCfg(); B.messages.splice(+el.dataset.k, 1); commit(true); return; }
     if (d === 'bprev') { bellPreview = Date.now() + 8000; updateBell(); Suite.toast('Showing a preview for a few seconds'); return; }

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-07b">
-<script src="shared/core.js?v=2026-10-07b"></script>
-<script>window.PAGE_VERSION = '2026-10-07b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-07c">
+<script src="shared/core.js?v=2026-10-07c"></script>
+<script>window.PAGE_VERSION = '2026-10-07c';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
 .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -49,6 +49,9 @@ canvas{display:block;max-width:100%}
 .empty{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
 .empty h2{margin-bottom:8px}
 @media (max-width:860px){.stage{grid-template-columns:1fr}}
+.sortby{display:flex;align-items:center;gap:4px;margin:2px 0 4px;font-size:13px;color:var(--ink-2);white-space:nowrap}
+.sortby .btn{white-space:nowrap;min-height:0;padding:3px 11px;font-size:13px}
+.sortby .btn[aria-pressed="true"]{background:var(--sea);color:var(--on-sea);border-radius:999px}
 .selall{margin:-2px 0 6px}
 #exit-proj{display:none}
 body.proj #suite-nav,body.proj .tabs,body.proj .topbar,body.proj .below{display:none!important}
@@ -199,9 +202,15 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
         <ul class="plist">${all.map(x => `<li class="${done.has(x.id) ? 'picked' : ''}"><span class="swatch" style="background:${esc(x.color)}"></span><span class="nm">${esc(x.label)}</span></li>`).join('')}</ul>`;
     } else {
       const order = c.tables.map(t => t.id);
-      const everyone = c.students.slice().sort((a, b) => (order.indexOf(a.tableId) + 99) % 99 - (order.indexOf(b.tableId) + 99) % 99 || a.name.localeCompare(b.name));
+      const parts = n => String(n).trim().split(/\s+/), first = n => parts(n)[0] || '', last = n => { const p = parts(n); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
+      const sorters = {
+        table: (a, b) => (order.indexOf(a.tableId) + 99) % 99 - (order.indexOf(b.tableId) + 99) % 99 || a.name.localeCompare(b.name),
+        first: (a, b) => first(a.name).localeCompare(first(b.name)) || a.name.localeCompare(b.name),
+        last: (a, b) => last(a.name).localeCompare(last(b.name)) || first(a.name).localeCompare(first(b.name))
+      };
+      const everyone = c.students.slice().sort(sorters[SP.sort] || sorters.table);
       panel = `<h2>Students</h2><div class="count">${left} of ${all.length} left this round${away.size ? `, ${away.size} off the wheel` : ''}</div>
-        ${everyone.length ? `<div class="bar selall"><button class="btn quiet small" data-a="allon">Select all</button><button class="btn quiet small" data-a="alloff">Deselect all</button></div>` : ''}
+        ${everyone.length ? `<div class="sortby" role="group" aria-label="Sort the list">Sort by ${[['table', Suite.word('team', { cap: true })], ['first', 'First'], ['last', 'Last']].map(([k, n]) => `<button class="btn quiet small" data-a="sort" data-v="${k}" aria-pressed="${(SP.sort || 'table') === k}" title="Sort by ${k === 'table' ? esc(Suite.word('team')) : k + ' name'}">${esc(n)}</button>`).join('')}</div><div class="bar selall"><button class="btn quiet small" data-a="allon">Select all</button><button class="btn quiet small" data-a="alloff">Deselect all</button></div>` : ''}
         ${everyone.length ? `<ul class="plist">${everyone.map(s => { const t = c.tables.find(x => x.id === s.tableId);
           return `<li class="${away.has(s.id) ? 'away' : done.has(s.id) ? 'picked' : ''}"><span class="swatch" style="background:${esc(t ? t.color : NEUTRAL)}"></span>
             <span class="nm">${esc(s.name)}</span><label><input type="checkbox" data-c="here" data-id="${esc(s.id)}"${away.has(s.id) ? '' : ' checked'}> On wheel</label></li>`; }).join('')}</ul>`
@@ -210,6 +219,7 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
     }
     panel += `<label class="opt"><input type="checkbox" data-c="remove"${SP.removeAfter ? ' checked' : ''}> Take picks off the wheel until everyone has had a turn</label>`;
 
+    const keep = ['.plist', '.panel'].map(q => { const el = document.querySelector(q); return [q, el ? el.scrollTop : 0]; }), winY = window.scrollY;
     $('#app').innerHTML = `
       ${SP.mode !== 'custom' || list.length ? `<nav class="tabs" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${c && k.id === c.id && SP.mode !== 'custom' ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
       <div class="topbar">
@@ -230,6 +240,8 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
         </div>
         <aside class="panel">${panel}</aside>
       </div>`;
+    keep.forEach(([q, y]) => { const el = document.querySelector(q); if (el && y) el.scrollTop = y; });
+    if (winY) window.scrollTo(0, winY);
     renderResult();
     if (!spinning) draw(keepWheel && spunList ? spunList : available(c));
   }
@@ -241,6 +253,7 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
     else if (a === 'mode') { SP.mode = el.dataset.m; result = null; rot = 0; save(); render(); }
     else if (a === 'panel') { SP.hidePanel = !SP.hidePanel; save(); render(); }
     else if (a === 'proj') { proj = !proj; render(); }
+    else if (a === 'sort') { SP.sort = el.dataset.v; save(); render(); }
     else if ((a === 'allon' || a === 'alloff') && c) {
       SP.absent[c.id] = { date: Suite.dateKey(new Date()), ids: a === 'alloff' ? c.students.map(s => s.id) : [] };
       result = null; save(); render();
