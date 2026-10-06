@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-10a">
-<script src="shared/core.js?v=2026-10-10a"></script>
-<script>window.PAGE_VERSION = '2026-10-10a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-11a">
+<script src="shared/core.js?v=2026-10-11a"></script>
+<script>window.PAGE_VERSION = '2026-10-11a';</script>
 <style>
 .wrap{max-width:900px;margin:0 auto;padding:22px 20px 60px}
 .wrap h1{font-size:36px;margin-bottom:6px}
@@ -43,24 +43,26 @@ kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;p
       'The schedule card says which schedule is running and why, for example "Set for Wednesdays" or "Special day."',
       'Add a daily plan (learning target, agenda, homework) with "+ Add today\'s plan," or "Plan a day" under the schedule.',
       'Countdowns to tests and events appear under "Coming up." Add them in General settings.']],
-    ['Today (beta)', 'Your start-of-class screen', [
+    ['Today (beta)', 'The live screen for your projector', [
       '<b>Today is in beta:</b> it works, but it is still being refined, so expect a few rough edges.',
-      'Shows the date, a Have Out list, and a series of boards: Welcome, Warm-up, Returned work, Things that are due, Today\'s agenda, and your own boards. Press Next (or the right arrow, or a clicker) to step through them; your lesson slides come last.',
-      'Auto follows the bell schedule, so the right class is up when the bell rings. The warm-up timer can start on its own at the bell.',
-      'Edit day fills in each board. Due and Agenda can come straight from the Planner, or you can write a student version. Format text with the toolbar: bold, italic, colors, fonts, and sizes.',
-      'Choose a background (paper, chalkboard, corkboard, a solid color, or upload your own) and an optional picture of yourself. Move text lets you drag every piece into place and add your own text boxes.',
-      'Unit changes switch the background and picture automatically on a date you choose.']],
-    ['Planner', 'Plan the week', [
+      'Shows the date, a Have Out list, and the boards students see (Welcome, Warm-up, Returned work, Things that are due, Today\'s agenda, and your own custom boards). Press Next, the right arrow, or a clicker to step through them; your lesson slides come last.',
+      'Auto follows the bell schedule. When no class is in session (lunch, staff time, before or after school), a between-classes screen shows what is happening and counts down to what is next. Each window keeps its own choice, so a display can stay on Auto while you plan in another window.',
+      'What each day shows comes from the Planner: press Plan this day. Edit on screen arranges and formats the boards (fonts, colors, alignment, text boxes, pictures, and tools like a name picker or noise meter).',
+      'Day settings holds the class\'s board lineup, background, bitmoji, unit changes, and warm-up timer. Settings → Today screen holds what applies to every class: the bell reminder, your backgrounds and bitmojis, and saved boards (My boards).']],
+    ['Planner', 'Plan each day in one place', [
       'Click any day to plan it: a learning target, agenda steps, homework, and links or files. Plans show on the dashboard, the Today screen, and the substitute page.',
+      'Students see (Today screen) sets what students see that day: Welcome, Warm-up (start a line with ? to hide an answer until you click), Returned work, the agenda and due boards (from your plan or a student version), Have out, and custom boards.',
+      'Lesson slides: paste your published deck (File → Share → Publish to the web). It carries forward to later days until you paste a different one.',
       'Group sections that get the same lesson into a course, then plan once for all of them. "Change one period only" covers days when one section is different.',
-      'School events (like a field trip or testing) go in the top row and show on the dashboard.',
-      'Shift plans moves everything forward from a day you choose, skipping days with no school. Print this week gives you a one-page summary.']],
+      'Events go in the top row. Check "Count down to it" to show it on the dashboard, or "Just for me" to keep it off student screens. Days off (holidays and breaks) show as no school everywhere, and Shift plans skips them.']],
     ['Points', 'Team points for each ' + team, [
+      'Auto follows your bell schedule and switches to the class in session; pick a class to stay on it.',
       'Tap +1, −1, the clean-up buttons, or the 3-point challenge on a ' + team + '\'s card.',
       'Keyboard: press a ' + team + '\'s number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean, <kbd>M</kbd> mostly clean, <kbd>P</kbd> 3-point challenge, <kbd>U</kbd> undo.',
       'At the end of the week, open More and choose End week. Winners, most improved, and streaks are recorded in the prize record, and ' + leads + ' rotate if you turned that on.',
       'Tracker settings (at the bottom) has the weekly goal menu, ' + lead + ' rotation, the quarter report, and starting a new quarter.']],
     ['Seating', 'Seating charts', [
+      'Auto follows your bell schedule and switches to the class in session; pick a class to stay on it.',
       'Shuffle into new groups mixes students into new tables and seats. Add keep-apart rules: "not in the same group" or "not next to each other" (in rows, that also covers the desk in front or behind). Students you check under "Stays where they are" keep their seats. Undo puts everyone back.',
       'Set up the room again (in Edit room) switches between tables and rows of desks, or starts over with a new number of groups. It can mix students into the new groups, apply to every class, and update the word for groups and the points features to match.',
       'Drag a name onto a seat to move a student, or onto another student to trade places. You can also tap a name, then tap a seat.',
@@ -73,10 +75,6 @@ kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;p
       'Review game: a quiz board of categories. Paste "Category | Question | Answer" lines to build one.',
       'Stations, Tally, Partners and groups, and the Noise meter (press Calibrate while the room is quiet).',
       'Easy grader: enter the number of questions and what the assignment is worth (100, 50, 10, or any total), then type how many a student missed to see the score. The full chart shows every score and prints on one page. Save setups you use often.']],
-    ['Present', 'Your Google Slides with tools on top', [
-      'In Google Slides, choose File, Share, Publish to the web, and copy the link. Paste it on the Present page.',
-      'The toolbar in the corner opens the timer, spinner, points, or groups over your slides. Esc goes back to the slides.',
-      'Or use the pop-out button (next to Timer) for a small window that floats on top of Slides in Chrome or Edge.']],
     ['Timer', 'A countdown for the class', [
       'Pick a preset or type a time like 7, 1:30, or 90s. It keeps running as you move between pages and chimes when time is up.',
       '<kbd>Space</kbd> starts or pauses, <kbd>R</kbd> resets, <kbd>Esc</kbd> hides it.']],

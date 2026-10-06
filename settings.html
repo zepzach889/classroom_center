@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-10a">
-<script src="shared/core.js?v=2026-10-10a"></script>
-<script>window.PAGE_VERSION = '2026-10-10a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-11a">
+<script src="shared/core.js?v=2026-10-11a"></script>
+<script>window.PAGE_VERSION = '2026-10-11a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -147,6 +147,13 @@ main{min-width:0;max-width:820px}
   .rail .jump{display:none}
   .title-input{font-size:28px}
 }
+.tsh{font-size:18px;margin:18px 0 6px}
+.tsgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:8px 0}
+.tsgrid label{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px}
+.tsmsg{display:grid;grid-template-columns:70px auto 1fr auto auto;gap:6px;align-items:center;margin:6px 0}
+.tsrow{display:flex;gap:8px;align-items:center;margin:6px 0}.tsrow .field{flex:1}.tsrow span{flex:1;font-weight:600}
+#today-area .rv{display:flex;gap:6px;align-items:center;margin:6px 0}
+#today-area .lbl{font-weight:700;margin:10px 0 2px}
 </style>
 </head>
 <body>
@@ -178,9 +185,16 @@ main{min-width:0;max-width:820px}
     </section>
     <section class="block" id="countdowns" aria-labelledby="h-cd">
       <details class="fold" data-fold="countdowns">
-        <summary><h2 id="h-cd">Countdowns</h2><span class="fold-hint">Show</span></summary>
-        <p class="hint">Upcoming dates for the dashboard, like a unit test or the end of a school day. The dashboard shows the three closest. Add a time (like 3:45) to count down to that moment; without one, it counts days. Each one drops off once it passes.</p>
+        <summary><h2 id="h-cd">Your countdowns</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Dates of your own for the dashboard, like a unit test or the end of a school day. (Events in the Planner can count down too: check "Count down to it" when you add one.) The dashboard shows the three closest. Add a time (like 3:45) to count down to that moment; without one, it counts days. Each one drops off once it passes.</p>
         <div id="cd-area"></div>
+      </details>
+    </section>
+    <section class="block" id="today" aria-labelledby="h-today">
+      <details class="fold" data-fold="today">
+        <summary><h2 id="h-today">Today screen</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Settings for the Today screen in every class: the bell reminder, your backgrounds and bitmojis, and saved boards. Pictures are kept in this browser and in your backups, never on the website.</p>
+        <div id="today-area"></div>
       </details>
     </section>
     <section class="block" id="words" aria-labelledby="h-words">
@@ -293,7 +307,7 @@ main{min-width:0;max-width:820px}
     renderSchedule();
     renderCountdowns();
     renderLook();
-    renderWords();
+    renderWords(); renderToday();
   }
 
   function renderBackup(){
@@ -778,9 +792,70 @@ main{min-width:0;max-width:820px}
     const d = sec.querySelector('details.fold'); if (d) d.open = true;
     setTimeout(() => sec.scrollIntoView({ block: 'start' }), 0);
   }
+
+  /* ---------- Today screen (settings for every class) ---------- */
+  const TS = () => Object.assign({ rows: {}, days: {}, custom: {}, bitmojis: {}, bmAdj: {}, library: [], bell: null }, Suite.get('today', {}));
+  const BELL0 = { on: true, style: 'badge', corner: 'tr', strip: 'bottom', minutes: 5, overLesson: true, messages: [{ min: 3, text: 'Clean up your area and push in your chair.', chime: true }] };
+  function renderToday(){
+    const el = document.getElementById('today-area'); if (!el) return;
+    const T = TS(), B = Object.assign({}, BELL0, T.bell || {}), esc = Suite.esc;
+    el.innerHTML = `
+      <h3 class="tsh">Bell reminder</h3>
+      <label class="rv"><input type="checkbox" data-ts="bon"${B.on ? ' checked' : ''}> Show a countdown near the end of class and during passing time</label>
+      <div class="tsgrid"><label>Look<select data-ts="bstyle"><option value="badge"${B.style === 'badge' ? ' selected' : ''}>Corner badge</option><option value="strip"${B.style === 'strip' ? ' selected' : ''}>Strip across the screen</option><option value="box"${B.style === 'box' ? ' selected' : ''}>A box you place (with Edit on screen)</option></select></label>
+        ${B.style === 'badge' ? `<label>Corner<select data-ts="bcorner">${[['tr', 'Top right'], ['tl', 'Top left'], ['br', 'Bottom right'], ['bl', 'Bottom left']].map(([v, n]) => `<option value="${v}"${B.corner === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>` : B.style === 'strip' ? `<label>Where<select data-ts="bstrip"><option value="top"${B.strip === 'top' ? ' selected' : ''}>Top</option><option value="bottom"${B.strip === 'bottom' ? ' selected' : ''}>Bottom</option></select></label>` : '<span></span>'}
+        <label>Show it in the last<span><input class="field num" type="number" min="1" max="20" data-ts="bmin" value="${B.minutes}" style="width:70px"> minutes</span></label></div>
+      <label class="rv"><input type="checkbox" data-ts="bover"${B.overLesson ? ' checked' : ''}> Also show it on top of the lesson slides</label>
+      <p class="lbl">Messages before the bell</p>
+      ${(B.messages || []).map((x, k) => `<div class="tsmsg"><input class="field num" type="number" min="1" max="30" data-ts="mmin" data-k="${k}" value="${x.min}" aria-label="Minutes before the bell"><span>min:</span><input class="field" data-ts="mtext" data-k="${k}" value="${esc(x.text)}" placeholder="Start cleaning up" aria-label="Message"><label class="rv"><input type="checkbox" data-ts="mchime" data-k="${k}"${x.chime ? ' checked' : ''}> chime</label><button class="btn quiet danger small" data-ts="mrm" data-k="${k}" aria-label="Remove message">×</button></div>`).join('') || '<p class="muted small">None yet.</p>'}
+      <button class="btn small" data-ts="madd">Add a message</button>
+
+      <h3 class="tsh">Backgrounds</h3>
+      <p class="hint" style="margin-top:0">Built in: Paper, Chalkboard, Corkboard, and Solid color. Pick a background for each class in Today's Day settings, then place the text with Edit on screen.</p>
+      ${Object.entries(T.custom).map(([id, r]) => `<div class="tsrow"><input class="field" data-ts="rname" data-id="${esc(id)}" value="${esc(r.name)}" aria-label="Background name"><button class="btn quiet danger small" data-ts="rdel" data-id="${esc(id)}">Delete</button></div>`).join('') || '<p class="muted small">No backgrounds of your own yet.</p>'}
+      <div class="bar"><label class="btn small">Add a background<input type="file" accept="image/*" data-ts="radd" hidden></label><label class="btn quiet small">Import a room pack<input type="file" accept=".json,application/json" data-ts="pack" hidden></label></div>
+
+      <h3 class="tsh">Bitmojis</h3>
+      ${Object.entries(T.bitmojis).map(([id, b]) => `<div class="tsrow"><input class="field" data-ts="bname" data-id="${esc(id)}" value="${esc(b.name)}" aria-label="Bitmoji name"><button class="btn quiet danger small" data-ts="bdel" data-id="${esc(id)}">Delete</button></div>`).join('') || '<p class="muted small">No bitmojis yet.</p>'}
+      <div class="bar"><label class="btn small">Add a bitmoji<input type="file" accept="image/png,image/webp,image/*" data-ts="badd" hidden></label><span class="muted small">PNGs with a see-through background work best.</span></div>
+
+      <h3 class="tsh">My boards</h3>
+      ${(T.library || []).map((x, i) => `<div class="tsrow"><span>${esc(x.name)}</span><button class="btn quiet danger small" data-ts="ldel" data-i="${i}">Delete</button></div>`).join('') || '<p class="muted small">Save a custom board from Today (Day settings → Custom boards) to reuse it here.</p>'}`;
+  }
+  const tsArea = () => document.getElementById('today-area');
+  document.addEventListener('change', async e => {
+    const t = e.target; if (!t.dataset || !t.dataset.ts || !tsArea() || !tsArea().contains(t)) return;
+    const T = TS(), B = T.bell = Object.assign({}, BELL0, T.bell || {}), k = t.dataset.ts;
+    if (k === 'bon') B.on = t.checked; else if (k === 'bstyle') B.style = t.value; else if (k === 'bcorner') B.corner = t.value; else if (k === 'bstrip') B.strip = t.value;
+    else if (k === 'bmin') B.minutes = Math.max(1, Math.min(20, parseInt(t.value, 10) || 5)); else if (k === 'bover') B.overLesson = t.checked;
+    else if (k === 'mmin') B.messages[+t.dataset.k].min = Math.max(1, Math.min(30, parseInt(t.value, 10) || 1)); else if (k === 'mchime') B.messages[+t.dataset.k].chime = t.checked;
+    else if (k === 'rname' || k === 'bname') { const o = (k === 'rname' ? T.custom : T.bitmojis)[t.dataset.id]; if (o && t.value.trim()) o.name = t.value.trim(); }
+    else if ((k === 'radd' || k === 'badd') && t.files[0]) {
+      try { const f = t.files[0], meta = await Suite.files.put(f), name = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+        if (k === 'radd') T.custom['room-' + Suite.uid()] = { name, fileId: meta.id }; else T.bitmojis['bm-' + Suite.uid()] = { name, fileId: meta.id };
+        Suite.toast(name + ' added'); } catch (err) { Suite.toast(err.message || "Couldn't add that picture"); return; }
+    }
+    else if (k === 'pack' && t.files[0]) { try { const r = await Suite.importRoomPack(t.files[0]); Suite.toast(`Imported ${r.rooms} backgrounds and ${r.bitmojis} bitmojis`); } catch (err) { Suite.toast(err.message || "Couldn't read that file"); } renderToday(); return; }
+    else return;
+    Suite.set('today', T); renderToday();
+  });
+  document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.ts === 'mtext' && tsArea() && tsArea().contains(t)) { const T = TS(); T.bell = Object.assign({}, BELL0, T.bell || {}); T.bell.messages[+t.dataset.k].text = t.value; Suite.set('today', T); } });
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-ts]'); if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT' || !tsArea() || !tsArea().contains(b)) return;
+    const T = TS(), k = b.dataset.ts;
+    if (k === 'madd') { T.bell = Object.assign({}, BELL0, T.bell || {}); T.bell.messages = (T.bell.messages || []).concat({ min: 2, text: '', chime: true }); }
+    else if (k === 'mrm') { T.bell = Object.assign({}, BELL0, T.bell || {}); T.bell.messages.splice(+b.dataset.k, 1); }
+    else if (k === 'rdel' || k === 'bdel') { const map = k === 'rdel' ? T.custom : T.bitmojis, o = map[b.dataset.id]; if (!o) return;
+      if (!await Suite.dialog({ title: 'Delete ' + o.name + '?', body: 'Classes using it switch to the default.', ok: 'Delete', danger: true })) return;
+      delete map[b.dataset.id]; if (o.fileId) Suite.files.del(o.fileId).catch(() => {}); }
+    else if (k === 'ldel') { if (!await Suite.dialog({ title: 'Delete this saved board?', body: 'Days that already use it keep their copy.', ok: 'Delete', danger: true })) return; T.library.splice(+b.dataset.i, 1); }
+    else return;
+    Suite.set('today', T); renderToday();
+  });
+
   function route(){
     const h = location.hash.replace('#', '');
-    if (['schedule', 'countdowns', 'backup', 'appearance', 'words', 'general'].includes(h)) { showTab('general'); if (h !== 'general') openSection(h); }
+    if (['schedule', 'countdowns', 'backup', 'appearance', 'words', 'general', 'today'].includes(h)) { showTab('general'); if (h !== 'general') openSection(h); }
     else showTab('classes');
   }
   window.addEventListener('hashchange', route);

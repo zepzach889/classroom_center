@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-10a">
-<script src="shared/core.js?v=2026-10-10a"></script>
-<script>window.PAGE_VERSION = '2026-10-10a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-11a">
+<script src="shared/core.js?v=2026-10-11a"></script>
+<script>window.PAGE_VERSION = '2026-10-11a';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -132,7 +132,11 @@ body.proj .tbl h2{font-size:28px}
   { const m = location.hash.match(/class=([\w-]+)/); if (m) UI.cur = m[1]; }
 
   const classes = () => Suite.classes();
-  const curClass = list => list.find(c => c.id === UI.cur) || list[0] || null;
+  const AUTO = Suite.autoClass('seating');
+  if (/class=/.test(location.hash)) AUTO.set(false);   // a link to a specific class turns Auto off for this window
+  const curClass = list => { if (AUTO.on) { const id = Suite.classNow(); const c = id && list.find(x => x.id === id); if (c) return c; } return list.find(c => c.id === UI.cur) || list[0] || null; };
+  let lastAuto = null;
+  setInterval(() => { if (!AUTO.on) return; const id = Suite.classNow(); if (id && id !== lastAuto) { lastAuto = id; render(); } }, 15000);
   // Who is in which seat. Students with no seat (or a clashing one) wait beside their table.
   function seatMap(c, t){
     const seats = Array(t.seats).fill(null), loose = [];
@@ -191,7 +195,7 @@ body.proj .tbl h2{font-size:28px}
 
   /* ---------- page tabs: classes, and the two modes ---------- */
   function topTabs(list, c){
-    return `${list.length > 1 ? `<nav class="pills ctl" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
+    return `${list.length > 1 ? `<nav class="pills ctl" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
       <nav class="modes ctl" aria-label="Seating mode"><button data-a="mode" data-id="seat"${UI.mode !== 'room' ? ' aria-current="true"' : ''}>Seat students</button><button data-a="mode" data-id="room"${UI.mode === 'room' ? ' aria-current="true"' : ''}>Edit room</button></nav>`;
   }
   const needSeats = c => c.students.length - c.tables.reduce((n, t) => n + seatMap(c, t).seats.filter(Boolean).length, 0);
@@ -520,7 +524,7 @@ body.proj .tbl h2{font-size:28px}
     if (justDragged) return;
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, list = classes(), c = curClass(list);
-    if (a === 'pick') { UI.cur = el.dataset.id; sel = null; saveUI(); render(); return; }
+    if (a === 'pick') { if (el.dataset.id === 'auto') AUTO.set(true); else { AUTO.set(false); UI.cur = el.dataset.id; saveUI(); } sel = null; render(); return; }
     if (a === 'proj') { proj = !proj; sel = null; render(); return; }
     if (a === 'print') { sel = null; render(); printChart(); return; }
     if (a === 'savepic') { saveChartPicture(); return; }

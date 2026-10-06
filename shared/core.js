@@ -23,8 +23,7 @@
       { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally', feature: 'tally' },
       { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups', feature: 'groups' },
       { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' },
-      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
-      { id: 'present', label: 'Present slides', href: 'present.html', feature: 'present' }
+      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' }
     ] }
   ];
   const GEAR_MENU = [
@@ -33,12 +32,12 @@
     { id: 'general', label: 'General settings', href: 'settings.html#general' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
-  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'present', 'grader'];
+  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader'];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-10a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-11a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -176,6 +175,33 @@
       if (!broken) break;
     }
     return Object.assign(best || { assign: {}, seats: {}, conflicts: 0 }, { over: c.students.length > tables.reduce((n, t) => n + t.seats, 0) });
+  };
+  // The class in session right now (or about to start, during passing time). null when no class is scheduled.
+  S.classNow = () => {
+    const now = new Date(), P = S.scheduleFor(now).periods, st = S.periodStatus(P, now), list = S.classes();
+    const cur = st.cur >= 0 && !S.isPassing(P[st.cur]) ? P[st.cur] : null;
+    let c = cur ? S.classForPeriod(cur, list) : null;
+    if (!c && (st.cur < 0 || S.isPassing(P[st.cur]))) { const from = st.cur >= 0 ? st.cur + 1 : st.next; for (let i = from; from >= 0 && i < P.length; i++) if (!S.isPassing(P[i])) { c = S.classForPeriod(P[i], list); break; } }
+    return c ? c.id : null;
+  };
+  // Auto mode for a page's class picker: on by default, remembered per window.
+  S.autoClass = page => { const k = 'suite:auto:' + page; return { get on(){ try { return sessionStorage.getItem(k) !== 'off'; } catch (e) { return true; } }, set(v){ try { sessionStorage.setItem(k, v ? 'on' : 'off'); } catch (e) {} } }; };
+  // Import a room pack (rooms with text spots, bitmojis, and a flag background) into this browser's Today screen.
+  S.importRoomPack = async file => {
+    const pack = JSON.parse(await file.text());
+    if (!pack || pack.app !== 'classroom-suite-room-pack') throw new Error("That file isn't a room pack");
+    const T = Object.assign({ rows: {}, days: {}, custom: {}, bitmojis: {}, bmAdj: {} }, S.get('today', {}));
+    const toFile = async (dataUrl, name) => new File([await (await fetch(dataUrl)).blob()], name);
+    const lookMap = {}, bmMap = {};
+    for (const r of pack.rooms || []) { const meta = await S.files.put(await toFile(r.image, r.name + '.jpg')), id = 'room-' + S.uid(); T.custom[id] = { name: r.name, fileId: meta.id, layout: r.layout }; if (r.replaces) lookMap[r.replaces] = id; }
+    for (const b of pack.bitmojis || []) { const meta = await S.files.put(await toFile(b.image, b.name + '.webp')), id = 'bm-' + S.uid(); T.bitmojis[id] = { name: b.name, fileId: meta.id }; if (b.adj) T.bmAdj[id] = b.adj; if (b.replaces) bmMap[b.replaces] = id; }
+    if (pack.flagBackground) { const meta = await S.files.put(await toFile(pack.flagBackground, 'flag-background.jpg')); T.flagBg = meta.id; }
+    const fix = o => { if (!o) return; if (lookMap[o.look]) o.look = lookMap[o.look]; if (bmMap[o.bitmoji]) o.bitmoji = bmMap[o.bitmoji]; };
+    Object.values(T.rows).forEach(u => { const had = !!lookMap[u.look]; fix(u); (u.schedule || []).forEach(fix); if (had && !u.bitmoji && pack.defaultBitmoji && bmMap[pack.defaultBitmoji]) u.bitmoji = bmMap[pack.defaultBitmoji]; });
+    Object.values(T.days).forEach(day => Object.values(day).forEach(fix));
+    Object.keys(T.bmAdj).forEach(k => { if (bmMap[k]) { T.bmAdj[bmMap[k]] = T.bmAdj[bmMap[k]] || T.bmAdj[k]; delete T.bmAdj[k]; } });
+    S.set('today', T);
+    return { rooms: (pack.rooms || []).length, bitmojis: (pack.bitmojis || []).length };
   };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 

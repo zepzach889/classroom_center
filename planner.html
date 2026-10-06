@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-10a">
-<script src="shared/core.js?v=2026-10-10a"></script>
-<script>window.PAGE_VERSION = '2026-10-10a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-11a">
+<script src="shared/core.js?v=2026-10-11a"></script>
+<script>window.PAGE_VERSION = '2026-10-11a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -45,6 +45,7 @@ td.cell{vertical-align:top;padding:0}
 .cellbtn.ev{min-height:52px;flex-direction:row;flex-wrap:wrap;align-items:flex-start;gap:4px}
 .cellbtn.ev.empty{min-height:52px}
 .evrow th.rowh{padding:8px 12px}
+.evchip.mine{background:var(--wash);color:var(--ink);border:1.5px dashed var(--edge)}
 .evchip{background:var(--sea);color:var(--on-sea);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600}
 .evlist{list-style:none;margin:0;padding:0}.evlist li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--rule)}.evlist li:first-child{border-top:0}
 .evgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.evgrid label{display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:700}
@@ -120,9 +121,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     const head = D.map(d => { const sc = Suite.scheduleFor(d), k = keyOf(d), off = offs.find(x => x.date === k && x.scheduleId === 'none');
       return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<span>${esc(sc.periods.length ? sc.scheduleName || sc.label : sc.label)}</span>
         <button class="dayoff noprint" data-a="${off ? 'dayon' : 'dayoff'}" data-date="${k}">${off ? 'Undo day off' : 'Mark day off'}</button></th>`; }).join('');
-    const evRow = `<tr class="evrow"><th class="rowh" scope="row"><span class="nm">School events</span><span class="secs">Dress-up days, testing, field trips</span></th>${D.map(d => {
+    const evRow = `<tr class="evrow"><th class="rowh" scope="row"><span class="nm">Events</span><span class="secs">School events, plus your own (⏳ counts down on the dashboard)</span></th>${D.map(d => {
         const k = keyOf(d), ev = Suite.eventsOn(k);
-        return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn ev${ev.length ? '' : ' empty'}" data-a="events" data-date="${k}" aria-label="School events on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">${ev.length ? ev.map(x => `<span class="evchip">${esc(x.title)}</span>`).join('') : '+ Event'}</button></td>`; }).join('')}</tr>`;
+        return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn ev${ev.length ? '' : ' empty'}" data-a="events" data-date="${k}" aria-label="School events on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">${ev.length ? ev.map(x => `<span class="evchip${x.mine ? ' mine' : ''}" title="${x.mine ? 'Just for you' : ''}">${x.countdown ? '⏳ ' : ''}${esc(x.title)}</span>`).join('') : '+ Event'}</button></td>`; }).join('')}</tr>`;
     const body = evRow + R.map(r => `<tr><th class="rowh" scope="row"><span class="nm">${esc(r.name)}</span>
         ${r.kind === 'course' ? `<span class="secs">${r.classes.map(c => esc(c.name)).join(', ') || 'No sections yet'}</span>` : ''}
         <button class="btn quiet noprint" data-a="shift" data-row="${esc(r.key)}">Shift plans…</button></th>
@@ -147,6 +148,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
 
   /* ---------- the Today screen's student boards, prepared from here ---------- */
   const TODAY_BOARDS = [['welcome', 'Welcome', 'WELCOME!'], ['warmup', 'Warm-up', 'WARM-UP'], ['returned', 'Returned work', 'Returned Work']];
+  const BOARD_HEADS = { agenda: "TODAY'S AGENDA", due: 'THINGS THAT ARE DUE' };
   const todayStore = () => Object.assign({ rows: {}, days: {} }, Suite.get('today', {}) || {});
   const todayRec = (date, key) => ((todayStore().days || {})[date] || {})[key] || null;
   const linesToText = lines => (lines || []).map(l => '-'.repeat(Math.min(2, l.level || 0)) + (l.level ? ' ' : '') + (l.reveal ? '? ' : '') + (l.text || '').trim()).join('\n');
@@ -174,6 +176,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     if (extra) {
       const have = extra.haveOut.split(',').map(x => x.trim()).filter(Boolean), had = rec.haveOut || [];
       if (have.join('|') !== had.join('|')) { if (have.length) rec.haveOut = have; else delete rec.haveOut; changed = true; }
+      Object.entries(extra.sources || {}).forEach(([id, v]) => { const cur = rec.boards[id]; if ((cur && cur.source || 'plan') !== v) { rec.boards[id] = Object.assign({ heading: id === 'due' ? 'THINGS THAT ARE DUE' : "TODAY'S AGENDA", lines: [] }, cur || {}, { source: v }); changed = true; } });
       if ((extra.slideLink || '') !== (rec.slideLink || '')) { if (extra.slideLink) rec.slideLink = extra.slideLink; else delete rec.slideLink; changed = true; }
     }
     if (!changed) { if (!Object.keys(rec.boards).length && Object.keys(rec).length === 1) { delete day[key]; Suite.set('today', T); } return; }
@@ -185,6 +188,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     Suite.set('today', T);
   }
 
+  const backToToday = () => { const m = location.hash.match(/from=today/), d = location.hash.match(/date=([\d-]+)/), c = location.hash.match(/class=([\w-]+)/); if (m && d && c) setTimeout(() => { location.href = `today.html#date=${d[1]}&class=${c[1]}`; }, 350); };
   /* ---------- editing a day ---------- */
   function openEditor(rowKey, dateKey, classOnly){
     const R = rows(), r = R.find(x => x.key === rowKey); if (!r) return;
@@ -211,6 +215,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         <label class="lb" for="st-slide">Lesson slides <span class="muted small">(the slide Today opens after the boards)</span></label>
         <input class="field" id="st-slide" style="width:100%" value="${esc((todayRec(dateKey, target) || {}).slideLink || '')}" placeholder="Paste your published deck link (it carries forward to later days until you change it)">
         ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="${id === 'welcome' ? 2 : 3}" data-sb="${id}" placeholder="${id === 'welcome' ? 'Empty: the usual Welcome board' : ''}">${esc(linesToText(((todayRec(dateKey, target) || {}).boards || {})[id] && todayRec(dateKey, target).boards[id].lines))}</textarea>`).join('')}
+        ${[['agenda', "Today's agenda", 'the agenda steps above'], ['due', 'Things that are due', 'the homework above']].map(([id, label, from]) => { const bd = (((todayRec(dateKey, target) || {}).boards) || {})[id] || {}, custom = bd.source === 'custom';
+          return `<label class="lb" for="st-src-${id}">${label}</label><select id="st-src-${id}" data-src="${id}"><option value="plan"${custom ? '' : ' selected'}>Show ${from}</option><option value="custom"${custom ? ' selected' : ''}>Write a student version</option></select>
+            <textarea id="st-${id}" rows="3" data-sb="${id}" ${custom ? '' : 'hidden'} placeholder="What students should see">${esc(custom ? linesToText(bd.lines) : '')}</textarea>`; }).join('')}
         <label class="lb" for="st-have">Have out <span class="muted small">(comma between items; empty uses the usual list)</span></label>
         <input class="field" id="st-have" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).haveOut || []).join(', '))}" placeholder="Pen or pencil, Notebook">
         <div id="st-custom">${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id)).map(([id, bd]) => `<div class="stc"><input class="field" data-hh="${id}" value="${esc(String(bd.heading || '').replace(/<[^>]+>/g, ''))}" placeholder="Board heading" aria-label="Board heading"><textarea rows="3" data-sb="${id}">${esc(linesToText(bd.lines))}</textarea></div>`).join('')}</div>
@@ -224,6 +231,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); close(); } };
     document.addEventListener('keydown', onKey, true);
     const q = id => back.querySelector('#' + id);
+    back.addEventListener('change', ev => { const sel = ev.target.closest('[data-src]'); if (!sel) return; const ta = q('st-' + sel.dataset.src); ta.hidden = sel.value !== 'custom';
+      if (sel.value === 'custom' && !ta.value.trim()) ta.value = sel.dataset.src === 'agenda' ? q('ed-items').value : q('ed-hw').value; });
     let mats = JSON.parse(JSON.stringify(e.materials || []));
     const added = [], removed = [];
     const drawMats = () => {
@@ -247,7 +256,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       if (ev.target === back) return close();
       const b = ev.target.closest('[data-e]'); if (!b) return;
       const k = b.dataset.e;
-      if (k === 'cancel') { close(); dropUnused(added); }
+      if (k === 'cancel') { close(); dropUnused(added); backToToday(); }
       else if (k === 'stadd') { const id = 'c-' + Suite.uid(), d = document.createElement('div'); d.className = 'stc'; d.innerHTML = `<input class="field" data-hh="${id}" placeholder="Board heading, like REMINDERS" aria-label="Board heading"><textarea rows="3" data-sb="${id}" placeholder="One line per bullet"></textarea>`; back.querySelector('#st-custom').appendChild(d); d.querySelector('input').focus(); }
       else if (k === 'addlink') { mats.push({ id: Suite.uid(), kind: 'link', title: '', url: '' }); drawMats(); const f = back.querySelector('.mrow:last-child input'); if (f) f.focus(); }
       else if (k === 'mrm') { const m = mats.splice(+b.dataset.i, 1)[0]; if (m && m.kind === 'file') removed.push(m.file.id); drawMats(); }
@@ -265,9 +274,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         const links = mats.filter(m => m.kind === 'file' || (m.url || '').trim()).map(m => m.kind === 'link' ? Object.assign(m, { url: /^https?:\/\//i.test(m.url.trim()) ? m.url.trim() : 'https://' + m.url.trim() }) : m);
         const entry = { target: q('ed-target').value.trim(), items: q('ed-items').value.split('\n').map(x => x.trim()).filter(Boolean), homework: q('ed-hw').value.trim(), materials: links };
         Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework || links.length ? entry : null);
-        saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].map(t => { const hh = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return [t.dataset.sb, hh ? (hh.value.trim() ? esc(hh.value.trim()) : 'MY BOARD') : (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || 'MY BOARD', t.value, !!hh]; }),
-          { haveOut: back.querySelector('#st-have').value, slideLink: back.querySelector('#st-slide').value.trim() });
-        close(); dropUnused(removed); render(); Suite.toast('Plan saved');
+        saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].filter(t => !t.hidden).map(t => { const hh = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return [t.dataset.sb, hh ? (hh.value.trim() ? esc(hh.value.trim()) : 'MY BOARD') : (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || BOARD_HEADS[t.dataset.sb] || 'MY BOARD', t.value, !!hh]; }),
+          { haveOut: back.querySelector('#st-have').value, slideLink: back.querySelector('#st-slide').value.trim(), sources: Object.fromEntries([...back.querySelectorAll('[data-src]')].map(x => [x.dataset.src, x.value])) });
+        close(); dropUnused(removed); render(); Suite.toast('Plan saved'); backToToday();
       }
     });
   }
@@ -325,6 +334,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         <label class="lb" for="ev-title">What's happening</label><input class="field" id="ev-title" value="${esc(ev ? ev.title : '')}" placeholder="Spirit day, state testing, field trip...">
         <div class="evgrid"><label>Starts<input type="date" class="field" id="ev-start" value="${esc(ev ? ev.start : dateKey)}"></label><label>Ends <span class="muted small">(for events longer than a day)</span><input type="date" class="field" id="ev-end" value="${esc(ev ? (ev.end || ev.start) : dateKey)}"></label></div>
         <label class="lb" for="ev-note">Note <span class="muted small">(optional)</span></label><input class="field" id="ev-note" value="${esc(ev ? ev.note || '' : '')}" placeholder="Wear green and gold">
+        <label class="rv"><input type="checkbox" id="ev-cd"${ev && ev.countdown ? ' checked' : ''}> Count down to it on the dashboard</label>
+        <label class="rv"><input type="checkbox" id="ev-mine"${ev && ev.mine ? ' checked' : ''}> Just for me (don't show it on the Today screen or the sub page)</label>
         <div class="suite-dialog-actions"><button class="btn" data-v="close">Done</button><button class="btn primary" data-v="save" data-id="${ev ? esc(ev.id) : ''}">${ev ? 'Save changes' : 'Add event'}</button></div></div>`;
       back.querySelector('#ev-title').focus();
     };
@@ -343,7 +354,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         const title = back.querySelector('#ev-title').value.trim(); if (!title) { Suite.toast('Add a name for the event'); return; }
         let start = back.querySelector('#ev-start').value || dateKey, end = back.querySelector('#ev-end').value || start;
         if (end < start) [start, end] = [end, start];
-        const list = Suite.events(), id = b.dataset.id, item = { id: id || Suite.uid(), title, start, end, note: back.querySelector('#ev-note').value.trim() };
+        const list = Suite.events(), id = b.dataset.id, item = { id: id || Suite.uid(), title, start, end, note: back.querySelector('#ev-note').value.trim(), countdown: back.querySelector('#ev-cd').checked, mine: back.querySelector('#ev-mine').checked };
         const i = list.findIndex(x => x.id === id); if (i > -1) list[i] = item; else list.push(item);
         Suite.saveEvents(list); draw();
       }

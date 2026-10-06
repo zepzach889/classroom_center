@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-10a">
-<script src="shared/core.js?v=2026-10-10a"></script>
-<script>window.PAGE_VERSION = '2026-10-10a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-11a">
+<script src="shared/core.js?v=2026-10-11a"></script>
+<script>window.PAGE_VERSION = '2026-10-11a';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
 @media (min-width:861px){
@@ -199,8 +199,10 @@
     $('#evtoday').innerHTML = evToday.length ? `<span class="k">Today</span>${evToday.map(e => `<span class="evc">${esc(e.title)}${e.note ? `<span>${esc(e.note)}</span>` : ''}</span>`).join('')}` : '';
     const soon = [];
     for (let i = 1; i <= 7; i++) { const d = new Date(now); d.setDate(d.getDate() + i); const k = Suite.dateKey(d);
-      Suite.eventsOn(k).forEach(e => { if (!soon.some(x => x.e.id === e.id) && !evToday.some(x => x.id === e.id)) soon.push({ e, d }); }); }
-    const all = Suite.countdowns().filter(cd => Suite.countdownLive(cd, now)).sort((a, b) => Suite.countdownEnd(a) - Suite.countdownEnd(b));
+      Suite.eventsOn(k).forEach(e => { if (!e.countdown && !soon.some(x => x.e.id === e.id) && !evToday.some(x => x.id === e.id)) soon.push({ e, d }); }); }
+    // your countdowns, plus Planner events marked "count down to it"
+    const fromEvents = Suite.events().filter(e => e.countdown).map(e => ({ id: 'ev-' + e.id, date: e.start, label: e.title, fromPlanner: true }));
+    const all = Suite.countdowns().concat(fromEvents).filter(cd => Suite.countdownLive(cd, now)).sort((a, b) => Suite.countdownEnd(a) - Suite.countdownEnd(b));
     const list = all.slice(0, soon.length ? 2 : 3), more = all.length - list.length;
     const dayName = k => { const [y, m, dd] = k.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: 'short' }); };
     const evHtml = soon.slice(0, 3).map(({ e, d }) => `<li class="evli"><span class="what">${esc(e.title)}${e.note ? `<span class="at">${esc(e.note)}</span>` : ''}</span><span class="when"><b class="day">${d.toLocaleDateString(undefined, { weekday: 'short' })}</b>${e.end && e.end !== e.start ? `<span>to ${esc(dayName(e.end))}</span>` : ''}</span></li>`).join('');
