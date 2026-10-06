@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-09d">
-<script src="shared/core.js?v=2026-10-09d"></script>
-<script>window.PAGE_VERSION = '2026-10-09d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-10a">
+<script src="shared/core.js?v=2026-10-10a"></script>
+<script>window.PAGE_VERSION = '2026-10-10a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -209,7 +209,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       <details class="students"${boardHasText(todayRec(dateKey, target)) || ((todayRec(dateKey, target) || {}).slideLink) ? ' open' : ''}><summary>Students see (Today screen)</summary>
         <p class="hintline">What goes on this day's Today screen. Leave a box empty to use the usual one. One line per bullet: start a line with <b>-</b> for a sub-point (<b>--</b> for a third level) and with <b>?</b> to keep it hidden until you click, like a warm-up answer. Due and Agenda come from the plan above.</p>
         <label class="lb" for="st-slide">Lesson slides <span class="muted small">(the slide Today opens after the boards)</span></label>
-        <input class="field" id="st-slide" style="width:100%" value="${esc((todayRec(dateKey, target) || {}).slideLink || '')}" placeholder="Paste the Google Slides link for this day's first slide (or add it under Links and files above)">
+        <input class="field" id="st-slide" style="width:100%" value="${esc((todayRec(dateKey, target) || {}).slideLink || '')}" placeholder="Paste your published deck link (it carries forward to later days until you change it)">
         ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="${id === 'welcome' ? 2 : 3}" data-sb="${id}" placeholder="${id === 'welcome' ? 'Empty: the usual Welcome board' : ''}">${esc(linesToText(((todayRec(dateKey, target) || {}).boards || {})[id] && todayRec(dateKey, target).boards[id].lines))}</textarea>`).join('')}
         <label class="lb" for="st-have">Have out <span class="muted small">(comma between items; empty uses the usual list)</span></label>
         <input class="field" id="st-have" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).haveOut || []).join(', '))}" placeholder="Pen or pencil, Notebook">

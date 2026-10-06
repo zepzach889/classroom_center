@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-09d">
-<script src="shared/core.js?v=2026-10-09d"></script>
-<script>window.PAGE_VERSION = '2026-10-09d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-10a">
+<script src="shared/core.js?v=2026-10-10a"></script>
+<script>window.PAGE_VERSION = '2026-10-10a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -115,6 +115,11 @@ body.full #suite-nav,body.full .rail{display:none}
 .dnav{display:flex;align-items:center;gap:4px}
 .dnav input{height:34px;font-size:14px;padding:0 8px;width:150px}
 .dnav .btn.quiet{font-size:20px;line-height:1;padding:2px 10px;min-height:34px}
+.idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.6cqw;text-align:center;color:#24323d}
+.idle .i-date{font:700 2.6cqw Georgia,serif;color:var(--ink-date)}
+.idle .i-now{font:400 7cqw/1.05 "Architects Daughter",cursive;color:var(--ink-green);-webkit-text-stroke:.03em currentColor}
+.idle .i-left{font:600 2.2cqw var(--sans)}.idle .i-left b{font-size:4cqw;font-variant-numeric:tabular-nums;margin:0 .4cqw}.idle .i-left span{opacity:.75}
+.idle .i-next{font:600 2cqw var(--sans);opacity:.85}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 body.editing-screen .stage-wrap{background:#1b2633;padding-top:64px}
@@ -392,8 +397,26 @@ details.sec>summary .muted{font-weight:400}
     const c = p ? Suite.classForPeriod(p, list) : null;
     const same = c && c.name.trim().toLowerCase() === (p ? p.name : '').trim().toLowerCase();
     if (c) return { cid: c.id, text: cur ? `${same ? '' : p.name + ' '}until ${Suite.fmt12(p.end)}` : `up next${same ? '' : ': ' + p.name} at ${Suite.fmt12(p.start)}`, period: p };
-    return { cid: (list[0] || {}).id, text: `no class right now, so showing ${(list[0] || {}).name || 'your first class'}. Pick a class to plan for a different one`, period: null, idle: true };
+    return { cid: (list[0] || {}).id, text: 'no class right now, so the between-classes screen is up. Pick a class above to plan for it', period: null, idle: true };
   }
+  function idleInfo(){
+    const now = new Date(), day = Suite.scheduleFor(now), P = day.periods, st = Suite.periodStatus(P, now), list = classes();
+    const curP = st.cur >= 0 ? P[st.cur] : null;
+    const label = !P.length ? (day.label || 'No school today') : curP ? (Suite.isPassing(curP) ? 'Passing period' : curP.name) : st.next >= 0 ? 'Before school' : 'After school';
+    const endHM = curP ? curP.end : st.next >= 0 ? P[st.next].start : null;
+    let nx = null; const from = curP ? st.cur + 1 : st.next; for (let i = from; from >= 0 && i < P.length; i++) if (!Suite.isPassing(P[i]) && Suite.classForPeriod(P[i], list)) { nx = P[i]; break; }
+    let left = null; if (endHM) { const [h, m] = endHM.split(':').map(Number), e = new Date(now); e.setHours(h, m, 0, 0); left = e - now; }
+    return { label, endHM, left, nx };
+  }
+  const isIdle = () => MODE === 'auto' && !editMode && viewDate === Suite.dateKey(new Date()) && autoPick().idle;
+  function idleHtml(){
+    const I = idleInfo();
+    return `<div class="idle"><div class="i-date">${esc(longDate(viewDate))}</div><div class="i-now">${esc(I.label)}</div>
+      ${I.left != null && I.left > 0 ? `<div class="i-left"><span>ends in</span> <b id="idleLeft">${fmtLeft(I.left)}</b> <span>at ${Suite.fmt12(I.endHM)}</span></div>` : ''}
+      ${I.nx ? `<div class="i-next">Next: ${esc(I.nx.name)} at ${Suite.fmt12(I.nx.start)}</div>` : ''}</div>`;
+  }
+  const fmtLeft = ms => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s % 60).padStart(2, '0'); };
+  function updateIdle(){ const el = document.getElementById('idleLeft'); if (!el) return; const I = idleInfo(); if (I.left != null) el.textContent = fmtLeft(I.left); }
   // Which class this window shows belongs to this window only, so a planning window can't change a live display.
   let MODE = (() => { try { return sessionStorage.getItem('suite:today-mode') || 'auto'; } catch (e) { return 'auto'; } })();
   const setMode = m => { MODE = m; try { sessionStorage.setItem('suite:today-mode', m); } catch (e) {} };
@@ -511,6 +534,7 @@ details.sec>summary .muted{font-weight:400}
     document.body.classList.toggle('editing-screen', editMode);
     const cid = activeId();
     if (!cid) { $('#stage').innerHTML = '<div class="lesson"><div class="lesson-empty"><p class="t">Add your classes first</p><p>Today uses your classes and bell schedule.</p></div></div>'; renderRail(null); return; }
+    if (isIdle() && !lesson) { const st = $('#stage'); st.innerHTML = idleHtml(); st.className = 'stage bg-paper idle-stage'; st.style.backgroundImage = ''; st.style.backgroundColor = ''; st.dataset.look = ''; st.dataset.type = ''; renderRail(cid, []); return; }
     const S = screens(viewDate, cid), rec = dayFor(viewDate, cid), u = usual(cid), room = roomFor(viewDate, cid);
     if (screen >= S.length) screen = Math.max(0, S.length - 1);
     const type = S[screen] || 'welcome', b = boardOf(rec, type);
@@ -586,7 +610,13 @@ details.sec>summary .muted{font-weight:400}
   const planSlides = cid => ((Suite.agendaFor(viewDate, cid) || {}).materials || []).filter(m => m.kind === 'link' && /docs\.google\.com\/presentation/.test(m.url || ''));
   const slideLinkFor = (cid, rec) => (rec.slideLink && !publishedId(rec.slideLink) ? rec.slideLink : '') || ((planSlides(cid).find(m => !publishedId(m.url)) || {}).url) || '';
   // the deck to show: a published link saved for this day wins, then one in the plan's links, then the course's usual deck
-  const deckFor = (cid, rec) => (rec && publishedId(rec.slideLink) ? rec.slideLink : '') || ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || usual(cid).deckUrl || '';
+  function carriedDeck(cid){
+    const keys = [cid, rowKeyOf(cid)], dates = Object.keys(T.days || {}).filter(d => d <= viewDate).sort().reverse();
+    for (const d of dates) for (const k of keys) { const r = (T.days[d] || {})[k]; if (r && publishedId(r.slideLink)) return { url: r.slideLink, from: d }; }
+    return null;
+  }
+  // the deck to show: a published link from this day's plan, else the latest deck saved for this class (it carries forward), else the usual deck
+  const deckFor = (cid, rec) => ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || (carriedDeck(cid) || {}).url || usual(cid).deckUrl || '';
   function lessonHtml(cid, rec){
     const u = usual(cid), deck = deckFor(cid, rec), pid = publishedId(deck), link = slideLinkFor(cid, rec), did = docId(link) || docId(u.deckUrl), slide = slideParam(link) || slideParam(deck);
     const src = pid ? `https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}`
@@ -628,7 +658,8 @@ details.sec>summary .muted{font-weight:400}
   setInterval(() => {
     drawTimer();
     const pick = autoPick();
-    if (MODE === 'auto' && pick.cid !== lastCid) { lastCid = pick.cid; if (!timer.running) resetTimer(pick.cid); screen = 0; reveal = 0; lesson = false; render(); }
+    const pickKey = pick.cid + (pick.idle ? ':idle' : '');
+    if (MODE === 'auto' && pickKey !== lastCid) { lastCid = pickKey; if (!timer.running) resetTimer(pick.cid); screen = 0; reveal = 0; lesson = false; render(); }
     const p = pick.period, now = new Date(), nowHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     if (p && p.start === nowHM && viewDate === Suite.dateKey(now) && pick.cid && (MODE === 'auto' || MODE === pick.cid)) {
       const key = Suite.dateKey(now) + p.start, u = usual(pick.cid);
@@ -663,7 +694,7 @@ details.sec>summary .muted{font-weight:400}
         ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${MODE === c.id}">${esc(c.name)}</button>`).join('')}</div>
       <div class="daybar" role="group" aria-label="Which day"><button class="btn quiet small" data-a="dayprev" title="Previous school day" aria-label="Previous school day">‹</button><label class="dpick" title="Pick a date"><span>${esc(fmtDate(viewDate, 'medium'))}</span><input type="date" data-a="daypick" value="${viewDate}" aria-label="Pick a date"></label><button class="btn quiet small" data-a="daynext" title="Next school day" aria-label="Next school day">›</button>${viewDate !== today ? '<button class="btn small" data-a="daytoday">Back to today</button>' : ''}</div>
       <div class="dnav" role="group" aria-label="Which day"><button class="btn quiet small" data-a="dprev" aria-label="Previous school day" title="Previous school day">‹</button><input type="date" class="field" data-a2="dpick" value="${viewDate}" aria-label="Pick a date"><button class="btn quiet small" data-a="dnext" aria-label="Next school day" title="Next school day">›</button>${viewDate !== today ? '<button class="btn small" data-a="dtoday">Today</button>' : ''}</div>
-      <div class="status">${cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
+      <div class="status">${isIdle() ? (() => { const I = idleInfo(); return `<b>${esc(I.label)}</b>${I.endHM ? ' until ' + Suite.fmt12(I.endHM) : ''} · between classes. Pick a class to plan for it`; })() : cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       ${editMode && cid && isCustom(S[screen] || '') ? (() => { const bd = boardOf(dayFor(viewDate, cid), S[screen]), h = bd.hide || {};
           return `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">On this board:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>`; })() : ''}
@@ -719,6 +750,7 @@ details.sec>summary .muted{font-weight:400}
           <label class="lb">Published deck link <span class="muted small">(set once for ${esc(rowName(cid))})</span><input class="field wide" data-d="deck" value="${esc(u.deckUrl || '')}" placeholder="From File, Share, Publish to the web"></label>
           <label class="lb">This day's first lesson slide <span class="muted small">(click the slide in Google Slides, then copy the address bar)</span><input class="field wide" data-d="slide" value="${esc(rec.slideLink || '')}" placeholder="${planSlides(cid).length ? 'Using the Slides link from your plan' : 'https://docs.google.com/presentation/d/…#slide=id.…'}"></label>
           ${!rec.slideLink && planSlides(cid).length ? '<p class="note">Using the Google Slides link from this day\'s plan. Paste a link here to use a different slide.</p>' : ''}
+          ${(() => { const cd = carriedDeck(cid); return cd && cd.from !== viewDate ? `<p class="note">Showing the deck saved on ${esc(longDate(cd.from))}. It carries forward until you paste a new one.</p>` : ''; })()}
           <p class="note${u.deckUrl && !publishedId(u.deckUrl) ? ' warn' : ''}">${u.deckUrl && !publishedId(u.deckUrl) ? 'That looks like an editing link. Use the link from Publish to the web so it can show here; "Open in Slides" still works.' : 'If your district limits published decks, use Open in Slides during the lesson instead.'}</p></details>
         <details class="sec"><summary>Background and bitmoji <span class="muted small">${esc(lookById(room.look).name)} · ${room.bitmoji === 'none' ? 'no bitmoji' : esc(bmName(room.bitmoji))}</span></summary>
           <span class="lb">Usual for ${esc(rowName(cid))}</span>
@@ -1042,7 +1074,7 @@ details.sec>summary .muted{font-weight:400}
     el.classList.toggle('hasmsg', !!msg);
     el.hidden = false;
   }
-  setInterval(updateBell, 500);
+  setInterval(() => { updateBell(); updateIdle(); }, 500);
 
   /* ---------- suite tools: open one on top, or place one on a board ---------- */
   const TOOL_PAGES = { spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
