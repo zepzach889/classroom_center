@@ -37,7 +37,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-11a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-11c';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -202,6 +202,58 @@
     Object.keys(T.bmAdj).forEach(k => { if (bmMap[k]) { T.bmAdj[bmMap[k]] = T.bmAdj[bmMap[k]] || T.bmAdj[k]; delete T.bmAdj[k]; } });
     S.set('today', T);
     return { rooms: (pack.rooms || []).length, bitmojis: (pack.bitmojis || []).length };
+  };
+  // Who sits where at a table: seats in order, plus anyone without a set seat.
+  S.seatMap = (c, t) => {
+    const seats = Array(t.seats).fill(null), loose = [];
+    c.students.filter(s => s.tableId === t.id).sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+      if (Number.isInteger(s.seat) && s.seat >= 0 && s.seat < t.seats && !seats[s.seat]) seats[s.seat] = s; else loose.push(s);
+    });
+    return { seats, loose };
+  };
+  S.roomSize = (c, lay) => ({ cols: Math.max(lay.cols, c.roomCols || 0, 1), rows: Math.max(lay.rows, c.roomRows || 0, 1) });
+  // Draw a class's seating chart as a picture: tables where they sit in the room, each student in their seat.
+  S.drawSeatingChart = (c, opts = {}) => {
+    const front = opts.front || ((S.get('seating', {}) || {}).front) || 'top', title = opts.title === undefined ? c.name + ' seating chart' : opts.title;
+    const T0 = S.get('tracker', {}) || {}, caps = (T0.captains || {})[c.id] || {};
+    const W = opts.width || 3300, H = opts.height || 2550, M = opts.margin || 150, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    const font = (px, bold) => `${bold ? '700 ' : ''}${px}px Georgia, "Times New Roman", serif`;
+    const fitText = (txt, maxW, maxH, start, bold) => { let px = start; g.font = font(px, bold); while (px > 14 && g.measureText(txt).width > maxW) { px -= 2; g.font = font(px, bold); } if (px > maxH * .8) { px = Math.floor(maxH * .8); g.font = font(px, bold); } return px; };
+    const rrect = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    let top = M;
+    if (title) { g.fillStyle = '#111'; g.font = font(78, true); g.textBaseline = 'alphabetic'; g.fillText(title, M, M + 60); top = M + 110; }
+    const lay = S.roomLayout(c.tables), RS = S.roomSize(c, lay), cols = RS.cols, rows = RS.rows;
+    const frontH = 70, gap = 50;
+    let gridTop = top, gridBottom = H - M;
+    const drawFront = y => { g.setLineDash([18, 14]); g.strokeStyle = '#888'; g.lineWidth = 4; rrect(M, y, W - 2 * M, frontH, 16); g.stroke(); g.setLineDash([]); g.fillStyle = '#555'; g.font = font(40, true); g.textAlign = 'center'; g.fillText('FRONT OF THE ROOM', W / 2, y + 50); g.textAlign = 'left'; };
+    if (front === 'bottom') { drawFront(H - M - frontH); gridBottom = H - M - frontH - gap; } else { drawFront(top); gridTop = top + frontH + gap; }
+    const cellW = (W - 2 * M - gap * (cols - 1)) / cols, cellH = (gridBottom - gridTop - gap * (rows - 1)) / rows;
+    c.tables.forEach(t => {
+      const p = lay.at[t.id]; if (!p) return; const r = front === 'bottom' ? rows - p.row + 1 : p.row;
+      const x = M + (p.col - 1) * (cellW + gap), y = gridTop + (r - 1) * (cellH + gap);
+      rrect(x, y, cellW, cellH, 26); g.lineWidth = 6; g.strokeStyle = t.open ? '#111' : '#999'; g.setLineDash(t.open ? [] : [20, 14]); g.stroke(); g.setLineDash([]);
+      const headH = Math.min(110, cellH * .16);
+      g.fillStyle = '#111'; const hp = fitText(t.name, cellW * .62, headH, 56, true); g.fillText(t.name, x + 30, y + headH * .5 + hp * .35);
+      const m = S.seatMap(c, t), count = m.seats.filter(Boolean).length + m.loose.length;
+      g.font = font(34); g.fillStyle = '#555'; g.textAlign = 'right'; g.fillText(t.open ? `${count} of ${t.seats}` : 'not in use', x + cellW - 30, y + headH * .5 + 12); g.textAlign = 'left';
+      g.beginPath(); g.moveTo(x, y + headH); g.lineTo(x + cellW, y + headH); g.lineWidth = 4; g.strokeStyle = '#111'; g.stroke();
+      const L = S.seatLayout(t), pad = 26, ax = x + pad, ay = y + headH + pad, aw = cellW - 2 * pad, ah = cellH - headH - 2 * pad;
+      const surf = 30, colsN = L.cols, rowsN = L.rows;
+      const sw = (aw - (L.surface === 'v' ? surf + 20 : 0) - (colsN - 1) * 16) / colsN, sh = (ah - (L.surface === 'h' ? surf + 20 : 0) - (rowsN - 1) * 14) / rowsN;
+      if (L.surface === 'v') { g.fillStyle = '#e8e8e8'; rrect(ax + sw + 10 + 8, ay, surf, ah, 12); g.fill(); }
+      if (L.surface === 'h') { g.fillStyle = '#e8e8e8'; rrect(ax, ay + sh + 10 + 7, aw, surf, 12); g.fill(); }
+      m.seats.forEach((st, i) => {
+        const q = L.pos(i); let sx = ax + q.c * (sw + 16), sy = ay + q.r * (sh + 14);
+        if (L.surface === 'v' && q.c >= 1) sx += surf + 20;
+        if (L.surface === 'h' && q.r >= 1) sy += surf + 20;
+        rrect(sx, sy, sw, sh, 14); g.lineWidth = 3; g.strokeStyle = st ? '#777' : '#bbb'; g.setLineDash(st ? [] : [10, 8]); g.stroke(); g.setLineDash([]);
+        const label = st ? st.name : 'Seat ' + (i + 1), bold = st && caps[t.id] === st.name;
+        g.fillStyle = st ? '#111' : '#999'; const px = fitText(label, sw - 20, sh, st ? 44 : 30, bold);
+        g.textAlign = 'center'; g.fillText(label, sx + sw / 2, sy + sh / 2 + px * .35); g.textAlign = 'left';
+      });
+    });
+    return cv;
   };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
@@ -876,7 +928,22 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     sc.onload = () => res(window.SuiteGuide || null); sc.onerror = () => res(null);
     document.head.appendChild(sc);
   });
+  // the small period clock in the menu bar (every page but the dashboard, which has the big one)
+  function periodClock(){
+    const el = document.getElementById('st-pclock'); if (!el) return;
+    const now = new Date(), P = S.scheduleFor(now).periods, st = S.periodStatus(P, now), p = st.cur >= 0 ? P[st.cur] : null;
+    if (!p) { el.hidden = true; return; }
+    const [h, m] = p.end.split(':').map(Number), end = new Date(now); end.setHours(h, m, 0, 0);
+    const left = Math.max(0, Math.ceil((end - now) / 1000)), hh = Math.floor(left / 3600), mm = Math.floor(left % 3600 / 60), ss = left % 60;
+    const time = (hh ? hh + ':' + String(mm).padStart(2, '0') : mm) + ':' + String(ss).padStart(2, '0');
+    const name = S.isPassing(p) ? 'Passing' : p.name.replace(/^Period\s*/i, 'P');
+    el.innerHTML = `<b>${S.esc(name)}</b> ${time} left`;
+    el.classList.toggle('soon', left <= 300);
+    el.hidden = false;
+  }
+  setInterval(periodClock, 1000);
   S.mountNav = current => {
+    setTimeout(periodClock, 0);
     const el = document.getElementById('suite-nav');
     if (!el) return;
     const draw = () => {
@@ -895,6 +962,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
         <nav aria-label="Main"><ul>${NAV.filter(n => n.menu ? toolItems.length : on(n)).map(n => n.menu
           ? `<li><button class="ddbtn${TOOL_PAGES.includes(current) ? ' here' : ''}" data-dd="${n.id}" aria-expanded="false" aria-haspopup="true">${S.esc(n.label)}<i class="caret" aria-hidden="true"></i></button></li>`
           : `<li>${link(n)}</li>`).join('')}</ul></nav>
+        ${current === 'dashboard' ? '' : '<a class="pclock" id="st-pclock" href="index.html" title="Time left in this period (opens the dashboard)" hidden></a>'}
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
         <button class="gear" data-dd="pop" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false" aria-haspopup="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
         <button class="gear${current === 'settings' || current === 'sub' || current === 'help' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>

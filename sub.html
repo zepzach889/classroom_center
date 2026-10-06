@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-11a">
-<script src="shared/core.js?v=2026-10-11a"></script>
-<script>window.PAGE_VERSION = '2026-10-11a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-11c">
+<script src="shared/core.js?v=2026-10-11c"></script>
+<script>window.PAGE_VERSION = '2026-10-11c';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -76,6 +76,10 @@
   .sheet{border:0;border-radius:0;padding:0;margin:0;break-after:page}
   .sheet:last-child{break-after:auto}
 }
+.seatimg{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:8px;margin-top:6px}
+#ptsbox{display:flex;gap:8px;align-items:center;margin:12px 0 0;font-weight:600}
+#ptsbox[hidden]{display:none}
+@media print{.seatimg{border:0;border-radius:0;break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -89,6 +93,7 @@
         <div><label class="lb" for="sdate">Date</label><input type="date" class="field" id="sdate"></div>
         <div><span class="lb">Classes to include</span><div class="classpick" id="classpick"></div></div>
       </div>
+      <label class="rv" id="ptsbox"><input type="checkbox" id="spoints"> Include table points in the sub plans</label>
       <div class="bar" style="margin-top:14px"><button class="btn primary" id="print">Print the packet</button><span class="muted small">Attached PDFs print separately; use their Open buttons below.</span></div>
     </div>
     <details class="cbox" open>
@@ -121,9 +126,10 @@
 (function(){
   const $ = q => document.querySelector(q);
   const esc = Suite.esc;
-  const usesPoints = () => Suite.feature('points') && Suite.classes().some(c => c.tables.some(t => t.open));
+  const pointsSetUp = () => Suite.feature('points') && Suite.classes().some(c => c.tables.some(t => t.open));
+  const usesPoints = () => pointsSetUp() && S0.points !== false;
   const RULES = () => `Students sit in ${Suite.word('team', { plural: true })}, and points go to the whole ${Suite.word('team')}. Please jot down any points you'd like to give, and I'll add them when I'm back.`;
-  const S0 = Object.assign({ notes: '', rules: '', emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {} }, Suite.get('sub', {}));
+  const S0 = Object.assign({ notes: '', rules: '', emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {}, points: true }, Suite.get('sub', {}));
   ['helpers', 'classNotes', 'materials'].forEach(k => { S0[k] = S0[k] || {}; });
   let date = Suite.dateKey(new Date());
   const save = () => Suite.set('sub', S0);
@@ -168,11 +174,7 @@
       const tables = c.tables.slice().sort((x, y) => lay.at[x.id].row - lay.at[y.id].row || lay.at[x.id].col - lay.at[y.id].col);
       const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId));
       const bySeat = (x, y) => (Number.isInteger(x.seat) ? x.seat : 99) - (Number.isInteger(y.seat) ? y.seat : 99) || x.name.localeCompare(y.name);
-      const room = `<div class="room" style="grid-template-columns:repeat(${lay.cols},minmax(0,1fr))">${tables.map(t => {
-        const m = c.students.filter(s => s.tableId === t.id).sort(bySeat);
-        return `<div class="tbl${t.open ? '' : ' off'}" style="grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col}">
-          <div class="tn">${esc(t.name)}<span>${t.open ? m.length + ' students' : 'not in use'}</span></div>
-          <ul>${m.map(s => `<li${s.name === cp[t.id] ? ' class="cap"' : ''}>${esc(s.name)}${s.name === cp[t.id] ? ' (captain)' : ''}</li>`).join('') || '<li class="noroster">Empty</li>'}</ul></div>`; }).join('')}</div>`;
+      const room = c.tables.length ? `<img class="seatimg" alt="Seating chart for ${esc(c.name)}" src="${Suite.drawSeatingChart(c, { title: '', width: 3000, height: 2050, margin: 40 }).toDataURL('image/png')}">` : '';
       const helpers = (S0.helpers[c.id] || []).map(id => c.students.find(s => s.id === id)).filter(Boolean);
       return `<section class="sheet">
         <h2>${esc(c.name)}</h2><div class="sub">${p ? Suite.fmt12(p.start) + ' to ' + Suite.fmt12(p.end) + ' · ' : ''}${esc(when)}</div>
@@ -195,11 +197,13 @@
     document.querySelectorAll('img[data-fid]').forEach(async img => { const u = await fileUrl(img.dataset.fid); if (u) img.src = u; });
   }
 
+  document.addEventListener('change', e => { if (e.target.id === 'spoints') { S0.points = e.target.checked; Suite.set('sub', S0); renderControls(); render(); } });
   function renderControls(){
     const list = Suite.classes();
     $('#sdate').value = date;
     $('#classpick').innerHTML = list.map(c => `<label><input type="checkbox" value="${esc(c.id)}"${S0.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="muted small">No classes yet.</span>';
     document.querySelectorAll('textarea[data-t]').forEach(t => { t.value = S0[t.dataset.t] || ''; });
+    $('#ptsbox').hidden = !pointsSetUp(); $('#spoints').checked = S0.points !== false; $('#ptsbox').lastChild.textContent = ' Include ' + Suite.word('team') + ' points in the sub plans';
     $('#rulesbox').hidden = !usesPoints(); $('#srules').placeholder = RULES();
     $('#classnotes').innerHTML = list.map(c => `<div class="classnote"><h3>${esc(c.name)}</h3>
         <span class="lb">Students the sub can rely on</span>

@@ -142,3 +142,11 @@ button.gear{background:none;cursor:pointer;font:inherit}
 @media (max-width:1400px){.nav-inner li a,.nav-inner li .soon{padding:5px 8px;letter-spacing:.04em}.nav-inner{gap:10px}.wordmark{font-size:21px;gap:8px}}
 @media (max-width:1250px){.speed{display:none}.nav-inner li a,.nav-inner li .soon{font-size:12px;padding:5px 7px;letter-spacing:.03em}}
 @media (max-width:1080px){.wordmark{font-size:0;gap:0}.wordmark .speed{display:inline-flex}.nav-inner li a,.nav-inner li .soon{font-size:11.5px;padding:4px 6px}}
+
+/* period clock in the menu bar */
+.pclock{flex:none;display:inline-flex;align-items:baseline;gap:6px;white-space:nowrap;text-decoration:none;color:var(--bar-ink);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;border:1.5px solid rgba(255,255,255,.25);border-radius:999px;padding:4px 11px}
+.pclock b{color:#fff;font-weight:700;max-width:9em;overflow:hidden;text-overflow:ellipsis}
+.pclock:hover{border-color:var(--bar-ink);color:#fff}
+.pclock.soon{border-color:var(--land);color:#fff}
+.pclock[hidden]{display:none}
+@media (max-width:1250px){.pclock{font-size:12px;padding:3px 8px}}

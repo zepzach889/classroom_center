@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-11a">
-<script src="shared/core.js?v=2026-10-11a"></script>
-<script>window.PAGE_VERSION = '2026-10-11a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-11c">
+<script src="shared/core.js?v=2026-10-11c"></script>
+<script>window.PAGE_VERSION = '2026-10-11c';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -138,13 +138,7 @@ body.proj .tbl h2{font-size:28px}
   let lastAuto = null;
   setInterval(() => { if (!AUTO.on) return; const id = Suite.classNow(); if (id && id !== lastAuto) { lastAuto = id; render(); } }, 15000);
   // Who is in which seat. Students with no seat (or a clashing one) wait beside their table.
-  function seatMap(c, t){
-    const seats = Array(t.seats).fill(null), loose = [];
-    c.students.filter(s => s.tableId === t.id).sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
-      if (Number.isInteger(s.seat) && s.seat >= 0 && s.seat < t.seats && !seats[s.seat]) seats[s.seat] = s; else loose.push(s);
-    });
-    return { seats, loose };
-  }
+  const seatMap = (c, t) => Suite.seatMap(c, t);
 
   function render(){
     document.body.classList.toggle('proj', proj);
@@ -201,7 +195,7 @@ body.proj .tbl h2{font-size:28px}
   const needSeats = c => c.students.length - c.tables.reduce((n, t) => n + seatMap(c, t).seats.filter(Boolean).length, 0);
 
   /* ---------- Edit room: tables, seats, and where they sit ---------- */
-  const roomSize = (c, lay) => ({ cols: Math.max(lay.cols, c.roomCols || 0, 1), rows: Math.max(lay.rows, c.roomRows || 0, 1) });
+  const roomSize = (c, lay) => Suite.roomSize(c, lay);
   const TEAM = () => Suite.word('team'), TEAMS = () => Suite.word('team', { plural: true });
   function arrangeLabel(t){ const o = Suite.seatOptions(t.seats).find(x => x.cols === Suite.seatLayout(t).cols); return o ? o.label : ''; }
   function renderRoom(c, list){
@@ -453,48 +447,7 @@ body.proj .tbl h2{font-size:28px}
   }
   window.addEventListener('beforeprint', () => { if (!document.body.classList.contains('printing-img')) { const cv = chartCanvas(); if (cv) { let host = document.getElementById('seatprint'); if (!host) { host = document.createElement('div'); host.id = 'seatprint'; document.body.appendChild(host); } host.innerHTML = `<img alt="Seating chart" src="${cv.toDataURL('image/png')}">`; document.body.classList.add('printing-img'); const done = () => { document.body.classList.remove('printing-img'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); } } });
   // The Print button builds a page-sized copy of just the chart, measures it at that size, and scales it to fit one sheet.
-  function chartCanvas(){
-    const list = classes(), c = curClass(list); if (!c) return null;
-    const T0 = Suite.get('tracker', {}) || {}, caps = (T0.captains || {})[c.id] || {};
-    const W = 3300, H = 2550, M = 150, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
-    const font = (px, bold) => `${bold ? '700 ' : ''}${px}px Georgia, "Times New Roman", serif`;
-    const fitText = (txt, maxW, maxH, start, bold) => { let px = start; g.font = font(px, bold); while (px > 14 && g.measureText(txt).width > maxW) { px -= 2; g.font = font(px, bold); } if (px > maxH * .8) { px = Math.floor(maxH * .8); g.font = font(px, bold); } return px; };
-    const rrect = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
-    g.fillStyle = '#111'; g.font = font(78, true); g.textBaseline = 'alphabetic'; g.fillText(c.name + ' seating chart', M, M + 60);
-    const lay = Suite.roomLayout(c.tables), RS = roomSize(c, lay), cols = RS.cols, rows = RS.rows;
-    const frontH = 70, top = M + 110, gap = 50;
-    let gridTop = top, gridBottom = H - M;
-    const drawFront = y => { g.setLineDash([18, 14]); g.strokeStyle = '#888'; g.lineWidth = 4; rrect(M, y, W - 2 * M, frontH, 16); g.stroke(); g.setLineDash([]); g.fillStyle = '#555'; g.font = font(40, true); g.textAlign = 'center'; g.fillText('FRONT OF THE ROOM', W / 2, y + 50); g.textAlign = 'left'; };
-    if (UI.front === 'bottom') { drawFront(H - M - frontH); gridBottom = H - M - frontH - gap; } else { drawFront(top); gridTop = top + frontH + gap; }
-    const cellW = (W - 2 * M - gap * (cols - 1)) / cols, cellH = (gridBottom - gridTop - gap * (rows - 1)) / rows;
-    c.tables.forEach(t => {
-      const p = lay.at[t.id], r = UI.front === 'bottom' ? rows - p.row + 1 : p.row;
-      const x = M + (p.col - 1) * (cellW + gap), y = gridTop + (r - 1) * (cellH + gap);
-      rrect(x, y, cellW, cellH, 26); g.lineWidth = 6; g.strokeStyle = t.open ? '#111' : '#999'; g.setLineDash(t.open ? [] : [20, 14]); g.stroke(); g.setLineDash([]);
-      const headH = Math.min(110, cellH * .16);
-      g.fillStyle = '#111'; const hp = fitText(t.name, cellW * .62, headH, 56, true); g.fillText(t.name, x + 30, y + headH * .5 + hp * .35);
-      const m = seatMap(c, t), count = m.seats.filter(Boolean).length + m.loose.length;
-      g.font = font(34); g.fillStyle = '#555'; g.textAlign = 'right'; g.fillText(t.open ? `${count} of ${t.seats}` : 'not in use', x + cellW - 30, y + headH * .5 + 12); g.textAlign = 'left';
-      g.beginPath(); g.moveTo(x, y + headH); g.lineTo(x + cellW, y + headH); g.lineWidth = 4; g.strokeStyle = '#111'; g.stroke();
-      // seats in the table's arrangement
-      const L = Suite.seatLayout(t), pad = 26, ax = x + pad, ay = y + headH + pad, aw = cellW - 2 * pad, ah = cellH - headH - 2 * pad;
-      const surf = 30, colsN = L.cols, rowsN = L.rows;
-      const sw = (aw - (L.surface === 'v' ? surf + 20 : 0) - (colsN - 1) * 16) / colsN, sh = (ah - (L.surface === 'h' ? surf + 20 : 0) - (rowsN - 1) * 14) / rowsN;
-      if (L.surface === 'v') { g.fillStyle = '#e8e8e8'; rrect(ax + sw + 10 + 8, ay, surf, ah, 12); g.fill(); }
-      if (L.surface === 'h') { g.fillStyle = '#e8e8e8'; rrect(ax, ay + sh + 10 + 7, aw, surf, 12); g.fill(); }
-      m.seats.forEach((st, i) => {
-        const q = L.pos(i); let sx = ax + q.c * (sw + 16), sy = ay + q.r * (sh + 14);
-        if (L.surface === 'v' && q.c >= 1) sx += surf + 20 - 16 + 16;
-        if (L.surface === 'h' && q.r >= 1) sy += surf + 20;
-        rrect(sx, sy, sw, sh, 14); g.lineWidth = 3; g.strokeStyle = st ? '#777' : '#bbb'; g.setLineDash(st ? [] : [10, 8]); g.stroke(); g.setLineDash([]);
-        const label = st ? st.name : 'Seat ' + (i + 1), bold = st && caps[t.id] === st.name;
-        g.fillStyle = st ? '#111' : '#999'; const px = fitText(label, sw - 20, sh, st ? 44 : 30, bold);
-        g.textAlign = 'center'; g.fillText(label, sx + sw / 2, sy + sh / 2 + px * .35); g.textAlign = 'left';
-      });
-    });
-    return cv;
-  }
+  function chartCanvas(){ const c = curClass(classes()); return c ? Suite.drawSeatingChart(c, { front: UI.front }) : null; }
   function printChart(){
     const cv = chartCanvas(); if (!cv) return;
     let host = document.getElementById('seatprint');
