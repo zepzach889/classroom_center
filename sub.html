@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-12d">
-<script src="shared/core.js?v=2026-10-12d"></script>
-<script>window.PAGE_VERSION = '2026-10-12d';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-12e">
+<script src="shared/core.js?v=2026-10-12e"></script>
+<script>window.PAGE_VERSION = '2026-10-12e';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -19,7 +19,14 @@
 .cbox>summary h2{font-size:22px}
 .cbox>summary .hintx{font-size:14px;font-weight:600;color:var(--ink-2)}
 .cbox[open]>summary{margin-bottom:10px}
-.cgrid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px}
+.crow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:start;margin-bottom:12px}
+.crow .lb{margin:6px 0 0}
+.daypick{display:flex;flex-wrap:wrap;gap:6px}
+.daypick label{display:flex;align-items:center;gap:6px;border:1.5px solid var(--rule);border-radius:12px;padding:5px 10px;font-size:14px;cursor:pointer;background:var(--paper)}
+.daypick label.on{border-color:var(--sea);background:var(--wash)}
+.daypick .tag{font-size:11px;font-weight:700;border-radius:999px;padding:0 7px;background:var(--plum);color:#fff}
+.daypick .muted{font-size:12px}
+@media (max-width:700px){.crow{grid-template-columns:1fr}}
 .lb{display:block;font-weight:700;font-size:14px;margin:10px 0 4px}
 .cgrid .lb{margin-top:0}
 .classpick{display:flex;flex-wrap:wrap;gap:4px 14px}
@@ -114,11 +121,9 @@
     <h1>Print sub plans</h1>
     <p class="hint">A packet for a substitute: the day's schedule, your notes, and a page for each class with its plan, materials, helpers, and seating. Everything here saves automatically.</p>
     <div class="cbox">
-      <div class="cgrid">
-        <div><span class="lb">Days</span><div class="range"><input type="date" class="field" id="sdate" aria-label="First day"><span>to</span><input type="date" class="field" id="sdate2" aria-label="Last day"></div>
-          <label class="rv"><input type="checkbox" id="onlyout"> Only days marked "I'm out" in the Planner</label></div>
-        <div><span class="lb">Classes to include</span><div class="classpick" id="classpick"></div></div>
-      </div>
+      <div class="crow"><span class="lb">Dates</span><div class="range"><input type="date" class="field" id="sdate" aria-label="First day"><span>to</span><input type="date" class="field" id="sdate2" aria-label="Last day"></div></div>
+      <div class="crow"><span class="lb">Days to print</span><div class="daypick" id="daypick"></div></div>
+      <div class="crow"><span class="lb">Classes to include</span><div class="classpick" id="classpick"></div></div>
       <label class="rv" id="ptsbox"><input type="checkbox" id="spoints"> Include table points in the sub plans</label>
       <details class="popts"><summary>Printing and notes from the sub</summary>
         <label class="rv"><input type="checkbox" data-pr="newPage"> Start each class on a new page</label>
@@ -147,10 +152,20 @@
   ['helpers', 'classNotes', 'materials'].forEach(k => { S0[k] = S0[k] || {}; });
   let date = Suite.dateKey(new Date()), date2 = date;
   { const f = location.hash.match(/from=(\d{4}-\d{2}-\d{2})/), t = location.hash.match(/to=(\d{4}-\d{2}-\d{2})/); if (f) date = date2 = f[1]; if (t) date2 = t[1]; if (/out=1/.test(location.hash)) S0_onlyOut = true; }
-  function printDays(){
-    const out = [], a = date <= date2 ? date : date2, z = date <= date2 ? date2 : date, outs = (Suite.get('sub', {}) || {}).out || {};
-    for (let d = parseDate(a); Suite.dateKey(d) <= z; d.setDate(d.getDate() + 1)) { const k = Suite.dateKey(d); if (!Suite.scheduleFor(parseDate(k)).periods.length && k !== a) continue; if (S0_onlyOut && !outs[k]) continue; out.push(k); }
-    return out.slice(0, 15);
+  let picked = null;   // the days you've checked to print
+  function rangeDays(){
+    const out = [], a = date <= date2 ? date : date2, z = date <= date2 ? date2 : date;
+    for (let d = parseDate(a); Suite.dateKey(d) <= z && out.length < 15; d.setDate(d.getDate() + 1)) { const k = Suite.dateKey(d); if (Suite.scheduleFor(parseDate(k)).periods.length || k === a) out.push(k); }
+    return out;
+  }
+  function defaultPick(){ const outs = (Suite.get('sub', {}) || {}).out || {}, all = rangeDays(), mine = all.filter(k => outs[k]); picked = new Set(S0_onlyOut && mine.length ? mine : mine.length ? mine : all); }
+  function printDays(){ if (!picked) defaultPick(); return rangeDays().filter(k => picked.has(k)); }
+  function renderDayPick(){
+    const outs = (Suite.get('sub', {}) || {}).out || {}, S = Suite.get('sub', {}) || {}, mats = S.materials || {};
+    if (!picked) defaultPick();
+    $('#daypick').innerHTML = rangeDays().map(k => { const n = (mats[k] || []).length, plan = Object.values(Suite.agendaAll()[k] || {}).length;
+      return `<label class="${picked.has(k) ? 'on' : ''}"><input type="checkbox" data-day="${k}"${picked.has(k) ? ' checked' : ''}> ${parseDate(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+        ${outs[k] ? '<span class="tag">Sub day</span>' : ''}<span class="muted">${n ? n + ' sub note' + (n === 1 ? '' : 's') : plan ? 'plan only' : 'nothing planned yet'}</span></label>`; }).join('') || '<span class="muted">No school days in these dates.</span>';
   }
   const save = () => Suite.set('sub', S0);
   const mats = () => (S0.materials[date] = S0.materials[date] || []);
@@ -167,7 +182,7 @@
     const P0 = PR();
     $('#packet').classList.toggle('flow', !P0.newPage);
     $('#packet').innerHTML = !list0.length ? '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>'
-      : days.length ? html : `<div class="sheet"><p>${S0_onlyOut ? 'None of these days are marked "I\'m out" in the Planner. Mark them from each day\'s header there, or turn off "Only days marked I\'m out."' : 'There are no school days in that range.'}</p></div>`;
+      : days.length ? html : `<div class="sheet"><p>${rangeDays().length ? 'Check at least one day above to print.' : 'There are no school days in those dates.'}</p></div>`;
     document.querySelectorAll('img[data-fid]').forEach(async img => { const u = await fileUrl(img.dataset.fid); if (u) img.src = u; });
   }
   function renderOne(){
@@ -238,7 +253,7 @@
   document.addEventListener('change', e => { if (e.target.id === 'spoints') { S0.points = e.target.checked; Suite.set('sub', S0); renderControls(); render(); } });
   function renderControls(){
     const list = Suite.classes();
-    $('#sdate').value = date; $('#sdate2').value = date2; $('#onlyout').checked = S0_onlyOut;
+    $('#sdate').value = date; $('#sdate2').value = date2; renderDayPick();
     $('#classpick').innerHTML = list.map(c => `<label><input type="checkbox" value="${esc(c.id)}"${S0.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="muted small">No classes yet.</span>';
     const P1 = PR(); document.querySelectorAll('[data-pr]').forEach(i => { if (i.type === 'checkbox') i.checked = !!P1[i.dataset.pr]; else i.value = P1[i.dataset.pr]; });
     $('#ptsbox').hidden = !pointsSetUp(); $('#spoints').checked = S0.points !== false; $('#ptsbox').lastChild.textContent = ' Include ' + Suite.word('team') + ' points in the sub plans';
@@ -303,9 +318,9 @@
 
   document.addEventListener('change', async e => {
     const el = e.target;
-    if (el.id === 'sdate' && el.value) { date = el.value; if (date2 < date) { date2 = date; $('#sdate2').value = date2; } render(); }
-    else if (el.id === 'sdate2' && el.value) { date2 = el.value; render(); }
-    else if (el.id === 'onlyout') { S0_onlyOut = el.checked; render(); }
+    if (el.id === 'sdate' && el.value) { date = el.value; if (date2 < date) { date2 = date; $('#sdate2').value = date2; } picked = null; renderDayPick(); render(); }
+    else if (el.id === 'sdate2' && el.value) { date2 = el.value; picked = null; renderDayPick(); render(); }
+    else if (el.dataset && el.dataset.day) { if (el.checked) picked.add(el.dataset.day); else picked.delete(el.dataset.day); renderDayPick(); render(); }
     else if (el.closest('#classpick')) { const id = el.value; S0.skip = S0.skip.filter(x => x !== id); if (!el.checked) S0.skip.push(id); save(); render(); }
     else if (el.dataset.help) { const cid = el.dataset.help, set = new Set(S0.helpers[cid] || []); if (el.checked) set.add(el.value); else set.delete(el.value); S0.helpers[cid] = [...set]; save(); render(); }
     else if (el.dataset.mfor) {

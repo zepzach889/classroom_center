@@ -37,7 +37,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-12d';   // bump with every build; pages check they match
+  const VERSION = '2026-10-12e';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
