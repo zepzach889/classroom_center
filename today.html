@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-12a">
-<script src="shared/core.js?v=2026-10-12a"></script>
-<script>window.PAGE_VERSION = '2026-10-12a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-12d">
+<script src="shared/core.js?v=2026-10-12d"></script>
+<script>window.PAGE_VERSION = '2026-10-12d';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -115,6 +115,18 @@ body.full #suite-nav,body.full .rail{display:none}
 .dnav{display:flex;align-items:center;gap:4px}
 .dnav input{height:34px;font-size:14px;padding:0 8px;width:150px}
 .dnav .btn.quiet{font-size:20px;line-height:1;padding:2px 10px;min-height:34px}
+.idle-stage{background:var(--sea)}
+.idle.st-dashboard{background:var(--sea);color:var(--on-sea,#fff)}
+.idle.st-dashboard .i-date{color:var(--ia,var(--land));font-family:var(--sans);letter-spacing:.08em;text-transform:uppercase;font-size:2cqw}
+.idle.st-dashboard .i-now{font-family:var(--serif);color:var(--on-sea,#fff);-webkit-text-stroke:0;font-size:6.4cqw}
+.idle.st-dashboard .i-left b{color:var(--ia,var(--land))}
+.idle.st-board{background:#f4eee1}
+.idle.st-board .i-now{color:var(--ia,var(--ink-green))}
+.idle.st-dark{background:#151b22;color:#eef1f4}
+.idle.st-dark .i-date{color:var(--ia,#ffd27a)}.idle.st-dark .i-now{font-family:var(--sans);font-weight:700;-webkit-text-stroke:0;color:#fff}.idle.st-dark .i-left b{color:var(--ia,#ffd27a)}
+.idle.st-light{background:#fff;color:#1d2a35}
+.idle.st-light .i-date{color:var(--ia,#2f6fd0)}.idle.st-light .i-now{font-family:var(--sans);font-weight:700;-webkit-text-stroke:0;color:#1d2a35}.idle.st-light .i-left b{color:var(--ia,#2f6fd0)}
+.idle .i-msg{font:600 2.4cqw/1.3 var(--sans);max-width:70%;opacity:.95}
 .idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.6cqw;text-align:center;color:#24323d}
 .idle .i-date{font:700 2.6cqw Georgia,serif;color:var(--ink-date)}
 .idle .i-now{font:400 7cqw/1.05 "Architects Daughter",cursive;color:var(--ink-green);-webkit-text-stroke:.03em currentColor}
@@ -394,17 +406,35 @@ details.sec>summary .muted{font-weight:400}
     const endHM = curP ? curP.end : st.next >= 0 ? P[st.next].start : null;
     let nx = null; const from = curP ? st.cur + 1 : st.next; for (let i = from; from >= 0 && i < P.length; i++) if (!Suite.isPassing(P[i]) && Suite.classForPeriod(P[i], list)) { nx = P[i]; break; }
     let left = null; if (endHM) { const [h, m] = endHM.split(':').map(Number), e = new Date(now); e.setHours(h, m, 0, 0); left = e - now; }
-    return { label, endHM, left, nx };
+    const kind = !P.length ? 'none' : !curP ? (st.next >= 0 ? 'before' : 'after') : Suite.isPassing(curP) ? 'passing' : curP.staff ? 'staff' : curP.isBreak ? (/lunch/i.test(curP.name) ? 'lunch' : 'break') : /lunch/i.test(curP.name) ? 'lunch' : 'other';
+    // go-home reminder: after the time you set, count up how long you've stayed (off unless turned on)
+    const G = idleCfg().goHome; let over = null;
+    if (G.on && P.length && G.time && !(curP && !curP.staff && !['after'].includes(kind) && kind !== 'staff')) { const [gh, gm] = G.time.split(':').map(Number), g = new Date(now); g.setHours(gh, gm, 0, 0); if (now >= g) over = now - g; }
+    return { label, endHM, left, nx, kind, over };
   }
+  const IDLE0 = { style: 'dashboard', color: '', messages: {}, goHome: { on: false, time: '15:45', text: 'Time to head home!' } };
+  function idleCfg(){ const c = Object.assign({}, IDLE0, T.idle || {}); c.messages = Object.assign({}, c.messages || {}); c.goHome = Object.assign({}, IDLE0.goHome, c.goHome || {}); return c; }
   const isIdle = () => MODE === 'auto' && !editMode && viewDate === Suite.dateKey(new Date()) && autoPick().idle;
   function idleHtml(){
-    const I = idleInfo();
-    return `<div class="idle"><div class="i-date">${esc(longDate(viewDate))}</div><div class="i-now">${esc(I.label)}</div>
+    const I = idleInfo(), C = idleCfg(), msg = (C.messages[I.kind] || '').trim();
+    const style = `st-${C.style || 'dashboard'}`, accent = C.color ? `--ia:${esc(C.color)};` : '';
+    if (I.over != null) return `<div class="idle ${style}" style="${accent}"><div class="i-date">${esc(longDate(viewDate))}</div><div class="i-now">${esc(C.goHome.text || 'Time to head home!')}</div>
+      <div class="i-left"><span>You've stayed</span> <b id="idleOver">${fmtLeft(I.over)}</b> <span>past ${Suite.fmt12(C.goHome.time)}</span></div></div>`;
+    return `<div class="idle ${style}" style="${accent}"><div class="i-date">${esc(longDate(viewDate))}</div><div class="i-now">${esc(I.label)}</div>
+      ${msg ? `<div class="i-msg">${esc(msg)}</div>` : ''}
       ${I.left != null && I.left > 0 ? `<div class="i-left"><span>ends in</span> <b id="idleLeft">${fmtLeft(I.left)}</b> <span>at ${Suite.fmt12(I.endHM)}</span></div>` : ''}
       ${I.nx ? `<div class="i-next">Next: ${esc(I.nx.name)} at ${Suite.fmt12(I.nx.start)}</div>` : ''}</div>`;
   }
   const fmtLeft = ms => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s % 60).padStart(2, '0'); };
-  function updateIdle(){ const el = document.getElementById('idleLeft'); if (!el) return; const I = idleInfo(); if (I.left != null) el.textContent = fmtLeft(I.left); }
+  // keep the between-classes screen current: redraw when what's happening changes (Advisory → teacher time), otherwise just tick the countdown
+  function updateIdle(){
+    const now = document.querySelector('#stage .idle .i-now'); if (!now) return;
+    const I = idleInfo();
+    const showingOver = !!document.getElementById('idleOver');
+    if (showingOver !== (I.over != null) || (!showingOver && (now.textContent !== I.label || !!document.getElementById('idleLeft') !== (I.left != null && I.left > 0)))) { render(); return; }
+    if (showingOver) { document.getElementById('idleOver').textContent = fmtLeft(I.over); return; }
+    const el = document.getElementById('idleLeft'); if (el && I.left != null) el.textContent = fmtLeft(I.left);
+  }
   // Which class this window shows belongs to this window only, so a planning window can't change a live display.
   let MODE = (() => { try { return sessionStorage.getItem('suite:today-mode') || 'auto'; } catch (e) { return 'auto'; } })();
   const setMode = m => { MODE = m; try { sessionStorage.setItem('suite:today-mode', m); } catch (e) {} };
@@ -519,7 +549,7 @@ details.sec>summary .muted{font-weight:400}
     document.body.classList.toggle('editing-screen', editMode);
     const cid = activeId();
     if (!cid) { $('#stage').innerHTML = '<div class="lesson"><div class="lesson-empty"><p class="t">Add your classes first</p><p>Today uses your classes and bell schedule.</p></div></div>'; renderRail(null); return; }
-    if (isIdle() && !lesson) { const st = $('#stage'); st.innerHTML = idleHtml(); st.className = 'stage bg-paper idle-stage'; st.style.backgroundImage = ''; st.style.backgroundColor = ''; st.dataset.look = ''; st.dataset.type = ''; renderRail(cid, []); return; }
+    if (isIdle() && !lesson) { const st = $('#stage'); st.innerHTML = idleHtml(); st.className = 'stage idle-stage'; st.style.backgroundImage = ''; st.style.backgroundColor = ''; st.dataset.look = ''; st.dataset.type = ''; renderRail(cid, []); return; }
     const S = screens(viewDate, cid), rec = dayFor(viewDate, cid), u = usual(cid), room = roomFor(viewDate, cid);
     if (screen >= S.length) screen = Math.max(0, S.length - 1);
     const type = S[screen] || 'welcome', b = boardOf(rec, type);

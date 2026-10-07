@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-12a">
-<script src="shared/core.js?v=2026-10-12a"></script>
-<script>window.PAGE_VERSION = '2026-10-12a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-12d">
+<script src="shared/core.js?v=2026-10-12d"></script>
+<script>window.PAGE_VERSION = '2026-10-12d';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -27,6 +27,9 @@ table.plan th.day.today{color:var(--land)}
 details.students{margin-top:14px;border:1.5px solid var(--rule);border-radius:12px;padding:8px 12px;background:var(--paper)}
 details.students summary{cursor:pointer;font-weight:700}
 details.students textarea{width:100%}
+.subday{display:block;margin-top:3px;font:700 11px var(--sans);letter-spacing:.04em;background:var(--plum);color:#fff;border-radius:999px;padding:1px 8px;width:max-content}
+.sitem{display:grid;grid-template-columns:1fr 1.4fr auto auto;gap:6px;align-items:center;margin-top:6px}
+.sitem textarea{grid-column:1 / span 2}.sitem .fname{font-weight:600}
 .stc{border:1.5px dashed var(--rule);border-radius:10px;padding:8px;margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .dayoff{display:block;margin-top:3px;font:600 11px var(--sans);color:var(--ink-2);background:none;border:1px dashed var(--rule);border-radius:999px;padding:1px 8px;cursor:pointer}
 .dayoff:hover{border-color:var(--edge);color:var(--ink)}
@@ -117,10 +120,11 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   function render(){
     const R = rows(), D = days(), A = Suite.agendaAll(), today = keyOf(new Date());
     const fri = D[4], label = D[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' to ' + fri.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    const offs = Suite.getSchedule().special;
+    const offs = Suite.getSchedule().special, outs = (Suite.get('sub', {}) || {}).out || {};
     const head = D.map(d => { const sc = Suite.scheduleFor(d), k = keyOf(d), off = offs.find(x => x.date === k && x.scheduleId === 'none');
       return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<span>${esc(sc.periods.length ? sc.scheduleName || sc.label : sc.label)}</span>
-        <button class="dayoff noprint" data-a="${off ? 'dayon' : 'dayoff'}" data-date="${k}">${off ? 'Undo day off' : 'Mark day off'}</button></th>`; }).join('');
+        ${outs[k] ? '<span class="subday">Sub day</span>' : ''}
+        <button class="dayoff noprint" data-a="${off ? 'dayon' : 'dayoff'}" data-date="${k}">${off ? 'Undo day off' : 'Mark day off'}</button>${off ? '' : `<button class="dayoff noprint" data-a="subout" data-date="${k}">${outs[k] ? 'Not out after all' : "I'm out"}</button>`}</th>`; }).join('');
     const evRow = `<tr class="evrow"><th class="rowh" scope="row"><span class="nm">Events</span><span class="secs">School events, plus your own (⏳ counts down on the dashboard)</span></th>${D.map(d => {
         const k = keyOf(d), ev = Suite.eventsOn(k);
         return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn ev${ev.length ? '' : ' empty'}" data-a="events" data-date="${k}" aria-label="School events on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">${ev.length ? ev.map(x => `<span class="evchip${x.mine ? ' mine' : ''}" title="${x.mine ? 'Just for you' : ''}">${x.countdown ? '⏳ ' : ''}${esc(x.title)}</span>`).join('') : '+ Event'}</button></td>`; }).join('')}</tr>`;
@@ -137,7 +141,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
-        <div class="bar"><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
+        <div class="bar"><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
       <div class="printonly">Plans for ${esc(label)}</div>
       ${mergeable() ? `<div class="banner noprint"><span><b>Some days still have a separate plan for each period</b>, saved before you set up courses. Combine the ones that match into the course plan? Periods with a different plan keep their own.</span><button class="btn primary" data-a="merge">Combine them</button></div>` : ''}
       ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
@@ -210,6 +214,12 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       <p class="hintline" style="margin-top:0">A Google Slides link here also becomes the lesson slides on the Today screen.</p>
       <div id="ed-mats"></div>
       <div class="bar" style="margin-top:6px"><button class="btn small" data-e="addlink">Add a link</button><label class="btn small">Attach a file<input type="file" id="ed-file" multiple hidden></label></div>
+      <details class="students subsec"><summary>For the sub</summary>
+        <p class="hintline">Notes, links, and files only the sub sees, for ${esc(classOnly ? (r.classes.find(c => c.id === classOnly) || {}).name || '' : r.name)} on this day. The plan above and its links and files print in the sub packet automatically. Changes here save right away.</p>
+        <div id="subitems"></div>
+        <div class="bar" style="margin-top:6px"><button class="btn small" data-e="subnote" type="button">Add a note</button><button class="btn small" data-e="sublink" type="button">Add a link</button><label class="btn small">Attach a file<input type="file" id="subfile" multiple hidden></label>
+          <button class="btn quiet small" data-e="subfrom" type="button">Copy from another day</button><button class="btn quiet small" data-e="subto" type="button">Copy to other days</button></div>
+      </details>
       <details class="students"${boardHasText(todayRec(dateKey, target)) || ((todayRec(dateKey, target) || {}).slideLink) ? ' open' : ''}><summary>Students see (Today screen)</summary>
         <p class="hintline">What goes on this day's Today screen. Leave a box empty to use the usual one. One line per bullet: start a line with <b>-</b> for a sub-point (<b>--</b> for a third level) and with <b>?</b> to keep it hidden until you click, like a warm-up answer. Due and Agenda come from the plan above.</p>
         <label class="lb" for="st-slide">Lesson slides <span class="muted small">(the slide Today opens after the boards)</span></label>
@@ -231,6 +241,39 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); close(); } };
     document.addEventListener('keydown', onKey, true);
     const q = id => back.querySelector('#' + id);
+    // ---- For the sub: these live with the sub plans (and save right away) ----
+    const subIds = classOnly ? [classOnly] : r.classes.map(c => c.id);
+    const SUBS = () => { const S = Object.assign({ materials: {} }, Suite.get('sub', {}) || {}); S.materials = S.materials || {}; return S; };
+    const fits = m => !m.classes || m.classes.some(id => subIds.includes(id));
+    const drawSub = () => { const items = (SUBS().materials[dateKey] || []).filter(fits), box = q('subitems'); if (!box) return;
+      box.innerHTML = items.map(m => `<div class="sitem" data-sid="${esc(m.id)}">${m.kind === 'file' ? `<span class="fname">📎 ${esc((m.file || {}).name || 'File')}</span>` : `<input class="field" data-sf="title" value="${esc(m.title || '')}" placeholder="${m.kind === 'link' ? 'Link title' : 'Note title (optional)'}">`}
+        ${m.kind === 'note' ? `<textarea rows="2" data-sf="text" placeholder="What the sub should do or know">${esc(m.text || '')}</textarea>` : m.kind === 'link' ? `<input class="field" data-sf="url" value="${esc(m.url || '')}" placeholder="https://…">` : ''}
+        <span class="muted small">${m.classes ? '' : 'All classes'}</span><button class="btn quiet danger small" data-e="subrm" type="button" aria-label="Remove">×</button></div>`).join('') || '<p class="muted small">Nothing yet.</p>'; };
+    const subSave = S => { Suite.set('sub', S); drawSub(); };
+    drawSub();
+    back.addEventListener('input', ev => { const f = ev.target.dataset && ev.target.dataset.sf; if (!f) return; const id = ev.target.closest('[data-sid]').dataset.sid, S = SUBS(), m = (S.materials[dateKey] || []).find(x => x.id === id); if (m) { m[f] = ev.target.value; Suite.set('sub', S); } });
+    q('subfile').addEventListener('change', async () => { const S = SUBS(); S.materials[dateKey] = S.materials[dateKey] || [];
+      for (const f of [...q('subfile').files]) { try { const meta = await Suite.files.put(f); S.materials[dateKey].push({ id: Suite.uid(), kind: 'file', title: '', file: meta, classes: subIds.slice() }); } catch (err) { Suite.toast(err.message || "Couldn't attach " + f.name); } }
+      q('subfile').value = ''; subSave(S); });
+    const subCopy = mode => {
+      const S = SUBS(), others = Object.keys(S.materials).filter(k => k !== dateKey && (S.materials[k] || []).some(fits)).sort().reverse(), mine = (S.materials[dateKey] || []).filter(fits);
+      if (mode === 'from' && !others.length) { Suite.toast('No other days have sub notes for this class yet'); return; }
+      if (mode === 'to' && !mine.length) { Suite.toast('Add something for the sub first'); return; }
+      const box = document.createElement('div'); box.className = 'suite-dialog-back';
+      const nxt = (() => { const d = parse(dateKey); d.setDate(d.getDate() + 1); return keyOf(d); })();
+      box.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>${mode === 'from' ? 'Copy sub notes from another day' : 'Copy these sub notes to other days'}</h2>
+        ${mode === 'from' ? `<label class="lb">Copy from<select id="sc-day" class="field">${others.map(k => `<option value="${k}">${parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</option>`).join('')}</select></label>`
+          : `<div class="evgrid"><label>First day<input type="date" class="field" id="sc-a" value="${nxt}"></label><label>Last day<input type="date" class="field" id="sc-b" value="${nxt}"></label></div><p class="hintline">Weekends and days off are skipped.</p>`}
+        <div class="suite-dialog-actions"><button class="btn" data-c="x">Cancel</button><button class="btn primary" data-c="go">Copy</button></div></div>`;
+      document.body.appendChild(box);
+      box.addEventListener('click', ev => { if (ev.target === box || ev.target.closest('[data-c="x"]')) return box.remove(); if (!ev.target.closest('[data-c="go"]')) return;
+        const S2 = SUBS(), cp = list => list.filter(fits).map(m => Object.assign(JSON.parse(JSON.stringify(m)), { id: Suite.uid(), classes: m.classes ? m.classes.filter(id => subIds.includes(id)) : subIds.slice() }));
+        if (mode === 'from') { const src = box.querySelector('#sc-day').value, add = cp(S2.materials[src] || []); S2.materials[dateKey] = (S2.materials[dateKey] || []).concat(add); box.remove(); subSave(S2); Suite.toast(`Copied ${add.length} item${add.length === 1 ? '' : 's'}`); }
+        else { let a = box.querySelector('#sc-a').value, z = box.querySelector('#sc-b').value || a; if (!a) return; if (z < a) [a, z] = [z, a]; let n = 0;
+          for (let d = parse(a); keyOf(d) <= z; d.setDate(d.getDate() + 1)) { const k = keyOf(d); if (k === dateKey || !Suite.scheduleFor(parse(k)).periods.length) continue; S2.materials[k] = (S2.materials[k] || []).concat(cp(S2.materials[dateKey] || [])); n++; }
+          box.remove(); subSave(S2); Suite.toast(n ? `Copied to ${n} day${n === 1 ? '' : 's'}` : 'No school days in that range'); }
+      });
+    };
     back.addEventListener('change', ev => { const sel = ev.target.closest('[data-src]'); if (!sel) return; const ta = q('st-' + sel.dataset.src); ta.hidden = sel.value !== 'custom';
       if (sel.value === 'custom' && !ta.value.trim()) ta.value = sel.dataset.src === 'agenda' ? q('ed-items').value : q('ed-hw').value; });
     let mats = JSON.parse(JSON.stringify(e.materials || []));
@@ -257,6 +300,10 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       const b = ev.target.closest('[data-e]'); if (!b) return;
       const k = b.dataset.e;
       if (k === 'cancel') { close(); dropUnused(added); backToToday(); }
+      else if (k === 'subnote' || k === 'sublink') { const S = SUBS(); S.materials[dateKey] = (S.materials[dateKey] || []).concat({ id: Suite.uid(), kind: k === 'subnote' ? 'note' : 'link', title: '', text: '', url: '', classes: subIds.slice() }); subSave(S); const f = [...back.querySelectorAll('.sitem [data-sf]')].pop(); if (f) f.focus(); }
+      else if (k === 'subrm') { const id = b.closest('[data-sid]').dataset.sid, S = SUBS(), M = S.materials[dateKey] || [], i = M.findIndex(x => x.id === id); if (i < 0) return; const m = M.splice(i, 1)[0]; subSave(S); if (m.kind === 'file' && m.file && !Suite.fileInUse(m.file.id)) Suite.files.del(m.file.id).catch(() => {}); }
+      else if (k === 'subfrom') subCopy('from');
+      else if (k === 'subto') subCopy('to');
       else if (k === 'stadd') { const id = 'c-' + Suite.uid(), d = document.createElement('div'); d.className = 'stc'; d.innerHTML = `<input class="field" data-hh="${id}" placeholder="Board heading, like REMINDERS" aria-label="Board heading"><textarea rows="3" data-sb="${id}" placeholder="One line per bullet"></textarea>`; back.querySelector('#st-custom').appendChild(d); d.querySelector('input').focus(); }
       else if (k === 'addlink') { mats.push({ id: Suite.uid(), kind: 'link', title: '', url: '' }); drawMats(); const f = back.querySelector('.mrow:last-child input'); if (f) f.focus(); }
       else if (k === 'mrm') { const m = mats.splice(+b.dataset.i, 1)[0]; if (m && m.kind === 'file') removed.push(m.file.id); drawMats(); }
@@ -442,6 +489,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     else if (a === 'edit') openEditor(el.dataset.row, el.dataset.date, null);
     else if (a === 'courses') openCourses();
     else if (a === 'daysoff') openDaysOff();
+    else if (a === 'subout') { const S = Object.assign({}, Suite.get('sub', {}) || {}); S.out = Object.assign({}, S.out || {}); if (S.out[el.dataset.date]) delete S.out[el.dataset.date]; else S.out[el.dataset.date] = true; Suite.set('sub', S); render(); }
+    else if (a === 'subprint') { const D = days(), outs = (Suite.get('sub', {}) || {}).out || {}, any = D.some(d => outs[keyOf(d)]); location.href = `sub.html#from=${keyOf(D[0])}&to=${keyOf(D[D.length - 1])}${any ? '&out=1' : ''}`; }
     else if (a === 'dayoff') { (async () => { const name = await Suite.dialog({ title: 'Mark ' + parse(el.dataset.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' as a day off?', input: 'No school', ok: 'Mark day off' }); if (name) { setDaysOff([el.dataset.date], name); render(); } })(); }
     else if (a === 'dayon') { clearDaysOff([el.dataset.date]); render(); }
     else if (a === 'events') openEvents(el.dataset.date);

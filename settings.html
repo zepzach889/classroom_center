@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-12a">
-<script src="shared/core.js?v=2026-10-12a"></script>
-<script>window.PAGE_VERSION = '2026-10-12a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-12d">
+<script src="shared/core.js?v=2026-10-12d"></script>
+<script>window.PAGE_VERSION = '2026-10-12d';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -154,6 +154,15 @@ main{min-width:0;max-width:820px}
 .tsrow{display:flex;gap:8px;align-items:center;margin:6px 0}.tsrow .field{flex:1}.tsrow span{flex:1;font-weight:600}
 #today-area .rv{display:flex;gap:6px;align-items:center;margin:6px 0}
 #today-area .lbl{font-weight:700;margin:10px 0 2px}
+.subgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.subgrid label{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px}
+.subgrid textarea,.subclass textarea{width:100%}
+.subclass{border-top:1.5px solid var(--rule);margin-top:14px;padding-top:10px}
+.subclass h3{font-size:18px;margin:0 0 6px}
+.subclass .helpers{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 8px}
+.subclass .helpers label{display:flex;gap:5px;align-items:center;font-size:15px}
+#subinfo-area .lbl{display:block;font-weight:700;font-size:14px;margin-top:6px}
+@media (max-width:760px){.subgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -195,6 +204,13 @@ main{min-width:0;max-width:820px}
         <summary><h2 id="h-today">Today screen</h2><span class="fold-hint">Show</span></summary>
         <p class="hint">Settings for the Today screen in every class: the bell reminder, your backgrounds and bitmojis, and saved boards. Pictures are kept in this browser and in your backups, never on the website.</p>
         <div id="today-area"></div>
+      </details>
+    </section>
+    <section class="block" id="subinfo" aria-labelledby="h-subinfo">
+      <details class="fold" data-fold="subinfo">
+        <summary><h2 id="h-subinfo">Substitute info</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Standing information for every sub packet. Each day's notes and materials go in the Planner (open a day, then For the sub), and you print packets from the Planner too.</p>
+        <div id="subinfo-area"></div>
       </details>
     </section>
     <section class="block" id="words" aria-labelledby="h-words">
@@ -307,7 +323,7 @@ main{min-width:0;max-width:820px}
     renderSchedule();
     renderCountdowns();
     renderLook();
-    renderWords(); renderToday();
+    renderWords(); renderToday(); renderSubInfo();
   }
 
   function renderBackup(){
@@ -810,6 +826,18 @@ main{min-width:0;max-width:820px}
       ${(B.messages || []).map((x, k) => `<div class="tsmsg"><input class="field num" type="number" min="1" max="30" data-ts="mmin" data-k="${k}" value="${x.min}" aria-label="Minutes before the bell"><span>min:</span><input class="field" data-ts="mtext" data-k="${k}" value="${esc(x.text)}" placeholder="Start cleaning up" aria-label="Message"><label class="rv"><input type="checkbox" data-ts="mchime" data-k="${k}"${x.chime ? ' checked' : ''}> chime</label><button class="btn quiet danger small" data-ts="mrm" data-k="${k}" aria-label="Remove message">×</button></div>`).join('') || '<p class="muted small">None yet.</p>'}
       <button class="btn small" data-ts="madd">Add a message</button>
 
+      <h3 class="tsh">Between-classes screens</h3>
+      <p class="hint" style="margin-top:0">What the Today screen shows when no class is in session (in Auto).</p>
+      ${(() => { const I = Object.assign({ style: 'dashboard', color: '', messages: {}, goHome: {} }, T.idle || {}), G = Object.assign({ on: false, time: '15:45', text: 'Time to head home!' }, I.goHome || {}), M = I.messages || {};
+        const kinds = [['passing', 'Passing time'], ['break', 'Break'], ['lunch', 'Lunch'], ['staff', 'Teacher time'], ['before', 'Before school'], ['after', 'After school'], ['other', 'A period with no class (like Advisory)'], ['none', 'No school']];
+        return `<div class="tsgrid"><label>Style<select data-ts="istyle">${[['dashboard', 'Match the dashboard'], ['board', 'Match the class boards'], ['dark', 'Plain dark'], ['light', 'Plain light']].map(([v, n]) => `<option value="${v}"${(I.style || 'dashboard') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label>Accent color<span><input type="color" data-ts="icolor" value="${esc(I.color || '#e07a5f')}"> <button class="btn quiet small" data-ts="icolorx" type="button">Use the theme's</button></span></label><span></span></div>
+          <p class="lbl">Messages <span class="muted small">(optional, shown under what's happening)</span></p>
+          ${kinds.map(([k, n]) => `<div class="tsrow"><span style="flex:0 0 15em;font-weight:600">${n}</span><input class="field" data-ts="imsg" data-k="${k}" value="${esc(M[k] || '')}" placeholder="${k === 'lunch' ? 'Enjoy your lunch!' : k === 'passing' ? 'Head to your next class' : ''}"></div>`).join('')}
+          <p class="lbl">Go-home reminder</p>
+          <label class="rv"><input type="checkbox" data-ts="gon"${G.on ? ' checked' : ''}> After <input class="field" type="time" data-ts="gtime" value="${esc(G.time)}" style="width:120px"> show a reminder and count up how long you've stayed</label>
+          <div class="tsrow"><span style="flex:0 0 15em;font-weight:600">Reminder text</span><input class="field" data-ts="gtext" value="${esc(G.text)}"></div>`; })()}
+
       <h3 class="tsh">Backgrounds</h3>
       <p class="hint" style="margin-top:0">Built in: Paper, Chalkboard, Corkboard, and Solid color. Pick a background for each class in Today's Day settings, then place the text with Edit on screen.</p>
       ${Object.entries(T.custom).map(([id, r]) => `<div class="tsrow"><input class="field" data-ts="rname" data-id="${esc(id)}" value="${esc(r.name)}" aria-label="Background name"><button class="btn quiet danger small" data-ts="rdel" data-id="${esc(id)}">Delete</button></div>`).join('') || '<p class="muted small">No backgrounds of your own yet.</p>'}
@@ -826,7 +854,9 @@ main{min-width:0;max-width:820px}
   document.addEventListener('change', async e => {
     const t = e.target; if (!t.dataset || !t.dataset.ts || !tsArea() || !tsArea().contains(t)) return;
     const T = TS(), B = T.bell = Object.assign({}, BELL0, T.bell || {}), k = t.dataset.ts;
-    if (k === 'bon') B.on = t.checked; else if (k === 'bstyle') B.style = t.value; else if (k === 'bcorner') B.corner = t.value; else if (k === 'bstrip') B.strip = t.value;
+    const I = T.idle = Object.assign({ style: 'dashboard', color: '', messages: {}, goHome: { on: false, time: '15:45', text: 'Time to head home!' } }, T.idle || {}); I.messages = I.messages || {}; I.goHome = Object.assign({ on: false, time: '15:45', text: 'Time to head home!' }, I.goHome || {});
+    if (k === 'istyle') I.style = t.value; else if (k === 'icolor') I.color = t.value; else if (k === 'gon') I.goHome.on = t.checked; else if (k === 'gtime') I.goHome.time = t.value || '15:45';
+    else if (k === 'bon') B.on = t.checked; else if (k === 'bstyle') B.style = t.value; else if (k === 'bcorner') B.corner = t.value; else if (k === 'bstrip') B.strip = t.value;
     else if (k === 'bmin') B.minutes = Math.max(1, Math.min(20, parseInt(t.value, 10) || 5)); else if (k === 'bover') B.overLesson = t.checked;
     else if (k === 'mmin') B.messages[+t.dataset.k].min = Math.max(1, Math.min(30, parseInt(t.value, 10) || 1)); else if (k === 'mchime') B.messages[+t.dataset.k].chime = t.checked;
     else if (k === 'rname' || k === 'bname') { const o = (k === 'rname' ? T.custom : T.bitmojis)[t.dataset.id]; if (o && t.value.trim()) o.name = t.value.trim(); }
@@ -839,11 +869,13 @@ main{min-width:0;max-width:820px}
     else return;
     Suite.set('today', T); renderToday();
   });
+  document.addEventListener('input', e => { const t = e.target; if (t.dataset && (t.dataset.ts === 'imsg' || t.dataset.ts === 'gtext') && tsArea() && tsArea().contains(t)) { const T = TS(); T.idle = Object.assign({ messages: {}, goHome: {} }, T.idle || {}); T.idle.messages = T.idle.messages || {}; T.idle.goHome = Object.assign({ on: false, time: '15:45', text: 'Time to head home!' }, T.idle.goHome || {}); if (t.dataset.ts === 'imsg') T.idle.messages[t.dataset.k] = t.value; else T.idle.goHome.text = t.value; Suite.set('today', T); return; } });
   document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.ts === 'mtext' && tsArea() && tsArea().contains(t)) { const T = TS(); T.bell = Object.assign({}, BELL0, T.bell || {}); T.bell.messages[+t.dataset.k].text = t.value; Suite.set('today', T); } });
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-ts]'); if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT' || !tsArea() || !tsArea().contains(b)) return;
     const T = TS(), k = b.dataset.ts;
-    if (k === 'madd') { T.bell = Object.assign({}, BELL0, T.bell || {}); T.bell.messages = (T.bell.messages || []).concat({ min: 2, text: '', chime: true }); }
+    if (k === 'icolorx') { T.idle = Object.assign({}, T.idle || {}, { color: '' }); }
+    else if (k === 'madd') { T.bell = Object.assign({}, BELL0, T.bell || {}); T.bell.messages = (T.bell.messages || []).concat({ min: 2, text: '', chime: true }); }
     else if (k === 'mrm') { T.bell = Object.assign({}, BELL0, T.bell || {}); T.bell.messages.splice(+b.dataset.k, 1); }
     else if (k === 'rdel' || k === 'bdel') { const map = k === 'rdel' ? T.custom : T.bitmojis, o = map[b.dataset.id]; if (!o) return;
       if (!await Suite.dialog({ title: 'Delete ' + o.name + '?', body: 'Classes using it switch to the default.', ok: 'Delete', danger: true })) return;
@@ -853,9 +885,31 @@ main{min-width:0;max-width:820px}
     Suite.set('today', T); renderToday();
   });
 
+
+  /* ---------- Substitute info (standing information for sub packets) ---------- */
+  const SUB = () => Object.assign({ notes: '', emergency: '', where: '', rules: '', helpers: {}, classNotes: {} }, Suite.get('sub', {}));
+  function renderSubInfo(){
+    const el = document.getElementById('subinfo-area'); if (!el) return;
+    const S = SUB(), esc = Suite.esc, pts = Suite.feature('points') && Suite.classes().some(c => c.tables.some(t => t.open));
+    el.innerHTML = `<div class="subgrid">
+        <label>Notes for the sub<textarea rows="5" data-si="notes" placeholder="Welcome, the day at a glance, who to call with questions...">${esc(S.notes)}</textarea></label>
+        <label>Emergency procedures<textarea rows="5" data-si="emergency" placeholder="Fire and lockdown routes, where the emergency folder is, the office number...">${esc(S.emergency)}</textarea></label>
+        <label>Where to find things<textarea rows="4" data-si="where" placeholder="Copies on the front table, extra pencils in the bin by the door...">${esc(S.where)}</textarea></label>
+        ${pts ? `<label>How ${esc(Suite.word('team'))} points work<textarea rows="4" data-si="rules" placeholder="Leave empty for a short standard explanation">${esc(S.rules)}</textarea></label>` : ''}</div>
+      ${Suite.classes().map(c => `<div class="subclass"><h3>${esc(c.name)}</h3>
+        <span class="lbl">Students the sub can rely on</span>
+        <div class="helpers">${c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => `<label><input type="checkbox" data-sih="${esc(c.id)}" value="${esc(s.id)}"${(S.helpers[c.id] || []).includes(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">No students yet.</span>'}</div>
+        <label class="lbl" for="sicn-${esc(c.id)}">Notes about this class</label>
+        <textarea id="sicn-${esc(c.id)}" rows="3" data-sicn="${esc(c.id)}" placeholder="Routines, reminders, anything the sub should know">${esc(S.classNotes[c.id] || '')}</textarea></div>`).join('')}`;
+  }
+  document.addEventListener('input', e => { const t = e.target, area = document.getElementById('subinfo-area'); if (!area || !area.contains(t)) return;
+    const S = SUB(); if (t.dataset.si) S[t.dataset.si] = t.value; else if (t.dataset.sicn) { S.classNotes[t.dataset.sicn] = t.value; } else return; Suite.set('sub', S); });
+  document.addEventListener('change', e => { const t = e.target; if (!t.dataset || !t.dataset.sih) return;
+    const S = SUB(), set = new Set(S.helpers[t.dataset.sih] || []); if (t.checked) set.add(t.value); else set.delete(t.value); S.helpers[t.dataset.sih] = [...set]; Suite.set('sub', S); });
+
   function route(){
     const h = location.hash.replace('#', '');
-    if (['schedule', 'countdowns', 'backup', 'appearance', 'words', 'general', 'today'].includes(h)) { showTab('general'); if (h !== 'general') openSection(h); }
+    if (['schedule', 'countdowns', 'backup', 'appearance', 'words', 'general', 'today', 'subinfo'].includes(h)) { showTab('general'); if (h !== 'general') openSection(h); }
     else showTab('classes');
   }
   window.addEventListener('hashchange', route);

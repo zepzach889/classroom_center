@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-12a">
-<script src="shared/core.js?v=2026-10-12a"></script>
-<script>window.PAGE_VERSION = '2026-10-12a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-12d">
+<script src="shared/core.js?v=2026-10-12d"></script>
+<script>window.PAGE_VERSION = '2026-10-12d';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -103,17 +103,20 @@
   .mimg{max-height:3.2in;width:auto;max-width:100%;object-fit:contain}
   .seatimg{max-height:6.3in;width:auto;max-width:100%;margin:0 auto}
 }
+.range{display:flex;align-items:center;gap:8px}.range .field{width:170px}
+.moved{background:var(--wash)}
 </style>
 </head>
 <body>
 <header id="suite-nav"></header>
 <div class="wrap">
   <div class="controls">
-    <h1>Substitute page</h1>
+    <h1>Print sub plans</h1>
     <p class="hint">A packet for a substitute: the day's schedule, your notes, and a page for each class with its plan, materials, helpers, and seating. Everything here saves automatically.</p>
     <div class="cbox">
       <div class="cgrid">
-        <div><label class="lb" for="sdate">Date</label><input type="date" class="field" id="sdate"></div>
+        <div><span class="lb">Days</span><div class="range"><input type="date" class="field" id="sdate" aria-label="First day"><span>to</span><input type="date" class="field" id="sdate2" aria-label="Last day"></div>
+          <label class="rv"><input type="checkbox" id="onlyout"> Only days marked "I'm out" in the Planner</label></div>
         <div><span class="lb">Classes to include</span><div class="classpick" id="classpick"></div></div>
       </div>
       <label class="rv" id="ptsbox"><input type="checkbox" id="spoints"> Include table points in the sub plans</label>
@@ -127,36 +130,13 @@
       </details>
       <div class="bar" style="margin-top:14px"><button class="btn primary" id="print">Print the packet</button><span class="muted small">Attached PDFs print separately; use their Open buttons below.</span></div>
     </div>
-    <details class="cbox" open>
-      <summary><h2>Lesson materials for <span id="mdate"></span></h2><span class="hintx">Hide</span></summary>
-      <p class="hint" style="margin-top:0">Notes, links, and files for this day. Each one can go to all your classes or just some. Images print in the packet; other files are listed so the sub knows to print them.</p>
-      <div id="materials"></div>
-      <div class="bar">
-        <button class="btn" data-a="addnote">Add a note</button>
-        <button class="btn" data-a="addlink">Add a link</button>
-        <label class="btn">Attach files<input type="file" id="addfiles" multiple hidden></label>
-        <button class="btn quiet" data-a="copyfrom">Copy from another day</button>
-        <button class="btn quiet" data-a="copyto">Copy this day to…</button>
-      </div>
-    </details>
-    <details class="cbox">
-      <summary><h2>General notes</h2><span class="hintx">Show</span></summary>
-      <div class="two">
-        <div><label class="lb" for="snotes">Notes for the sub</label><textarea id="snotes" rows="6" data-t="notes" placeholder="Welcome, the day at a glance, who to call with questions..."></textarea></div>
-        <div><label class="lb" for="semerg">Emergency procedures</label><textarea id="semerg" rows="6" data-t="emergency" placeholder="Fire and lockdown routes, where the emergency folder is, the office extension..."></textarea></div>
-        <div><label class="lb" for="swhere">Where to find things</label><textarea id="swhere" rows="5" data-t="where" placeholder="Copies on the front table, extra pencils in the bin by the door..."></textarea></div>
-        <div id="rulesbox"><label class="lb" for="srules">How points work</label><textarea id="srules" rows="5" data-t="rules"></textarea></div>
-      </div>
-    </details>
-    <details class="cbox">
-      <summary><h2>Class notes and helpers</h2><span class="hintx">Show</span></summary>
-      <div id="classnotes"></div>
-    </details>
+    <div class="cbox moved"><p><b>Where things are edited now:</b> each day's notes, links, and files for the sub are in the <a href="planner.html">Planner</a> (open a day, then <b>For the sub</b>; mark days you're out from each day's header). Standing information, like emergency procedures, helpers, and notes about each class, is in <a href="settings.html#subinfo">Settings → Substitute info</a>.</p></div>
   </div>
   <div id="packet"></div>
 </div>
 <script>
 (function(){
+  let S0_onlyOut = false;
   const $ = q => document.querySelector(q);
   const esc = Suite.esc;
   const pointsSetUp = () => Suite.feature('points') && Suite.classes().some(c => c.tables.some(t => t.open));
@@ -165,7 +145,13 @@
   const S0 = Object.assign({ notes: '', rules: '', emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {}, points: true, print: {}, breaks: {} }, Suite.get('sub', {}));
   const PR = () => Object.assign({ newPage: true, chartPage: false, notesEach: true, notesEnd: false, lines: 8 }, S0.print || {});
   ['helpers', 'classNotes', 'materials'].forEach(k => { S0[k] = S0[k] || {}; });
-  let date = Suite.dateKey(new Date());
+  let date = Suite.dateKey(new Date()), date2 = date;
+  { const f = location.hash.match(/from=(\d{4}-\d{2}-\d{2})/), t = location.hash.match(/to=(\d{4}-\d{2}-\d{2})/); if (f) date = date2 = f[1]; if (t) date2 = t[1]; if (/out=1/.test(location.hash)) S0_onlyOut = true; }
+  function printDays(){
+    const out = [], a = date <= date2 ? date : date2, z = date <= date2 ? date2 : date, outs = (Suite.get('sub', {}) || {}).out || {};
+    for (let d = parseDate(a); Suite.dateKey(d) <= z; d.setDate(d.getDate() + 1)) { const k = Suite.dateKey(d); if (!Suite.scheduleFor(parseDate(k)).periods.length && k !== a) continue; if (S0_onlyOut && !outs[k]) continue; out.push(k); }
+    return out.slice(0, 15);
+  }
   const save = () => Suite.set('sub', S0);
   const mats = () => (S0.materials[date] = S0.materials[date] || []);
   const urls = {};
@@ -176,6 +162,15 @@
   async function fileUrl(id){ if (urls[id]) return urls[id]; const r = await Suite.files.get(id); if (!r || !r.blob) return null; return (urls[id] = URL.createObjectURL(r.blob)); }
 
   function render(){
+    const days = printDays(), keep = date, list0 = Suite.classes(); let html = '';
+    days.forEach(d => { date = d; html += renderOne(); }); date = keep;
+    const P0 = PR();
+    $('#packet').classList.toggle('flow', !P0.newPage);
+    $('#packet').innerHTML = !list0.length ? '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>'
+      : days.length ? html : `<div class="sheet"><p>${S0_onlyOut ? 'None of these days are marked "I\'m out" in the Planner. Mark them from each day\'s header there, or turn off "Only days marked I\'m out."' : 'There are no school days in that range.'}</p></div>`;
+    document.querySelectorAll('img[data-fid]').forEach(async img => { const u = await fileUrl(img.dataset.fid); if (u) img.src = u; });
+  }
+  function renderOne(){
     const list = Suite.classes(), day = Suite.scheduleFor(parseDate(date));
     const when = parseDate(date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const T = Suite.get('tracker', {}), caps = (T && T.captains) || {};
@@ -235,9 +230,7 @@
       </section>`;
     }).join('');
     const endNotes = P0.notesEnd ? `<section class="sheet"><h2>Notes for your teacher</h2><div class="sub">${esc(when)}</div>${notesBox('How the day went', 21, 'Anything about the day: what got done, what didn\'t, who was absent, who was a big help, and anything I should follow up on.')}</section>` : '';
-    $('#packet').classList.toggle('flow', !P0.newPage);
-    $('#packet').innerHTML = list.length ? overview + pages + endNotes : '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>';
-    document.querySelectorAll('img[data-fid]').forEach(async img => { const u = await fileUrl(img.dataset.fid); if (u) img.src = u; });
+    return overview + pages + endNotes;
   }
 
   document.addEventListener('change', e => { const pr = e.target.dataset && e.target.dataset.pr; if (pr) { S0.print = Object.assign(PR(), { [pr]: e.target.type === 'checkbox' ? e.target.checked : Math.max(3, Math.min(30, parseInt(e.target.value, 10) || 8)) }); Suite.set('sub', S0); render(); } });
@@ -245,18 +238,10 @@
   document.addEventListener('change', e => { if (e.target.id === 'spoints') { S0.points = e.target.checked; Suite.set('sub', S0); renderControls(); render(); } });
   function renderControls(){
     const list = Suite.classes();
-    $('#sdate').value = date;
+    $('#sdate').value = date; $('#sdate2').value = date2; $('#onlyout').checked = S0_onlyOut;
     $('#classpick').innerHTML = list.map(c => `<label><input type="checkbox" value="${esc(c.id)}"${S0.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="muted small">No classes yet.</span>';
-    document.querySelectorAll('textarea[data-t]').forEach(t => { t.value = S0[t.dataset.t] || ''; });
     const P1 = PR(); document.querySelectorAll('[data-pr]').forEach(i => { if (i.type === 'checkbox') i.checked = !!P1[i.dataset.pr]; else i.value = P1[i.dataset.pr]; });
     $('#ptsbox').hidden = !pointsSetUp(); $('#spoints').checked = S0.points !== false; $('#ptsbox').lastChild.textContent = ' Include ' + Suite.word('team') + ' points in the sub plans';
-    $('#rulesbox').hidden = !usesPoints(); $('#srules').placeholder = RULES();
-    $('#classnotes').innerHTML = list.map(c => `<div class="classnote"><h3>${esc(c.name)}</h3>
-        <span class="lb">Students the sub can rely on</span>
-        <div class="helpers">${c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => `<label><input type="checkbox" data-help="${esc(c.id)}" value="${esc(s.id)}"${(S0.helpers[c.id] || []).includes(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">No roster yet.</span>'}</div>
-        <label class="lb" for="cn-${esc(c.id)}">Notes about this class</label>
-        <textarea id="cn-${esc(c.id)}" rows="3" data-cnote="${esc(c.id)}" placeholder="Routines, reminders, anything the sub should know">${esc(S0.classNotes[c.id] || '')}</textarea></div>`).join('') || '<p class="muted">Add classes in Classes & settings first.</p>';
-    renderMaterials();
   }
 
   /* ---------- copy materials between days (for absences longer than a day) ---------- */
@@ -298,6 +283,7 @@
   }
 
   function renderMaterials(){
+    if (!document.getElementById('materials')) return;
     const list = Suite.classes(), M = mats();
     $('#mdate').textContent = parseDate(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     $('#materials').innerHTML = M.map(m => {
@@ -317,7 +303,9 @@
 
   document.addEventListener('change', async e => {
     const el = e.target;
-    if (el.id === 'sdate' && el.value) { date = el.value; renderMaterials(); render(); }
+    if (el.id === 'sdate' && el.value) { date = el.value; if (date2 < date) { date2 = date; $('#sdate2').value = date2; } render(); }
+    else if (el.id === 'sdate2' && el.value) { date2 = el.value; render(); }
+    else if (el.id === 'onlyout') { S0_onlyOut = el.checked; render(); }
     else if (el.closest('#classpick')) { const id = el.value; S0.skip = S0.skip.filter(x => x !== id); if (!el.checked) S0.skip.push(id); save(); render(); }
     else if (el.dataset.help) { const cid = el.dataset.help, set = new Set(S0.helpers[cid] || []); if (el.checked) set.add(el.value); else set.delete(el.value); S0.helpers[cid] = [...set]; save(); render(); }
     else if (el.dataset.mfor) {
