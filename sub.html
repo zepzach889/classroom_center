@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-11c">
-<script src="shared/core.js?v=2026-10-11c"></script>
-<script>window.PAGE_VERSION = '2026-10-11c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-12a">
+<script src="shared/core.js?v=2026-10-12a"></script>
+<script>window.PAGE_VERSION = '2026-10-12a';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -80,6 +80,29 @@
 #ptsbox{display:flex;gap:8px;align-items:center;margin:12px 0 0;font-weight:600}
 #ptsbox[hidden]{display:none}
 @media print{.seatimg{border:0;border-radius:0;break-inside:avoid}}
+.pbrk{position:relative;height:0;margin:2px 0}
+.pbrk button{position:relative;top:-11px;display:block;margin:0 auto;font:600 12px var(--sans);color:var(--ink-2);background:var(--sheet);border:1.5px dashed var(--rule);border-radius:999px;padding:1px 10px;cursor:pointer;opacity:0;transition:opacity .15s}
+.sheet:hover .pbrk button,.pbrk button:focus{opacity:.9}
+.pbrk.on{height:auto;border-top:2.5px dashed var(--land);margin:18px 0}
+.pbrk.on button{opacity:1;color:var(--land);border-color:var(--land);border-style:solid}
+.pbrk.forced{border-top-style:dotted}
+.subnotes{margin-top:18px;border:1.5px solid #999;border-radius:10px;padding:10px 14px;break-inside:avoid}
+.subnotes h3{margin-top:0}
+.subnotes .prompts{font-size:13px;color:#555;margin:0 0 6px}
+.ruled i{display:block;height:.34in;border-bottom:1px solid #8a939b}
+.signed{margin:10px 0 0;font-size:14px}.signed span{display:inline-block;width:3in;border-bottom:1px solid #777}
+.keep{break-inside:avoid}
+.popts{margin-top:10px}.popts summary{cursor:pointer;font-weight:700}
+.popts .rv{display:flex;gap:8px;align-items:center;margin:6px 0}
+@media print{
+  .pbrk{border:0!important;margin:0!important;height:0!important}
+  .pbrk.on{break-after:page}
+  .pbrk button{display:none}
+  #packet.flow .sheet{break-after:auto}
+  .subnotes{border-color:#777}
+  .mimg{max-height:3.2in;width:auto;max-width:100%;object-fit:contain}
+  .seatimg{max-height:6.3in;width:auto;max-width:100%;margin:0 auto}
+}
 </style>
 </head>
 <body>
@@ -94,6 +117,14 @@
         <div><span class="lb">Classes to include</span><div class="classpick" id="classpick"></div></div>
       </div>
       <label class="rv" id="ptsbox"><input type="checkbox" id="spoints"> Include table points in the sub plans</label>
+      <details class="popts"><summary>Printing and notes from the sub</summary>
+        <label class="rv"><input type="checkbox" data-pr="newPage"> Start each class on a new page</label>
+        <label class="rv"><input type="checkbox" data-pr="chartPage"> Put each seating chart on its own page</label>
+        <label class="rv"><input type="checkbox" data-pr="notesEach"> Add a lined notes box to each class</label>
+        <label class="rv"><input type="checkbox" data-pr="notesEnd"> Add a full page for notes at the end</label>
+        <label class="rv">Lines in each class's notes box <input class="field num" type="number" min="3" max="30" data-pr="lines" style="width:70px"></label>
+        <p class="hint" style="margin:6px 0 0">For more control, use the <b>✂ Page break here</b> buttons between sections in the preview below.</p>
+      </details>
       <div class="bar" style="margin-top:14px"><button class="btn primary" id="print">Print the packet</button><span class="muted small">Attached PDFs print separately; use their Open buttons below.</span></div>
     </div>
     <details class="cbox" open>
@@ -104,6 +135,8 @@
         <button class="btn" data-a="addnote">Add a note</button>
         <button class="btn" data-a="addlink">Add a link</button>
         <label class="btn">Attach files<input type="file" id="addfiles" multiple hidden></label>
+        <button class="btn quiet" data-a="copyfrom">Copy from another day</button>
+        <button class="btn quiet" data-a="copyto">Copy this day to…</button>
       </div>
     </details>
     <details class="cbox">
@@ -129,7 +162,8 @@
   const pointsSetUp = () => Suite.feature('points') && Suite.classes().some(c => c.tables.some(t => t.open));
   const usesPoints = () => pointsSetUp() && S0.points !== false;
   const RULES = () => `Students sit in ${Suite.word('team', { plural: true })}, and points go to the whole ${Suite.word('team')}. Please jot down any points you'd like to give, and I'll add them when I'm back.`;
-  const S0 = Object.assign({ notes: '', rules: '', emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {}, points: true }, Suite.get('sub', {}));
+  const S0 = Object.assign({ notes: '', rules: '', emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {}, points: true, print: {}, breaks: {} }, Suite.get('sub', {}));
+  const PR = () => Object.assign({ newPage: true, chartPage: false, notesEach: true, notesEnd: false, lines: 8 }, S0.print || {});
   ['helpers', 'classNotes', 'materials'].forEach(k => { S0[k] = S0[k] || {}; });
   let date = Suite.dateKey(new Date());
   const save = () => Suite.set('sub', S0);
@@ -158,6 +192,9 @@
         : `<li><span class="k">${esc(m.title || f.name)}</span><br><span class="url">Attached file: ${esc(f.name)}. Printed separately.</span></li>`;
     }).join('')}</ul>`;
     const block = (title, text) => text && text.trim() ? `<h3>${title}</h3><div class="pre">${esc(text.trim())}</div>` : '';
+    const P0 = PR(), BR = (S0.breaks || {})[date] || {};
+    const brk = key => `<div class="pbrk${BR[key] ? ' on' : ''}"><button class="noprint" data-brk="${esc(key)}" title="${BR[key] ? 'Remove this page break' : 'Start a new page here when printing'}">✂ ${BR[key] ? 'Page break (click to remove)' : 'Page break here'}</button></div>`;
+    const notesBox = (title, lines, prompt) => `<div class="subnotes"><h3>${title}</h3><p class="prompts">${prompt}</p><div class="ruled">${'<i></i>'.repeat(lines)}</div><p class="signed">Substitute's name: <span></span></p></div>`;
     const overview = `<section class="sheet">
       <h2>Substitute plans</h2><div class="sub">${esc(when)} · ${esc(day.label)}</div>
       ${ev.length ? `<h3>Happening today</h3><ul class="mlist">${ev.map(e => `<li><span class="k">${esc(e.title)}</span>${e.note ? ': ' + esc(e.note) : ''}</li>`).join('')}</ul>` : ''}
@@ -182,27 +219,36 @@
           ${a.target ? `<div><span class="k">Learning target:</span> ${esc(a.target)}</div>` : ''}
           ${a.items && a.items.length ? `<ol>${a.items.map(i => `<li>${esc(i)}</li>`).join('')}</ol>` : ''}
           ${a.homework ? `<div><span class="k">Homework:</span> ${esc(a.homework)}</div>` : ''}</div>` : ''}
-        ${matFor(c).length ? '<h3>Lesson materials</h3>' + matHtml(matFor(c)) : ''}
+        ${brk(c.id + '|plan')}
+        ${matFor(c).length ? '<h3>Lesson materials</h3>' + matHtml(matFor(c)) + brk(c.id + '|mats') : ''}
         ${helpers.length ? `<h3>Students you can rely on</h3><p>${helpers.map(s => esc(s.name)).join(', ')}</p>` : ''}
         ${block('Notes about this class', S0.classNotes[c.id])}
-        <h3>Seating chart</h3>
+        ${P0.chartPage ? '<div class="pbrk on forced"></div>' : brk(c.id + '|before-chart')}
+        <div class="keep"><h3>Seating chart</h3>
         ${c.students.length ? room : '<p class="noroster">No roster entered for this class.</p>'}
-        ${unassigned.length ? `<p style="margin-top:8px"><span class="k">Not at a table:</span> ${unassigned.map(s => esc(s.name)).join(', ')}</p>` : ''}
+        ${unassigned.length ? `<p style="margin-top:8px"><span class="k">Not at a table:</span> ${unassigned.map(s => esc(s.name)).join(', ')}</p>` : ''}</div>
+        ${brk(c.id + '|chart')}
         ${usesPoints() && c.tables.some(t => t.open) ? `<h3>Points given today</h3>
         <table><thead><tr>${c.tables.filter(t => t.open).map(t => `<th>${esc(t.name)}</th>`).join('')}</tr></thead>
-          <tbody><tr>${c.tables.filter(t => t.open).map(() => '<td style="height:54px"></td>').join('')}</tr></tbody></table>` : ''}
+          <tbody><tr>${c.tables.filter(t => t.open).map(() => '<td style="height:54px"></td>').join('')}</tr></tbody></table>${brk(c.id + '|points')}` : ''}
+        ${P0.notesEach ? notesBox('Notes for your teacher', P0.lines, 'How did class go? Who was absent or late? Who was helpful, and is there anything I should know?') : ''}
       </section>`;
     }).join('');
-    $('#packet').innerHTML = list.length ? overview + pages : '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>';
+    const endNotes = P0.notesEnd ? `<section class="sheet"><h2>Notes for your teacher</h2><div class="sub">${esc(when)}</div>${notesBox('How the day went', 21, 'Anything about the day: what got done, what didn\'t, who was absent, who was a big help, and anything I should follow up on.')}</section>` : '';
+    $('#packet').classList.toggle('flow', !P0.newPage);
+    $('#packet').innerHTML = list.length ? overview + pages + endNotes : '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>';
     document.querySelectorAll('img[data-fid]').forEach(async img => { const u = await fileUrl(img.dataset.fid); if (u) img.src = u; });
   }
 
+  document.addEventListener('change', e => { const pr = e.target.dataset && e.target.dataset.pr; if (pr) { S0.print = Object.assign(PR(), { [pr]: e.target.type === 'checkbox' ? e.target.checked : Math.max(3, Math.min(30, parseInt(e.target.value, 10) || 8)) }); Suite.set('sub', S0); render(); } });
+  document.addEventListener('click', e => { const b = e.target.closest('[data-brk]'); if (!b) return; S0.breaks = S0.breaks || {}; const d = S0.breaks[date] = S0.breaks[date] || {}; if (d[b.dataset.brk]) delete d[b.dataset.brk]; else d[b.dataset.brk] = true; Suite.set('sub', S0); render(); });
   document.addEventListener('change', e => { if (e.target.id === 'spoints') { S0.points = e.target.checked; Suite.set('sub', S0); renderControls(); render(); } });
   function renderControls(){
     const list = Suite.classes();
     $('#sdate').value = date;
     $('#classpick').innerHTML = list.map(c => `<label><input type="checkbox" value="${esc(c.id)}"${S0.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="muted small">No classes yet.</span>';
     document.querySelectorAll('textarea[data-t]').forEach(t => { t.value = S0[t.dataset.t] || ''; });
+    const P1 = PR(); document.querySelectorAll('[data-pr]').forEach(i => { if (i.type === 'checkbox') i.checked = !!P1[i.dataset.pr]; else i.value = P1[i.dataset.pr]; });
     $('#ptsbox').hidden = !pointsSetUp(); $('#spoints').checked = S0.points !== false; $('#ptsbox').lastChild.textContent = ' Include ' + Suite.word('team') + ' points in the sub plans';
     $('#rulesbox').hidden = !usesPoints(); $('#srules').placeholder = RULES();
     $('#classnotes').innerHTML = list.map(c => `<div class="classnote"><h3>${esc(c.name)}</h3>
@@ -212,6 +258,45 @@
         <textarea id="cn-${esc(c.id)}" rows="3" data-cnote="${esc(c.id)}" placeholder="Routines, reminders, anything the sub should know">${esc(S0.classNotes[c.id] || '')}</textarea></div>`).join('') || '<p class="muted">Add classes in Classes & settings first.</p>';
     renderMaterials();
   }
+
+  /* ---------- copy materials between days (for absences longer than a day) ---------- */
+  const fmtD = k => parseDate(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const copyItems = (items, classIds, all) => items.map(m => { let cl = m.classes ? m.classes.filter(id => classIds.includes(id)) : (all ? null : classIds.slice()); if (cl && !cl.length) return null; return Object.assign(JSON.parse(JSON.stringify(m)), { id: Suite.uid(), classes: cl }); }).filter(Boolean);
+  function copyDialog(mode){
+    const list = Suite.classes(), days = Object.keys(S0.materials || {}).filter(k => k !== date && (S0.materials[k] || []).length).sort().reverse();
+    if (mode === 'from' && !days.length) { Suite.toast('No other days have materials yet'); return; }
+    if (mode === 'to' && !(S0.materials[date] || []).length) { Suite.toast('Add materials to this day first'); return; }
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const next = (() => { const d = parseDate(date); d.setDate(d.getDate() + 1); return Suite.dateKey(d); })();
+    back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" aria-labelledby="cp-t" style="max-width:480px">
+      <h2 id="cp-t">${mode === 'from' ? 'Copy materials from another day' : 'Copy this day\'s materials to other days'}</h2>
+      ${mode === 'from' ? `<label class="lb" for="cp-day">Copy from</label><select id="cp-day" class="field">${days.map(k => `<option value="${k}">${fmtD(k)} (${S0.materials[k].length})</option>`).join('')}</select>`
+        : `<div class="two"><label class="lb">First day<input type="date" class="field" id="cp-a" value="${next}"></label><label class="lb">Last day<input type="date" class="field" id="cp-b" value="${next}"></label></div><p class="hint" style="margin:4px 0 0">Weekends and days off are skipped.</p>`}
+      <p class="lb" style="margin-top:12px">For these classes</p>
+      ${list.map(c => `<label class="rv"><input type="checkbox" class="cp-c" value="${esc(c.id)}" checked> ${esc(c.name)}</label>`).join('')}
+      <p class="hint">Materials for other classes are left out. Copies are added to what's already there.</p>
+      <div class="suite-dialog-actions"><button class="btn" data-c="cancel">Cancel</button><button class="btn primary" data-c="go">Copy</button></div></div>`;
+    document.body.appendChild(back);
+    const close = () => back.remove();
+    back.addEventListener('click', e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('[data-c]'); if (!b) return;
+      if (b.dataset.c === 'cancel') return close();
+      const ids = [...back.querySelectorAll('.cp-c:checked')].map(x => x.value), all = ids.length === list.length;
+      if (!ids.length) { Suite.toast('Pick at least one class'); return; }
+      if (mode === 'from') {
+        const src = back.querySelector('#cp-day').value, add = copyItems(S0.materials[src] || [], ids, all);
+        mats().push(...add); save(); close(); renderMaterials(); render(); Suite.toast(`Copied ${add.length} item${add.length === 1 ? '' : 's'} from ${fmtD(src)}`);
+      } else {
+        let a = back.querySelector('#cp-a').value, z = back.querySelector('#cp-b').value || a; if (!a) return; if (z < a) [a, z] = [z, a];
+        const targets = []; for (let d = parseDate(a); Suite.dateKey(d) <= z; d.setDate(d.getDate() + 1)) { const k = Suite.dateKey(d); if (k !== date && Suite.scheduleFor(parseDate(k)).periods.length) targets.push(k); }
+        if (!targets.length) { Suite.toast('No school days in that range'); return; }
+        let n = 0; targets.forEach(k => { const add = copyItems(S0.materials[date] || [], ids, all); S0.materials[k] = (S0.materials[k] || []).concat(add); n = add.length; });
+        save(); close(); Suite.toast(`Copied ${n} item${n === 1 ? '' : 's'} to ${targets.length} day${targets.length === 1 ? '' : 's'}`);
+      }
+    });
+  }
+
   function renderMaterials(){
     const list = Suite.classes(), M = mats();
     $('#mdate').textContent = parseDate(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -261,13 +346,15 @@
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a;
+    if (a === 'copyfrom') { copyDialog('from'); return; }
+    if (a === 'copyto') { copyDialog('to'); return; }
     if (a === 'addnote' || a === 'addlink') { mats().push({ id: Suite.uid(), kind: a === 'addnote' ? 'note' : 'link', title: '', text: '', url: '', classes: null }); save(); renderMaterials(); render(); const f = document.querySelector('.mat:last-child [data-k="title"]'); if (f) f.focus(); }
     else if (a === 'mdel') {
       const M = mats(), i = M.findIndex(x => x.id === el.dataset.id); if (i < 0) return;
       const m = M[i];
       if (m.kind === 'file' && !await Suite.dialog({ title: 'Remove ' + ((m.file && m.file.name) || 'this file') + '?', body: 'The attached file will be deleted from this browser.', ok: 'Remove', danger: true })) return;
-      M.splice(i, 1);
-      if (m.kind === 'file' && m.file) { Suite.files.del(m.file.id).catch(() => {}); if (urls[m.file.id]) { URL.revokeObjectURL(urls[m.file.id]); delete urls[m.file.id]; } }
+      M.splice(i, 1); save();
+      if (m.kind === 'file' && m.file && !Suite.fileInUse(m.file.id)) { Suite.files.del(m.file.id).catch(() => {}); if (urls[m.file.id]) { URL.revokeObjectURL(urls[m.file.id]); delete urls[m.file.id]; } }
       save(); renderMaterials(); render();
     }
     else if (a === 'mopen') { const u = await fileUrl(el.dataset.id); if (u) window.open(u, '_blank'); else Suite.toast("Couldn't find that file. It may have been removed."); }
