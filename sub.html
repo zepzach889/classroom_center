@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-12e">
-<script src="shared/core.js?v=2026-10-12e"></script>
-<script>window.PAGE_VERSION = '2026-10-12e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-13b">
+<script src="shared/core.js?v=2026-10-13b"></script>
+<script>window.PAGE_VERSION = '2026-10-13b';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -112,6 +112,22 @@
 }
 .range{display:flex;align-items:center;gap:8px}.range .field{width:170px}
 .moved{background:var(--wash)}
+.rlist{columns:2;column-gap:28px;padding-left:0;list-style:none;margin:6px 0 0}
+.rlist li{display:flex;align-items:baseline;gap:6px;padding:2px 0;break-inside:avoid;font-size:14px}
+.rlist .box{flex:none;width:12px;height:12px;border:1.5px solid #555;border-radius:2px;transform:translateY(1px)}
+.rlist small{margin-left:auto;color:#666;font-size:12px;padding-left:8px}
+@media print{
+  @page{margin:.5in}
+  .sheet table td,.sheet table th{padding:3px 6px}
+  .sheet h3{margin-top:10px}
+  .sheet h3{break-after:avoid}
+  .sheet tr{break-inside:avoid}
+  .cover{font-size:13px;line-height:1.35}
+  .cover h2{font-size:22px}.cover h3{font-size:15px;margin:8px 0 3px}
+  .cover .cover2{columns:2;column-gap:24px}
+  .cover .cover2 h3{break-after:avoid}.cover .cover2 .pre{break-inside:auto}
+  .cover table{font-size:12px}.cover table td,.cover table th{padding:2px 6px}
+}
 </style>
 </head>
 <body>
@@ -128,6 +144,8 @@
       <details class="popts"><summary>Printing and notes from the sub</summary>
         <label class="rv"><input type="checkbox" data-pr="newPage"> Start each class on a new page</label>
         <label class="rv"><input type="checkbox" data-pr="chartPage"> Put each seating chart on its own page</label>
+        <label class="rv"><input type="checkbox" data-pr="roster"> Add a class list to each class (by last name, with a check-off box)</label>
+        <label class="rv"><input type="checkbox" data-pr="byCourse"> Print lesson instructions once per course (when sections share a course)</label>
         <label class="rv"><input type="checkbox" data-pr="notesEach"> Add a lined notes box to each class</label>
         <label class="rv"><input type="checkbox" data-pr="notesEnd"> Add a full page for notes at the end</label>
         <label class="rv">Lines in each class's notes box <input class="field num" type="number" min="3" max="30" data-pr="lines" style="width:70px"></label>
@@ -148,7 +166,7 @@
   const usesPoints = () => pointsSetUp() && S0.points !== false;
   const RULES = () => `Students sit in ${Suite.word('team', { plural: true })}, and points go to the whole ${Suite.word('team')}. Please jot down any points you'd like to give, and I'll add them when I'm back.`;
   const S0 = Object.assign({ notes: '', rules: '', emergency: '', where: '', skip: [], helpers: {}, classNotes: {}, materials: {}, points: true, print: {}, breaks: {} }, Suite.get('sub', {}));
-  const PR = () => Object.assign({ newPage: true, chartPage: false, notesEach: true, notesEnd: false, lines: 8 }, S0.print || {});
+  const PR = () => Object.assign({ newPage: true, chartPage: false, notesEach: true, notesEnd: false, lines: 8, roster: false, byCourse: true }, S0.print || {});
   ['helpers', 'classNotes', 'materials'].forEach(k => { S0[k] = S0[k] || {}; });
   let date = Suite.dateKey(new Date()), date2 = date;
   { const f = location.hash.match(/from=(\d{4}-\d{2}-\d{2})/), t = location.hash.match(/to=(\d{4}-\d{2}-\d{2})/); if (f) date = date2 = f[1]; if (t) date2 = t[1]; if (/out=1/.test(location.hash)) S0_onlyOut = true; }
@@ -205,10 +223,10 @@
     const P0 = PR(), BR = (S0.breaks || {})[date] || {};
     const brk = key => `<div class="pbrk${BR[key] ? ' on' : ''}"><button class="noprint" data-brk="${esc(key)}" title="${BR[key] ? 'Remove this page break' : 'Start a new page here when printing'}">✂ ${BR[key] ? 'Page break (click to remove)' : 'Page break here'}</button></div>`;
     const notesBox = (title, lines, prompt) => `<div class="subnotes"><h3>${title}</h3><p class="prompts">${prompt}</p><div class="ruled">${'<i></i>'.repeat(lines)}</div><p class="signed">Substitute's name: <span></span></p></div>`;
-    const overview = `<section class="sheet">
+    const overview = `<section class="sheet cover">
       <h2>Substitute plans</h2><div class="sub">${esc(when)} · ${esc(day.label)}</div>
       ${ev.length ? `<h3>Happening today</h3><ul class="mlist">${ev.map(e => `<li><span class="k">${esc(e.title)}</span>${e.note ? ': ' + esc(e.note) : ''}</li>`).join('')}</ul>` : ''}
-      ${block('Notes', S0.notes)}${block('Emergency procedures', S0.emergency)}${block('Where to find things', S0.where)}
+      <div class="cover2">${block('Notes', S0.notes)}${block('Emergency procedures', S0.emergency)}${block('Where to find things', S0.where)}</div>
       <h3>Schedule</h3>
       ${day.periods.length ? `<table><thead><tr><th>Time</th><th>Period</th><th>Class</th></tr></thead><tbody>${day.periods.filter(p => !Suite.isPassing(p)).map(p => {
         const c = Suite.classForPeriod(p, list);
@@ -216,37 +234,61 @@
         : '<p>No bells on this day.</p>'}
       ${usesPoints() ? block('How ' + Suite.word('team') + ' points work', S0.rules || RULES()) : ''}
     </section>`;
-    const pages = chosen.map(c => {
+    const lastName = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
+    const rosterHtml = c => { const tn = id => (c.tables.find(t => t.id === id) || {}).name || '';
+      const kids = c.students.slice().sort((x, y) => lastName(x.name).localeCompare(lastName(y.name)) || x.name.localeCompare(y.name));
+      return kids.length ? `<div class="keep"><h3>Class list · ${esc(c.name)} <span class="muted small">(check off who's here)</span></h3><ol class="rlist">${kids.map(s => `<li><span class="box"></span><b>${esc(lastName(s.name))}</b>${s.name.trim().split(/\s+/).length > 1 ? ', ' + esc(s.name.trim().split(/\s+/).slice(0, -1).join(' ')) : ''}${tn(s.tableId) ? `<small>${esc(tn(s.tableId))}${Number.isInteger(s.seat) ? ', seat ' + (s.seat + 1) : ''}</small>` : ''}</li>`).join('')}</ol></div>` : ''; };
+    const planHtml = a => a ? `<h3>Today's plan</h3><div class="agenda">
+          ${a.target ? `<div><span class="k">Learning target:</span> ${esc(a.target)}</div>` : ''}
+          ${a.items && a.items.length ? `<ol>${a.items.map(i => `<li>${esc(i)}</li>`).join('')}</ol>` : ''}
+          ${a.homework ? `<div><span class="k">Homework:</span> ${esc(a.homework)}</div>` : ''}</div>` : '';
+    // one instruction page per course (when that option is on and two or more of its sections are printing)
+    const groups = [], seen = new Set();
+    chosen.forEach(c => { if (seen.has(c.id)) return; const co = P0.byCourse ? Suite.courseOf(c.id) : null, members = co ? chosen.filter(x => (co.classIds || []).includes(x.id)) : [];
+      if (co && members.length > 1) { members.forEach(m => seen.add(m.id)); groups.push({ co, members }); } else { seen.add(c.id); groups.push({ members: [c] }); } });
+    const coursePage = g => {
+      const per = g.members.map(c => { const p = periodFor(c); return esc(c.name) + (p ? ` (${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)})` : ''); }).join(' · ');
+      const shared = g.members.find(c => !Suite.agendaIsOwn(date, c.id)) || g.members[0];
+      const items = []; g.members.forEach(c => matFor(c).forEach(m => { if (!items.some(x => x.id === m.id)) items.push(m); }));
+      return `<section class="sheet">
+        <h2>${esc(g.co.name)}</h2><div class="sub">${per} · ${esc(when)}</div>
+        <p class="hint" style="margin:6px 0 0">These instructions are for every ${esc(g.co.name)} section. Each section's page follows with its seating chart and notes.</p>
+        ${planHtml(Suite.agendaFor(date, shared.id))}
+        ${brk('course:' + g.co.id + '|plan')}
+        ${items.length ? '<h3>Lesson materials</h3>' + matHtml(items.map(m => { const only = m.classes && !g.members.every(c => m.classes.includes(c.id)) ? g.members.filter(c => m.classes.includes(c.id)).map(c => c.name).join(', ') : ''; return only ? Object.assign({}, m, { title: (m.title || (m.file || {}).name || (m.kind === 'link' ? 'Link' : 'Note')) + ` (${only} only)` }) : m; })) + brk('course:' + g.co.id + '|mats') : ''}
+      </section>`;
+    };
+    const classPage = (c, inCourse) => {
       const lay = Suite.roomLayout(c.tables), p = periodFor(c), a = Suite.agendaFor(date, c.id), cp = caps[c.id] || {};
       const tables = c.tables.slice().sort((x, y) => lay.at[x.id].row - lay.at[y.id].row || lay.at[x.id].col - lay.at[y.id].col);
       const unassigned = c.students.filter(s => !c.tables.some(t => t.id === s.tableId));
       const bySeat = (x, y) => (Number.isInteger(x.seat) ? x.seat : 99) - (Number.isInteger(y.seat) ? y.seat : 99) || x.name.localeCompare(y.name);
       const room = c.tables.length ? `<img class="seatimg" alt="Seating chart for ${esc(c.name)}" src="${Suite.drawSeatingChart(c, { title: '', width: 3000, height: 2050, margin: 40 }).toDataURL('image/png')}">` : '';
       const helpers = (S0.helpers[c.id] || []).map(id => c.students.find(s => s.id === id)).filter(Boolean);
+      const ownPlan = inCourse && Suite.agendaIsOwn(date, c.id);
       return `<section class="sheet">
-        <h2>${esc(c.name)}</h2><div class="sub">${p ? Suite.fmt12(p.start) + ' to ' + Suite.fmt12(p.end) + ' · ' : ''}${esc(when)}</div>
-        ${a ? `<h3>Today's plan</h3><div class="agenda">
-          ${a.target ? `<div><span class="k">Learning target:</span> ${esc(a.target)}</div>` : ''}
-          ${a.items && a.items.length ? `<ol>${a.items.map(i => `<li>${esc(i)}</li>`).join('')}</ol>` : ''}
-          ${a.homework ? `<div><span class="k">Homework:</span> ${esc(a.homework)}</div>` : ''}</div>` : ''}
-        ${brk(c.id + '|plan')}
-        ${matFor(c).length ? '<h3>Lesson materials</h3>' + matHtml(matFor(c)) + brk(c.id + '|mats') : ''}
+        <h2>${esc(c.name)}</h2><div class="sub">${p ? Suite.fmt12(p.start) + ' to ' + Suite.fmt12(p.end) + ' · ' : ''}${esc(when)}${inCourse ? ' · ' + esc(inCourse.name) + ': see the course page for the lesson' : ''}</div>
+        ${!inCourse || ownPlan ? planHtml(a) + brk(c.id + '|plan') : ''}${ownPlan ? '<p class="small muted">This section has its own plan today.</p>' : ''}
+        ${!inCourse && matFor(c).length ? '<h3>Lesson materials</h3>' + matHtml(matFor(c)) + brk(c.id + '|mats') : ''}
         ${helpers.length ? `<h3>Students you can rely on</h3><p>${helpers.map(s => esc(s.name)).join(', ')}</p>` : ''}
         ${block('Notes about this class', S0.classNotes[c.id])}
         ${P0.chartPage ? '<div class="pbrk on forced"></div>' : brk(c.id + '|before-chart')}
-        <div class="keep"><h3>Seating chart</h3>
+        <div class="keep"><h3>Seating chart · ${esc(c.name)}${p ? ` <span class="muted small">(${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)})</span>` : ''}</h3>
         ${c.students.length ? room : '<p class="noroster">No roster entered for this class.</p>'}
         ${unassigned.length ? `<p style="margin-top:8px"><span class="k">Not at a table:</span> ${unassigned.map(s => esc(s.name)).join(', ')}</p>` : ''}</div>
         ${brk(c.id + '|chart')}
+        ${P0.roster ? rosterHtml(c) + brk(c.id + '|roster') : ''}
         ${usesPoints() && c.tables.some(t => t.open) ? `<h3>Points given today</h3>
         <table><thead><tr>${c.tables.filter(t => t.open).map(t => `<th>${esc(t.name)}</th>`).join('')}</tr></thead>
           <tbody><tr>${c.tables.filter(t => t.open).map(() => '<td style="height:54px"></td>').join('')}</tr></tbody></table>${brk(c.id + '|points')}` : ''}
-        ${P0.notesEach ? notesBox('Notes for your teacher', P0.lines, 'How did class go? Who was absent or late? Who was helpful, and is there anything I should know?') : ''}
+        ${P0.notesEach ? notesBox('Notes for your teacher · ' + esc(c.name), P0.lines, 'How did class go? Who was absent or late? Who was helpful, and is there anything I should know?') : ''}
       </section>`;
-    }).join('');
+    };
+    const pages = groups.map(g => g.co ? coursePage(g) + g.members.map(c => classPage(c, g.co)).join('') : classPage(g.members[0], null)).join('');
     const endNotes = P0.notesEnd ? `<section class="sheet"><h2>Notes for your teacher</h2><div class="sub">${esc(when)}</div>${notesBox('How the day went', 21, 'Anything about the day: what got done, what didn\'t, who was absent, who was a big help, and anything I should follow up on.')}</section>` : '';
     return overview + pages + endNotes;
   }
+
 
   document.addEventListener('change', e => { const pr = e.target.dataset && e.target.dataset.pr; if (pr) { S0.print = Object.assign(PR(), { [pr]: e.target.type === 'checkbox' ? e.target.checked : Math.max(3, Math.min(30, parseInt(e.target.value, 10) || 8)) }); Suite.set('sub', S0); render(); } });
   document.addEventListener('click', e => { const b = e.target.closest('[data-brk]'); if (!b) return; S0.breaks = S0.breaks || {}; const d = S0.breaks[date] = S0.breaks[date] || {}; if (d[b.dataset.brk]) delete d[b.dataset.brk]; else d[b.dataset.brk] = true; Suite.set('sub', S0); render(); });
