@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hall pass · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
+<script src="shared/core.js?v=2026-10-14a"></script>
+<script>window.PAGE_VERSION = '2026-10-14a';</script>
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.top h1{font-size:34px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills button{font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:4px 14px;cursor:pointer}
+.pills button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px}
+.card h2{font-size:22px;margin-bottom:8px}
+.hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.kids{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.kid{font:inherit;font-size:15px;font-weight:600;text-align:left;background:var(--paper);color:var(--ink);border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;cursor:pointer}
+.kid:hover{border-color:var(--edge)}
+.kid.out{background:var(--wash);border-style:dashed;color:var(--ink-2)}
+.kid.pick{border-color:var(--sea);box-shadow:0 0 0 2px var(--sea)}
+.dest{margin-top:10px;padding:10px 12px;border:2px solid var(--sea);border-radius:14px;background:var(--wash)}
+.dest .row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.dest button{font:inherit;font-weight:700;font-size:15px;border:0;border-radius:999px;padding:7px 16px;background:var(--sea);color:var(--on-sea);cursor:pointer}
+.dest button.quiet{background:transparent;color:var(--ink);border:1.5px solid var(--edge)}
+.outlist{list-style:none;margin:0;padding:0}
+.outlist li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--paper);border:1.5px solid var(--rule);margin-bottom:6px}
+.outlist .who{font-weight:700}.outlist .where{font-size:13px;color:var(--ink-2)}
+.outlist .t{font:700 22px var(--sans);font-variant-numeric:tabular-nums}
+.outlist li.warn{border-color:#c99a3e;background:#fbf2dc}.outlist li.warn .t{color:#9a6b12}
+.outlist li.long{border-color:#c4281c;background:#fbe3df}.outlist li.long .t{color:#c4281c}
+.outlist .back{font:inherit;font-weight:700;border:0;border-radius:999px;padding:7px 16px;background:var(--land);color:var(--on-land);cursor:pointer}
+.empty{color:var(--ink-2);margin:4px 0}
+table.log{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+table.log th,table.log td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule)}
+table.log th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.set{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:14px;margin-top:8px}
+.num{width:70px}
+@media print{#suite-nav,.noprint,.backup-banner{display:none!important}.card{border:0;padding:0}}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q), esc = Suite.esc;
+  const H = Object.assign({ out: [], log: [], warn: 8, keep: 30, sort: 'first', cur: null }, Suite.get('hallpass', {}));
+  const save = () => Suite.set('hallpass', H);
+  const DESTS = ['Restroom', 'Water', 'Office', 'Nurse', 'Locker', 'Counselor'];
+  const AUTO = Suite.autoClass('hallpass');
+  let picked = null, logDate = Suite.dateKey(new Date()), logAll = false;
+  // clear entries older than the keep window (student data stays only as long as needed)
+  { const cut = Date.now() - H.keep * 86400000; const before = H.log.length; H.log = H.log.filter(x => x.end >= cut); if (H.log.length !== before) save(); }
+  const classes = () => Suite.classes();
+  const curClass = () => { const list = classes(); if (AUTO.on) { const id = Suite.classNow(); const c = id && list.find(x => x.id === id); if (c) return c; } return list.find(c => c.id === H.cur) || list[0] || null; };
+  const lastName = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
+  const mmss = ms => { const s = Math.max(0, Math.floor(ms / 1000)), m = Math.floor(s / 60); return m + ':' + String(s % 60).padStart(2, '0'); };
+  const mins = ms => Math.max(1, Math.round(ms / 60000));
+  const fmtT = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const dayOf = t => Suite.dateKey(new Date(t));
+
+  function render(){
+    const list = classes(), c = curClass();
+    if (!c) { $('#app').innerHTML = '<div class="card"><h2>Add your classes first</h2><p>The hall pass uses your class rosters. <a href="settings.html">Go to Classes</a>.</p></div>'; return; }
+    H.cur = c.id;
+    const outIds = new Set(H.out.map(o => o.sid));
+    const kids = c.students.slice().sort((a, b) => H.sort === 'last' ? lastName(a.name).localeCompare(lastName(b.name)) || a.name.localeCompare(b.name) : a.name.localeCompare(b.name));
+    const pk = picked && c.students.find(s => s.id === picked);
+    // log for the chosen day
+    const rows = H.log.filter(x => dayOf(x.start) === logDate && (logAll || x.cid === c.id)).sort((a, b) => a.start - b.start);
+    // weekly summary (Monday to Friday of the chosen day's week)
+    const d0 = new Date(logDate + 'T12:00'); d0.setDate(d0.getDate() - ((d0.getDay() + 6) % 7)); const wk0 = Suite.dateKey(d0); const d4 = new Date(d0); d4.setDate(d4.getDate() + 4); const wk4 = Suite.dateKey(d4);
+    const wk = {}; H.log.filter(x => (logAll || x.cid === c.id) && dayOf(x.start) >= wk0 && dayOf(x.start) <= wk4).forEach(x => { const k = x.sid; wk[k] = wk[k] || { name: x.name, n: 0, ms: 0 }; wk[k].n++; wk[k].ms += x.end - x.start; });
+    const wkRows = Object.values(wk).sort((a, b) => b.n - a.n || b.ms - a.ms);
+    $('#app').innerHTML = `
+      <div class="top"><h1>Hall pass</h1>
+        <nav class="pills" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav></div>
+      <div class="grid2">
+        <section class="card">
+          <div class="hd"><h2>${esc(c.name)}</h2><span class="bar small">Sort: <button class="btn quiet small" data-a="sort" data-v="first" aria-pressed="${H.sort !== 'last'}">First name</button><button class="btn quiet small" data-a="sort" data-v="last" aria-pressed="${H.sort === 'last'}">Last name</button></span></div>
+          <p class="muted small" style="margin:0 0 8px">Tap a student, then where they're going.</p>
+          <div class="kids">${kids.map(s => `<button class="kid${outIds.has(s.id) ? ' out' : ''}${picked === s.id ? ' pick' : ''}" data-a="kid" data-id="${esc(s.id)}"${outIds.has(s.id) ? ' title="Out of the room now"' : ''}>${esc(s.name)}</button>`).join('') || '<p class="empty">No students in this class yet.</p>'}</div>
+          ${pk ? `<div class="dest"><b>${esc(pk.name)}</b> is going to…<div class="row">${DESTS.map(d => `<button data-a="go" data-v="${esc(d)}">${esc(d)}</button>`).join('')}<button data-a="go" data-v="other" class="quiet">Somewhere else…</button><button data-a="cancel" class="quiet">Cancel</button></div></div>` : ''}
+        </section>
+        <section class="card">
+          <h2>Out of the room</h2>
+          ${H.out.length ? `<ul class="outlist" id="outlist">${H.out.map(o => `<li data-start="${o.start}"><span><span class="who">${esc(o.name)}</span><br><span class="where">${esc(o.dest)} · left ${fmtT(o.start)}${o.cid !== c.id ? ' · ' + esc((list.find(k => k.id === o.cid) || {}).name || '') : ''}</span></span><span class="t">${mmss(Date.now() - o.start)}</span><button class="back" data-a="back" data-id="${esc(o.id)}">Back</button></li>`).join('')}</ul>` : '<p class="empty">Everyone is here.</p>'}
+          <div class="set noprint"><label>Highlight after <input class="field num" type="number" min="1" max="60" data-s="warn" value="${H.warn}"> minutes</label></div>
+        </section>
+      </div>
+      <section class="card" style="margin-top:20px">
+        <div class="hd"><h2>Log</h2><div class="bar noprint"><input type="date" class="field" data-s="day" value="${logDate}" aria-label="Day"><label class="small"><input type="checkbox" data-s="all"${logAll ? ' checked' : ''}> All classes</label><button class="btn small" data-a="csv">Download (CSV)</button></div></div>
+        ${rows.length ? `<table class="log"><thead><tr><th>Student</th>${logAll ? '<th>Class</th>' : ''}<th>Where</th><th>Out</th><th>Back</th><th class="n">Minutes</th></tr></thead><tbody>${rows.map(x => `<tr><td>${esc(x.name)}</td>${logAll ? `<td>${esc((list.find(k => k.id === x.cid) || {}).name || '')}</td>` : ''}<td>${esc(x.dest)}</td><td>${fmtT(x.start)}</td><td>${fmtT(x.end)}</td><td class="n">${mins(x.end - x.start)}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">No trips logged for this day.</p>'}
+        <h3 style="margin-top:16px">This week <span class="muted small">(${new Date(wk0 + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} to ${new Date(wk4 + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})</span></h3>
+        ${wkRows.length ? `<table class="log"><thead><tr><th>Student</th><th class="n">Trips</th><th class="n">Total minutes</th></tr></thead><tbody>${wkRows.map(r => `<tr><td>${esc(r.name)}</td><td class="n">${r.n}</td><td class="n">${mins(r.ms)}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">No trips this week.</p>'}
+        <div class="set noprint"><label>Keep the log for <input class="field num" type="number" min="1" max="365" data-s="keep" value="${H.keep}"> days</label><span class="muted small">Older trips clear automatically.</span></div>
+      </section>`;
+  }
+  // live timers
+  setInterval(() => { document.querySelectorAll('#outlist li').forEach(li => { const ms = Date.now() - +li.dataset.start, w = H.warn * 60000; li.querySelector('.t').textContent = mmss(ms); li.classList.toggle('warn', ms >= w && ms < w * 1.5); li.classList.toggle('long', ms >= w * 1.5); }); }, 1000);
+  setInterval(() => { if (AUTO.on) { const id = Suite.classNow(); if (id && id !== H.cur) render(); } }, 15000);
+
+  document.addEventListener('click', async e => {
+    const el = e.target.closest('[data-a]'); if (!el) return;
+    const a = el.dataset.a, c = curClass();
+    if (a === 'pick') { if (el.dataset.id === 'auto') AUTO.set(true); else { AUTO.set(false); H.cur = el.dataset.id; save(); } picked = null; render(); }
+    else if (a === 'sort') { H.sort = el.dataset.v; save(); render(); }
+    else if (a === 'kid') {
+      const out = H.out.find(o => o.sid === el.dataset.id);
+      if (out) { if (await Suite.dialog({ title: `${out.name} is back?`, ok: 'Back' })) back(out.id); return; }
+      picked = picked === el.dataset.id ? null : el.dataset.id; render();
+    }
+    else if (a === 'cancel') { picked = null; render(); }
+    else if (a === 'go') {
+      const s = c.students.find(x => x.id === picked); if (!s) return;
+      let dest = el.dataset.v; if (dest === 'other') { dest = await Suite.dialog({ title: 'Where to?', input: '', ok: 'Sign out' }); if (!dest) return; }
+      H.out.push({ id: Suite.uid(), cid: c.id, sid: s.id, name: s.name, dest, start: Date.now() }); picked = null; save(); render();
+    }
+    else if (a === 'back') back(el.dataset.id);
+    else if (a === 'csv') {
+      const list = classes(), rows = H.log.slice().sort((x, y) => x.start - y.start);
+      const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+      const csv = ['Date,Class,Student,Where,Out,Back,Minutes'].concat(rows.map(x => [dayOf(x.start), (list.find(k => k.id === x.cid) || {}).name || '', x.name, x.dest, fmtT(x.start), fmtT(x.end), mins(x.end - x.start)].map(q).join(','))).join('\n');
+      const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a2.download = 'hall-pass-log.csv'; document.body.appendChild(a2); a2.click(); a2.remove();
+    }
+  });
+  function back(id){ const i = H.out.findIndex(o => o.id === id); if (i < 0) return; const o = H.out.splice(i, 1)[0]; H.log.push(Object.assign({}, o, { end: Date.now() })); save(); render(); Suite.toast(o.name + ' is back · ' + mins(Date.now() - o.start) + ' min'); }
+  document.addEventListener('change', e => { const k = e.target.dataset && e.target.dataset.s; if (!k) return;
+    if (k === 'warn') H.warn = Math.max(1, Math.min(60, parseInt(e.target.value, 10) || 8));
+    else if (k === 'keep') H.keep = Math.max(1, Math.min(365, parseInt(e.target.value, 10) || 30));
+    else if (k === 'day') logDate = e.target.value || logDate;
+    else if (k === 'all') logAll = e.target.checked;
+    save(); render(); });
+  window.addEventListener('suite:change', e => { if (e.detail && e.detail.key === 'hallpass' && e.detail.external) { Object.assign(H, Suite.get('hallpass', {})); render(); } });
+  Suite.mountNav('hallpass');
+  render();
+})();
+</script>
+</body>
+</html>

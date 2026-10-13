@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-13b">
-<script src="shared/core.js?v=2026-10-13b"></script>
-<script>window.PAGE_VERSION = '2026-10-13b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
+<script src="shared/core.js?v=2026-10-14a"></script>
+<script>window.PAGE_VERSION = '2026-10-14a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -23,6 +23,9 @@ table.plan th{font-weight:600;text-align:left;vertical-align:bottom;padding:4px 
 table.plan th.day{font-size:15px}
 table.plan th.day span{display:block;font-size:12px;font-weight:500;color:var(--ink-2)}
 table.plan th.day.today{color:var(--land)}
+.ubar{display:block;align-self:stretch;height:16px;margin:-2px -4px 4px;padding:0 6px;border-radius:6px;background:color-mix(in srgb,var(--uc) 22%,transparent);border-left:4px solid var(--uc);font:700 11px/16px var(--sans);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.udot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.cswatch{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}.cswatch.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--sheet) inset}
 .tday{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.04em;background:#2f6fd0;color:#fff;border-radius:999px;padding:1px 8px}
 details.students{margin-top:14px;border:1.5px solid var(--rule);border-radius:12px;padding:8px 12px;background:var(--paper)}
 details.students summary{cursor:pointer;font-weight:700}
@@ -136,12 +139,14 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         if (!sc.periods.length) return `<td class="cell"><div class="cellbtn off">${esc(sc.label)}</div></td>`;
         const e = day[r.key], own = r.kind === 'course' ? r.classes.filter(c => day[c.id]) : [];
         return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn${e || own.length ? '' : ' empty'}" data-a="edit" data-row="${esc(r.key)}" data-date="${k}" aria-label="Plan for ${esc(r.name)} on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">
+          ${(() => { const un = Suite.unitFor(r.key, k); if (!un) return ''; const prev = new Date(d); prev.setDate(prev.getDate() - 1); const first = k === un.start || d.getDay() === 1 || !Suite.unitFor(r.key, keyOf(prev)) || Suite.unitFor(r.key, keyOf(prev)).id !== un.id;
+            return `<span class="ubar" style="--uc:${esc(un.color || '#6a8caf')}" title="${esc(un.name)}">${first ? esc(un.name) : ''}</span>`; })()}
           ${e ? summary(e) : own.length || boardHasText(todayRec(k, r.key)) ? '' : '+ Plan'}${boardHasText(todayRec(k, r.key)) ? '<span class="tday" title="Student boards are ready for the Today screen">Today ready</span>' : ''}${own.length ? `<span class="own" title="These periods have their own plan this day instead of the course plan">Own plan: ${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))}</span>` : ''}</button></td>`;
       }).join('')}</tr>`).join('');
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
-        <div class="bar"><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
+        <div class="bar"><button class="btn" data-a="units">Units</button><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
       <div class="printonly">Plans for ${esc(label)}</div>
       ${mergeable() ? `<div class="banner noprint"><span><b>Some days still have a separate plan for each period</b>, saved before you set up courses. Combine the ones that match into the course plan? Periods with a different plan keep their own.</span><button class="btn primary" data-a="merge">Combine them</button></div>` : ''}
       ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
@@ -222,8 +227,10 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       </details>
       <details class="students"${boardHasText(todayRec(dateKey, target)) || ((todayRec(dateKey, target) || {}).slideLink) ? ' open' : ''}><summary>Students see (Today screen)</summary>
         <p class="hintline">What goes on this day's Today screen. Leave a box empty to use the usual one. One line per bullet: start a line with <b>-</b> for a sub-point (<b>--</b> for a third level) and with <b>?</b> to keep it hidden until you click, like a warm-up answer. Due and Agenda come from the plan above.</p>
-        <label class="lb" for="st-slide">Lesson slides <span class="muted small">(the slide Today opens after the boards)</span></label>
-        <input class="field" id="st-slide" style="width:100%" value="${esc((todayRec(dateKey, target) || {}).slideLink || '')}" placeholder="Paste your published deck link (it carries forward to later days until you change it)">
+        <label class="lb" for="st-deck">Lesson deck for ${esc(r.name)} <span class="muted small">(set once; it stays for the whole year)</span></label>
+        <input class="field" id="st-deck" style="width:100%" value="${esc(Suite.decks()[r.key] || '')}" placeholder="Paste your published deck link (File → Share → Publish to the web)">
+        <label class="lb" for="st-slide">Start at slide <span class="muted small">(optional, this day only: copy the address while that slide is selected in Google Slides)</span></label>
+        <input class="field" id="st-slide" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).slideLink || '').includes('/d/e/') ? '' : (todayRec(dateKey, target) || {}).slideLink || '')}" placeholder="Leave empty to open the deck where it starts">
         ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="${id === 'welcome' ? 2 : 3}" data-sb="${id}" placeholder="${id === 'welcome' ? 'Empty: the usual Welcome board' : ''}">${esc(linesToText(((todayRec(dateKey, target) || {}).boards || {})[id] && todayRec(dateKey, target).boards[id].lines))}</textarea>`).join('')}
         ${[['agenda', "Today's agenda", 'the agenda steps above'], ['due', 'Things that are due', 'the homework above']].map(([id, label, from]) => { const bd = (((todayRec(dateKey, target) || {}).boards) || {})[id] || {}, custom = bd.source === 'custom';
           return `<label class="lb" for="st-src-${id}">${label}</label><select id="st-src-${id}" data-src="${id}"><option value="plan"${custom ? '' : ' selected'}>Show ${from}</option><option value="custom"${custom ? ' selected' : ''}>Write a student version</option></select>
@@ -321,6 +328,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         const links = mats.filter(m => m.kind === 'file' || (m.url || '').trim()).map(m => m.kind === 'link' ? Object.assign(m, { url: /^https?:\/\//i.test(m.url.trim()) ? m.url.trim() : 'https://' + m.url.trim() }) : m);
         const entry = { target: q('ed-target').value.trim(), items: q('ed-items').value.split('\n').map(x => x.trim()).filter(Boolean), homework: q('ed-hw').value.trim(), materials: links };
         Suite.saveAgenda(dateKey, [target], entry.target || entry.items.length || entry.homework || links.length ? entry : null);
+        { const deck = q('st-deck').value.trim(), slide = q('st-slide').value.trim();
+          if (/\/presentation\/d\/e\//.test(slide)) { Suite.setDeck(r.key, slide); q('st-slide').value = ''; }   // a published link pasted here is the deck
+          else if (deck !== (Suite.decks()[r.key] || '')) Suite.setDeck(r.key, deck); }
         saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].filter(t => !t.hidden).map(t => { const hh = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return [t.dataset.sb, hh ? (hh.value.trim() ? esc(hh.value.trim()) : 'MY BOARD') : (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || BOARD_HEADS[t.dataset.sb] || 'MY BOARD', t.value, !!hh]; }),
           { haveOut: back.querySelector('#st-have').value, slideLink: back.querySelector('#st-slide').value.trim(), sources: Object.fromEntries([...back.querySelectorAll('[data-src]')].map(x => [x.dataset.src, x.value])) });
         close(); dropUnused(removed); render(); Suite.toast('Plan saved'); backToToday();
@@ -365,6 +375,65 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       }
       else if (b.dataset.o === 'rm') { clearDaysOff(back._groups[+b.dataset.i].dates); draw(); }
     });
+  }
+
+
+  /* ---------- units: a name and date range for a course; extras are opt-in ---------- */
+  const UCOLORS = ['#6a8caf', '#c07a4a', '#5e8f6a', '#8e6aa8', '#b8954a', '#4f8f9e', '#a85e6a'];
+  function openUnits(editId){
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const T = Suite.get('today', {}) || {}, looks = [['', 'No change'], ['paper', 'Paper'], ['chalk', 'Chalkboard'], ['cork', 'Corkboard'], ['solid', 'Solid color']].concat(Object.entries(T.custom || {}).map(([k, v]) => [k, v.name]));
+    const bms = [['', 'No change'], ['none', 'No bitmoji']].concat(Object.entries(T.bitmojis || {}).map(([k, v]) => [k, v.name]));
+    const R = rows(), rowName = k => (R.find(r => r.key === k) || {}).name || 'Removed class';
+    const fmt = k => k ? parse(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'ongoing';
+    const draw = id => {
+      const list = Suite.units().slice().sort((a, b) => a.key.localeCompare(b.key) || (a.start < b.start ? -1 : 1)), u = id ? list.find(x => x.id === id) : null, o = (u && u.opts) || {};
+      back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true" aria-labelledby="un-t" style="max-width:620px">
+        <h2 id="un-t">Units</h2>
+        <p class="hintline" style="margin-top:0">A unit is a name and dates for a course. It shows as a band in the Planner, and can switch Today's background and bitmoji when it starts.</p>
+        ${list.length ? `<ul class="evlist">${list.map(x => `<li><span><span class="udot" style="background:${esc(x.color || '#6a8caf')}"></span><b>${esc(x.name)}</b> <span class="muted small">${esc(rowName(x.key))} · ${fmt(x.start)} to ${fmt(x.end)}</span></span><span class="bar"><button class="btn quiet small" data-u="edit" data-id="${esc(x.id)}">Edit</button><button class="btn quiet danger small" data-u="del" data-id="${esc(x.id)}" aria-label="Delete ${esc(x.name)}">×</button></span></li>`).join('')}</ul>` : '<p class="muted">No units yet.</p>'}
+        <h3 style="margin-top:14px">${u ? 'Edit unit' : 'Add a unit'}</h3>
+        <div class="evgrid"><label>Course or class<select id="un-key">${R.map(r => `<option value="${esc(r.key)}"${u && u.key === r.key ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select></label><label>Name<input class="field" id="un-name" value="${esc(u ? u.name : '')}" placeholder="Ancient Egypt"></label></div>
+        <div class="evgrid"><label>Starts<input type="date" class="field" id="un-start" value="${esc(u ? u.start : keyOf(days()[0]))}"></label><label>Ends <span class="muted small">(optional)</span><input type="date" class="field" id="un-end" value="${esc(u ? u.end || '' : '')}"></label></div>
+        <div class="bar" style="margin-top:8px"><span class="small" style="font-weight:700">Color</span>${UCOLORS.map(c => `<button class="cswatch${(u ? u.color : UCOLORS[list.length % UCOLORS.length]) === c ? ' on' : ''}" data-u="color" data-c="${c}" style="background:${c}" aria-label="Color" type="button"></button>`).join('')}</div>
+        <div class="evgrid"><label>Today background<select id="un-look">${looks.map(([k, n]) => `<option value="${esc(k)}"${u && (u.look || '') === k ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label><label>Today bitmoji<select id="un-bm">${bms.map(([k, n]) => `<option value="${esc(k)}"${u && (u.bitmoji || '') === k ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label></div>
+        <details class="students"${o.showQuestion || o.countdown || o.pacing || o.shift ? ' open' : ''}><summary>Extras (optional)</summary>
+          <label class="rv"><input type="checkbox" id="un-q"${o.showQuestion ? ' checked' : ''}> Show an essential question on the Today screen</label>
+          <input class="field" id="un-qt" style="width:100%" value="${esc(o.question || '')}" placeholder="How did rivers shape early civilizations?">
+          <label class="rv"><input type="checkbox" id="un-cd"${o.countdown ? ' checked' : ''}> Count down to the unit's end on the dashboard</label>
+          <label class="rv"><input type="checkbox" id="un-pace"${o.pacing ? ' checked' : ''}> Show "Day 7 of 23" on the dashboard and sub plans</label>
+          <label class="rv"><input type="checkbox" id="un-shift"${o.shift ? ' checked' : ''}> When I shift plans for a snow day, move this unit's end date too</label>
+        </details>
+        <div class="suite-dialog-actions"><button class="btn" data-u="close">Done</button>${u ? '<button class="btn" data-u="new">New unit</button>' : ''}<button class="btn primary" data-u="save" data-id="${u ? esc(u.id) : ''}">${u ? 'Save changes' : 'Add unit'}</button></div></div>`;
+      back._color = u ? u.color : UCOLORS[list.length % UCOLORS.length];
+    };
+    document.body.appendChild(back); draw(editId);
+    const close = () => { back.remove(); render(); };
+    back.addEventListener('click', async e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('[data-u]'); if (!b) return;
+      const v = b.dataset.u, q = id => back.querySelector('#' + id);
+      if (v === 'close') close();
+      else if (v === 'new') draw();
+      else if (v === 'edit') draw(b.dataset.id);
+      else if (v === 'color') { back._color = b.dataset.c; back.querySelectorAll('.cswatch').forEach(x => x.classList.toggle('on', x === b)); }
+      else if (v === 'del') { if (!await Suite.dialog({ title: 'Delete this unit?', body: 'Plans stay. Only the unit (its dates and Today look) is removed.', ok: 'Delete', danger: true })) return; Suite.saveUnits(Suite.units().filter(x => x.id !== b.dataset.id)); draw(); }
+      else if (v === 'save') {
+        const name = q('un-name').value.trim(); if (!name) { Suite.toast('Give the unit a name'); return; }
+        let start = q('un-start').value, end = q('un-end').value; if (!start) { Suite.toast('Pick a start date'); return; } if (end && end < start) [start, end] = [end, start];
+        const item = { id: b.dataset.id || Suite.uid(), key: q('un-key').value, name, start, end, color: back._color, look: q('un-look').value, bitmoji: q('un-bm').value,
+          opts: { showQuestion: q('un-q').checked, question: q('un-qt').value.trim(), countdown: q('un-cd').checked, pacing: q('un-pace').checked, shift: q('un-shift').checked } };
+        const L = Suite.units(), i = L.findIndex(x => x.id === item.id); if (i > -1) L[i] = item; else L.push(item); Suite.saveUnits(L); draw(); Suite.toast('Unit saved');
+      }
+    });
+  }
+  // move a unit's dates along with a snow-day shift (only units that opted in)
+  function shiftUnits(keys, from, n){
+    const step = (k, dir) => { const d = parse(k); let left = Math.abs(n); while (left > 0) { d.setDate(d.getDate() + dir); if (Suite.scheduleFor(d).periods.length) left--; } return keyOf(d); };
+    const L = Suite.units(); let moved = 0;
+    L.forEach(u => { if (!keys.includes(u.key) || !(u.opts || {}).shift) return; const dir = n > 0 ? 1 : -1;
+      if (u.end && u.end >= from) { u.end = step(u.end, dir); moved++; } if (u.start > from) u.start = step(u.start, dir); });
+    if (moved) Suite.saveUnits(L); return moved;
   }
 
   /* ---------- school events ---------- */
@@ -476,8 +545,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       if (!from) return;
       if (back.querySelector('#sh-off').checked) { const S = Suite.getSchedule(); if (!S.special.some(d => d.date === from)) S.special.push({ date: from, label: 'No school', scheduleId: 'none' }); Suite.saveSchedule(S); }
       const keys = [r.key].concat(r.kind === 'course' ? r.classes.map(c => c.id) : []);
-      const moved = Suite.shiftPlans(keys, from, n);
-      close(); render(); Suite.toast(moved ? 'Moved ' + moved + ' plan' + (moved === 1 ? '' : 's') : 'No plans to move from that day on');
+      const moved = Suite.shiftPlans(keys, from, n), um = shiftUnits(keys, from, n);
+      close(); render(); Suite.toast((moved ? 'Moved ' + moved + ' plan' + (moved === 1 ? '' : 's') : 'No plans to move from that day on') + (um ? ' and ' + um + ' unit end date' + (um === 1 ? '' : 's') : ''));
     });
   }
 
@@ -489,6 +558,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     else if (a === 'edit') openEditor(el.dataset.row, el.dataset.date, null);
     else if (a === 'courses') openCourses();
     else if (a === 'daysoff') openDaysOff();
+    else if (a === 'units') openUnits();
     else if (a === 'subout') { const S = Object.assign({}, Suite.get('sub', {}) || {}); S.out = Object.assign({}, S.out || {}); if (S.out[el.dataset.date]) delete S.out[el.dataset.date]; else S.out[el.dataset.date] = true; Suite.set('sub', S); render(); }
     else if (a === 'subprint') { const D = days(), outs = (Suite.get('sub', {}) || {}).out || {}, any = D.some(d => outs[keyOf(d)]); location.href = `sub.html#from=${keyOf(D[0])}&to=${keyOf(D[D.length - 1])}${any ? '&out=1' : ''}`; }
     else if (a === 'dayoff') { (async () => { const name = await Suite.dialog({ title: 'Mark ' + parse(el.dataset.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' as a day off?', input: 'No school', ok: 'Mark day off' }); if (name) { setDaysOff([el.dataset.date], name); render(); } })(); }

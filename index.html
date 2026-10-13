@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-13b">
-<script src="shared/core.js?v=2026-10-13b"></script>
-<script>window.PAGE_VERSION = '2026-10-13b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
+<script src="shared/core.js?v=2026-10-14a"></script>
+<script>window.PAGE_VERSION = '2026-10-14a';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
 @media (min-width:861px){
@@ -20,7 +20,8 @@
   .fill>#agenda{flex:0 1 auto;min-height:0;display:flex;flex-direction:column}
   .fill>#agenda:empty{flex:0 0 auto}
   .fill>#agenda .agendabox{margin-top:0;min-height:0;max-height:100%;overflow:auto}
-  .fill>#agenda .agadd{margin-top:0}
+  .fill>#agenda .unitpace{font-size:14px;font-weight:600;color:var(--ink-2);margin:-4px 0 6px}.udot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.agadd{margin-top:0}
   .fill>.cards-row{flex:1 0 auto;margin-top:0;align-items:stretch}
   .cards-row>div{display:flex;flex-direction:column}
   .cards-row .classbox,.cards-row .comingbox{flex:1 1 auto}
@@ -168,9 +169,13 @@
     if (!cls) { el.innerHTML = ''; return; }
     const key = Suite.dateKey(now), a = Suite.agendaFor(key, cls.id);
     const plan = `planner.html#date=${key}&class=${encodeURIComponent(cls.id)}`;
-    if (!a) { el.innerHTML = `<div class="agadd"><a class="btn quiet small" href="${plan}">+ Add today's plan for ${esc(cls.name)}</a></div>`; return; }
+    const pace = (() => { const un = Suite.unitFor(cls.id, key); if (!un || !(un.opts || {}).pacing || !un.end) return '';
+      return `<div class="unitpace"><span class="udot" style="background:${esc(un.color || '#6a8caf')}"></span>${esc(un.name)} · day ${Suite.schoolDays(un.start, key)} of ${Suite.schoolDays(un.start, un.end)}</div>`; })();
+    if (!a) { el.innerHTML = `${pace}<div class="agadd"><a class="btn quiet small" href="${plan}">+ Add today's plan for ${esc(cls.name)}</a></div>`; return; }
     el.innerHTML = `<div class="agendabox">
       <div class="boxhead"><h2>Today in ${esc(cls.name)}</h2><a class="btn quiet small" href="${plan}">Edit</a></div>
+      ${(() => { const k = Suite.dateKey(now), un = Suite.unitFor(cls.id, k); if (!un || !(un.opts || {}).pacing || !un.end) return '';
+        return `<div class="unitpace"><span class="udot" style="background:${esc(un.color || '#6a8caf')}"></span>${esc(un.name)} · day ${Suite.schoolDays(un.start, k)} of ${Suite.schoolDays(un.start, un.end)}</div>`; })()}
       ${a.target ? `<div class="ag-target"><span class="k">Target</span>${esc(a.target)}</div>` : ''}
       ${a.items && a.items.length ? `<ol class="ag-steps">${a.items.map((x, i) => `<li><b>${i + 1}</b>${esc(x)}</li>`).join('')}</ol>` : ''}
       ${a.homework ? `<div class="ag-hw"><span class="k">Homework</span>${esc(a.homework)}</div>` : ''}
@@ -201,7 +206,8 @@
     for (let i = 1; i <= 7; i++) { const d = new Date(now); d.setDate(d.getDate() + i); const k = Suite.dateKey(d);
       Suite.eventsOn(k).forEach(e => { if (!e.countdown && !soon.some(x => x.e.id === e.id) && !evToday.some(x => x.id === e.id)) soon.push({ e, d }); }); }
     // your countdowns, plus Planner events marked "count down to it"
-    const fromEvents = Suite.events().filter(e => e.countdown).map(e => ({ id: 'ev-' + e.id, date: e.start, label: e.title, fromPlanner: true }));
+    const fromEvents = Suite.events().filter(e => e.countdown).map(e => ({ id: 'ev-' + e.id, date: e.start, label: e.title, fromPlanner: true }))
+      .concat(Suite.units().filter(u => (u.opts || {}).countdown && u.end).map(u => ({ id: 'un-' + u.id, date: u.end, label: u.name + ' ends', fromPlanner: true })));
     const all = Suite.countdowns().concat(fromEvents).filter(cd => Suite.countdownLive(cd, now)).sort((a, b) => Suite.countdownEnd(a) - Suite.countdownEnd(b));
     const list = all.slice(0, soon.length ? 2 : 3), more = all.length - list.length;
     const dayName = k => { const [y, m, dd] = k.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: 'short' }); };

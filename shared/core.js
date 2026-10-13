@@ -23,7 +23,8 @@
       { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally', feature: 'tally' },
       { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups', feature: 'groups' },
       { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' },
-      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' }
+      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
+      { id: 'hallpass', label: 'Hall pass', href: 'hallpass.html', feature: 'hallpass' }
     ] }
   ];
   const GEAR_MENU = [
@@ -32,12 +33,12 @@
     { id: 'general', label: 'General settings', href: 'settings.html#general' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
-  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader'];
+  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader', 'hallpass'];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-13b';   // bump with every build; pages check they match
+  const VERSION = '2026-10-14a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -64,7 +65,7 @@
 
 
   /* ---------- this user's words and tools ---------- */
-  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true, grader: true };
+  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true, grader: true, hallpass: true };
   S.prefs = () => { const p = S.get('prefs', {}); return { words: Object.assign({ team: 'table', lead: 'captain' }, p.words || {}), features: Object.assign({}, FEATURE_DEFAULTS, p.features || {}) }; };
   S.feature = f => S.prefs().features[f] !== false;
   // S.word('team') -> "table"; S.word('team', { plural: true, cap: true }) -> "Tables"
@@ -255,6 +256,31 @@
     });
     return cv;
   };
+  // Lesson decks: one published Google Slides link per course (or class), kept all year.
+  S.decks = () => S.get('decks', {}) || {};
+  S.deckFor = classId => { const D = S.decks(), co = S.courseOf(classId); return D[classId] || (co ? D[S.courseKey(co.id)] : '') || ''; };
+  S.setDeck = (key, url) => { const D = Object.assign({}, S.decks()); if (url) D[key] = url; else delete D[key]; S.set('decks', D); };
+  // Units: a name and date range for a course (or class). Extras are opt-in per unit.
+  S.units = () => S.get('units', []) || [];
+  S.saveUnits = list => S.set('units', list);
+  S.unitFor = (classOrKey, dateKey) => {
+    const co = String(classOrKey).startsWith('course:') ? null : S.courseOf(classOrKey);
+    const keys = [classOrKey].concat(co ? [S.courseKey(co.id)] : []);
+    return S.units().filter(u => keys.includes(u.key) && u.start <= dateKey && (!u.end || dateKey <= u.end)).sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key) || (a.start < b.start ? 1 : -1))[0] || null;
+  };
+  // Older "unit changes" from Today's Day settings become Planner units (once, on whichever page opens first).
+  (function migrateUnitChanges(){
+    try {
+      const T = S.get('today', {}) || {}; if (T.unitsMoved || !T.rows) return; const add = [];
+      Object.entries(T.rows).forEach(([key, row]) => { const sc = (row.schedule || []).filter(x => x.from).sort((a, b) => a.from < b.from ? -1 : 1);
+        sc.forEach((x, i) => { const nx = sc[i + 1]; let end = ''; if (nx) { const d = new Date(nx.from + 'T12:00'); d.setDate(d.getDate() - 1); end = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+          add.push({ id: S.uid(), key, name: 'Unit from ' + new Date(x.from + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), start: x.from, end, color: '#6a8caf', look: x.look || '', bitmoji: x.bitmoji || '', opts: {} }); });
+        row.schedule = []; });
+      if (add.length) S.saveUnits(S.units().concat(add));
+      T.unitsMoved = true; S.set('today', T);
+    } catch (e) {}
+  })();
+  S.schoolDays = (a, b) => { let n = 0; const d = new Date(a + 'T12:00'); const end = new Date(b + 'T12:00'); while (d <= end) { if (S.scheduleFor(d).periods.length) n++; d.setDate(d.getDate() + 1); } return n; };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
 
@@ -942,7 +968,22 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     el.hidden = false;
   }
   setInterval(periodClock, 1000);
+  // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
+  const NEWS = { id: '2026-10-14', items: [
+    'Units in the Planner: name a unit and its dates; Today can switch its background and bitmoji on its own. Extras like pacing and countdowns are optional.',
+    'Your lesson deck is now set once per course in the Planner, with an optional "start at slide" for each day.',
+    'New Hall pass tool (Tools menu): sign students out and back, with timers and a weekly log.',
+    'Settings is split into tabs, and Backup shows how much storage you are using.'] };
+  function showNews(){
+    if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
+    if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
+    const el = document.createElement('aside'); el.id = 'suite-news'; el.setAttribute('aria-label', "What's new");
+    el.innerHTML = `<h2>What's new</h2><ul>${NEWS.items.map(x => `<li>${S.esc(x)}</li>`).join('')}</ul><button class="btn primary small" data-news="ok">Got it</button>`;
+    document.body.appendChild(el);
+    el.addEventListener('click', e => { if (e.target.closest('[data-news]')) { S.set('newsSeen', NEWS.id); el.remove(); } });
+  }
   S.mountNav = current => {
+    setTimeout(() => { if (!/embed/.test(location.search) && current !== 'today') showNews(); }, 600);
     setTimeout(periodClock, 0);
     const el = document.getElementById('suite-nav');
     if (!el) return;

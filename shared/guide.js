@@ -4,7 +4,7 @@
   'use strict';
   const S = window.Suite, esc = S.esc;
   const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink', 'Gray', 'Brown', 'Navy', 'Gold'];
-  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['present', 'Present (Google Slides)']];
+  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['hallpass', 'Hall pass'], ['present', 'Present (Google Slides)']];
 
   const G = {
     step: 0,
@@ -108,6 +108,7 @@
     else if (step === 'done') {
       h = `<h1 id="g-title">You're set up</h1>
         <p class="g-lead">Your classes, room, and bell schedule are ready.</p>
+        <p><b>What to do next:</b> plan your first day in the <b>Planner</b> (click any day; "Students see" sets what the Today screen shows, and you can paste your lesson deck once). Then open <b>Today</b> on your projector: it follows your bell schedule on its own.</p>
         <p>Want a quick look at where everything is? The tour takes about a minute. You can replay it any time from the gear menu, under Help and tour.</p>
         <div class="g-nav"><button class="btn" data-g="close">Go to my dashboard</button><button class="btn primary" data-g="tour">Take the tour</button></div>`;
     }

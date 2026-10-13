@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-13b">
-<script src="shared/core.js?v=2026-10-13b"></script>
-<script>window.PAGE_VERSION = '2026-10-13b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
+<script src="shared/core.js?v=2026-10-14a"></script>
+<script>window.PAGE_VERSION = '2026-10-14a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -133,6 +133,8 @@ body.full #suite-nav,body.full .rail{display:none}
 .idle .i-left{font:600 2.2cqw var(--sans)}.idle .i-left b{font-size:4cqw;font-variant-numeric:tabular-nums;margin:0 .4cqw}.idle .i-left span{opacity:.75}
 .idle .i-next{font:600 2cqw var(--sans);opacity:.85}
 .plannote{background:var(--paper);border:1.5px solid var(--rule);border-radius:12px;padding:8px 12px;font-size:14px;margin:0 0 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.eqbox{display:flex;align-items:center;justify-content:center;gap:1cqw;text-align:center;font:600 1.6cqw/1.25 var(--sans);color:#24323d;background:rgba(255,255,255,.88);border-radius:1cqw;padding:.4cqw 1.2cqw}
+.eqbox .eqk{font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:1.1cqw;color:var(--ink-green)}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 body.editing-screen .stage-wrap{background:#1b2633;padding-top:64px}
@@ -319,7 +321,7 @@ details.sec>summary .muted{font-weight:400}
     cork:  { name: 'Corkboard', bgStyle: 'cork' },
     solid: { name: 'Solid color', bgStyle: 'solid' }
   };
-  const NEUTRAL = { date: [460, 40, 1000, 100], board: [440, 170, 1040, 600], cork: [1540, 170, 330, 600], timer: [760, 800, 400, 190], bm: [60, 250, 360, 800], pic: [980, 320, 470, 420], bell: [1400, 30, 480, 130], events: [460, 140, 1000, 54] };
+  const NEUTRAL = { date: [460, 40, 1000, 100], board: [440, 170, 1040, 600], cork: [1540, 170, 330, 600], timer: [760, 800, 400, 190], bm: [60, 250, 360, 800], pic: [980, 320, 470, 420], bell: [1400, 30, 480, 130], events: [460, 140, 1000, 54], eq: [440, 985, 1040, 70] };
   const NEUTRAL_PANELS = {};
   const PANELS = ['none', 'card', 'dark'], PANEL_NAMES = { none: 'No box', card: 'White card', dark: 'Dark card' };
   const BITMOJI = {};
@@ -480,10 +482,11 @@ details.sec>summary .muted{font-weight:400}
   const longDate = k => { const [y, m, d] = k.split('-').map(Number), x = new Date(y, m - 1, d); return `${x.toLocaleDateString('en-US', { weekday: 'long' })}, ${x.toLocaleDateString('en-US', { month: 'long' })} ${ordinal(d)}, ${y}`; };
   function roomFor(date, cid){
     const u = usual(cid), d = T.days[date] || {}, own = d[cid] || d[rowKeyOf(cid)] || {};
+    const pu = Suite.unitFor(cid, date);   // a unit from the Planner sets the look while it runs
     const unit = (u.schedule || []).filter(x => x.from && x.from <= date).sort((a, b) => a.from < b.from ? -1 : 1).pop();
-    const look = own.look || (unit && unit.look) || u.look;
+    const look = own.look || (pu && pu.look) || (unit && unit.look) || u.look;
     const lk = fixLook(look);
-    return { look: LOOKS[lk] || T.custom[lk] ? lk : 'paper', bitmoji: own.bitmoji || (unit && unit.bitmoji) || u.bitmoji || 'none', unit };
+    return { look: LOOKS[lk] || T.custom[lk] ? lk : 'paper', bitmoji: own.bitmoji || (pu && pu.bitmoji) || (unit && unit.bitmoji) || u.bitmoji || 'none', unit, pu };
   }
   const fixLook = id => id === 'basic' ? 'paper' : id;
   // a custom board's own layout: its background's layout, plus anything moved on that board
@@ -580,6 +583,8 @@ details.sec>summary .muted{font-weight:400}
         ${hide.cork ? '' : `<div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>`}
         ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer tm-${u.timer.style || 'digital'}${dark ? ' on-dark' : ''}${E ? ' ed' : ''}" id="rTimer" data-k="timer" style="${place(L.timer)};--tc:${esc(u.timer.color || '#2f6fd0')}"${E ? ' data-g="move" tabindex="-1"' : ''} aria-label="Warm-up timer. Click to start or pause."><span class="tm-in" id="timerIn">${timerInner(u.timer.style)}</span>${handles('timer')}</button>` : ''}
         ${!E && full ? `<span class="fstools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span>` : ''}
+        ${(() => { const pu = room.pu, o = (pu && pu.opts) || {}; if (!o.showQuestion || !o.question || (isCustom(type) && (b.hide || {}).board)) return '';
+          return `<div class="region eqbox${E ? ' ed' : ''}" data-k="eq" style="${place(L.eq || NEUTRAL.eq)}"${E ? ' data-g="move"' : ''}><span class="eqk">Essential question</span> ${esc(o.question)}${handles('eq')}</div>`; })()}
         ${u.showEvents ? (() => { const ev = Suite.eventsOn(viewDate).filter(x => !x.mine); return ev.length || E ? `<div class="region evs${E ? ' ed' : ''}" data-k="events" style="${place(L.events || NEUTRAL.events)}"${E ? ' data-g="move"' : ''}>${ev.length ? ev.map(x => `<span class="evtag">${esc(x.title)}${x.note ? `<small>${esc(x.note)}</small>` : ''}</span>`).join('') : '<span class="evtag ph">School events from your Planner show here</span>'}${handles('events')}</div>` : ''; })() : ''}
         ${(b.tools || []).map(w => `<div class="region tool tool-${w.kind}${E ? ' ed' : ''}" data-k="t:${esc(w.id)}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>${handles('t:' + w.id)}${E ? `<button class="xdel" data-g="tdel" data-x="${esc(w.id)}" aria-label="Remove this tool">×</button>` : ''}</div>`).join('')}
         ${(L.extras || []).map(x => `<div class="region xbox pn-${x.panel || 'none'}${(x.panel === 'dark' || ((x.panel || 'none') === 'none' && dark)) ? ' ink-light' : ''}${E ? ' ed' : ''}" data-k="x:${esc(x.id)}" style="${place(x.box)};${x.style || ''}"><div class="x-fit"${ce('x', ` data-x="${esc(x.id)}"`)}>${clean(x.html || '')}</div>${handles('x:' + x.id)}${E ? `<button class="xdel" data-g="xdel" data-x="${esc(x.id)}" aria-label="Remove this text box">×</button>` : ''}</div>`).join('')}`;
@@ -621,7 +626,7 @@ details.sec>summary .muted{font-weight:400}
     return null;
   }
   // the deck to show: a published link from this day's plan, else the latest deck saved for this class (it carries forward), else the usual deck
-  const deckFor = (cid, rec) => ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || (carriedDeck(cid) || {}).url || usual(cid).deckUrl || '';
+  const deckFor = (cid, rec) => ((planSlides(cid).find(m => publishedId(m.url)) || {}).url) || Suite.deckFor(cid) || (carriedDeck(cid) || {}).url || usual(cid).deckUrl || '';
   function lessonHtml(cid, rec){
     const u = usual(cid), deck = deckFor(cid, rec), pid = publishedId(deck), link = slideLinkFor(cid, rec), did = docId(link) || docId(u.deckUrl), slide = slideParam(link) || slideParam(deck);
     const src = pid ? `https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}`
@@ -752,9 +757,7 @@ details.sec>summary .muted{font-weight:400}
           ${room.look === 'solid' ? `<label class="lb">Background color <input type="color" data-d="bgcolor" value="${esc(u.bgColor || '#dfe8ee')}"></label>` : ''}
           <span class="lb">Just this day</span>
           <div class="bmrow"><select data-d="daylook" aria-label="Background this day">${lookOpts(dayOwn.look || '', 'Usual background')}</select><select data-d="daybm" aria-label="Bitmoji this day">${bmOpts(dayOwn.bitmoji || '', 'Usual bitmoji')}</select></div>
-          <span class="lb">Unit changes <span class="muted small">(switch on a date and stay until the next change)</span></span>
-          <ul class="sched">${(u.schedule || []).map((x, k) => `<li><input type="date" class="field" data-d="schfrom" data-k="${k}" value="${esc(x.from || '')}" aria-label="Starting date"><select data-d="schlook" data-k="${k}" aria-label="Background">${lookOpts(x.look || '', 'Usual background')}</select><select data-d="schbm" data-k="${k}" aria-label="Bitmoji">${bmOpts(x.bitmoji || '', 'Usual bitmoji')}</select><button class="btn quiet danger small" data-d="schrm" data-k="${k}" aria-label="Remove">×</button></li>`).join('') || '<li class="muted small" style="display:block">None yet.</li>'}</ul>
-          <button class="btn small" data-d="schadd">Add a unit change</button>
+          <p class="hintline">${room.pu ? `Right now the unit <b>${esc(room.pu.name)}</b> sets this class's look. ` : ''}Unit backgrounds and bitmojis are set in the Planner (Units).</p>
           ${room.bitmoji !== 'none' ? `<span class="lb">Fit ${esc(bmName(room.bitmoji))} <span class="muted small">(saved for this bitmoji)</span></span>
           <div class="bmrow"><label class="small">Size <input type="range" min="60" max="130" data-d="bmscale" value="${bmAdj(room.bitmoji).scale}"></label><label class="small">Left or right <input type="range" min="-200" max="300" data-d="bmdx" value="${bmAdj(room.bitmoji).dx}"></label></div>` : ''}
           <p class="hintline">Add or remove backgrounds and bitmojis in <a href="settings.html#today">Settings → Today screen</a>.</p></details>

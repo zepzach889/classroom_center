@@ -150,3 +150,9 @@ button.gear{background:none;cursor:pointer;font:inherit}
 .pclock.soon{border-color:var(--land);color:#fff}
 .pclock[hidden]{display:none}
 @media (max-width:1250px){.pclock{font-size:12px;padding:3px 8px}}
+
+/* what's new */
+#suite-news{position:fixed;right:18px;bottom:18px;z-index:120;max-width:380px;background:var(--sheet);color:var(--ink);border:2px solid var(--edge);border-radius:18px;padding:14px 16px;box-shadow:0 14px 34px rgba(0,0,0,.25)}
+#suite-news h2{font-size:20px;margin:0 0 6px}
+#suite-news ul{margin:0 0 10px;padding-left:18px;font-size:14px;line-height:1.4}
+#suite-news li{margin-bottom:4px}
