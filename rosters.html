@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-16g">
-<script src="shared/core.js?v=2026-10-16g"></script>
-<script>window.PAGE_VERSION = '2026-10-16g';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16h">
+<script src="shared/core.js?v=2026-10-16h"></script>
+<script>window.PAGE_VERSION = '2026-10-16h';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .controls{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin-bottom:20px}
@@ -21,24 +21,26 @@
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .num{width:70px}
 .hint{color:var(--ink-2);font-size:14px;margin:4px 0 0}
-/* the printed sheet */
-.sheet{background:#fff;color:#111;border:1px solid var(--rule);border-radius:8px;padding:.35in;margin:0 auto 22px;width:10.5in;max-width:100%;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
-.sh-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:6px}
-.sh-head h2{font:700 18px Arial,Helvetica,sans-serif;margin:0;color:#111}
-.sh-head .sub{font-size:12px;color:#444}
-.sh-head .wk{font:700 14px Arial,Helvetica,sans-serif;text-align:right}
-table.ros{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
-table.ros th,table.ros td{border:1px solid #333;padding:0 4px;height:.27in;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-table.ros thead th{background:#f1f1f1;font-weight:700;text-align:center;height:auto;padding:3px 2px;white-space:normal}
-table.ros thead th.day{border-left:2.5px solid #111}
-table.ros td.wu{border-left:2.5px solid #111}
+/* the printed sheet, in the suite's fonts and colors (always on white paper) */
+.sheet{background:#fff;color:#1C2B3A;border:1px solid var(--rule);border-radius:8px;padding:.35in;margin:0 auto 22px;width:10.5in;max-width:100%;box-sizing:border-box;font-family:var(--sans);color-scheme:light;
+  --ink-sh:#1C2B3A;--rule-sh:#3a4652;--head-sh:color-mix(in srgb,var(--land) 10%,#fff);--off-sh:#e7e4dc}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:8px;padding-bottom:6px;border-bottom:3px solid var(--land)}
+.sh-head h2{font:400 26px/1.1 var(--serif);margin:0;color:var(--ink-sh)}
+.sh-head .sub{font:500 12px var(--sans);color:#55606b}
+.sh-head h2 .sub{font-size:13px;margin-left:6px}
+.sh-head .wk{font:700 14px var(--sans);text-align:right;color:var(--ink-sh)}
+table.ros{width:100%;border-collapse:collapse;table-layout:fixed;font:500 11px var(--sans);color:var(--ink-sh)}
+table.ros th,table.ros td{border:1px solid var(--rule-sh);padding:0 5px;height:.27in;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+table.ros thead th{background:var(--head-sh);font:700 11px var(--sans);text-align:center;height:auto;padding:3px 2px;white-space:normal;color:var(--ink-sh)}
+table.ros thead th.day{border-left:2.5px solid var(--ink-sh)}
+table.ros td.wu{border-left:2.5px solid var(--ink-sh)}
 table.ros th.name,table.ros td.name{text-align:left}
 table.ros td.book{text-align:center}
-table.ros .off{background:repeating-linear-gradient(135deg,#e2e2e2 0 6px,#f3f3f3 6px 12px)}
-table.ros thead .off{background:#e2e2e2;color:#555}
-table.ros th .why{display:block;font-weight:600;font-size:10px;color:#555}
+table.ros .off{background:repeating-linear-gradient(135deg,#dcd8cd 0 6px,#f1efe9 6px 12px)}
+table.ros thead .off{background:var(--off-sh);color:#55606b}
+table.ros th .why{display:block;font-weight:600;font-size:10px;color:var(--land)}
 table.ros th .sub2{font-weight:600;font-size:10px;color:#444}
-table.ros td.tot{border-left:2.5px solid #111;text-align:right;color:#666;font-size:10px}
+table.ros td.tot{border-left:2.5px solid var(--ink-sh);text-align:right;color:#7a848d;font-size:10px}
 table.ros tr.blank td{color:#999}
 table.ros td{height:.205in;font-size:11px}
 table.ros thead th.day.blockable{cursor:pointer}
@@ -49,10 +51,11 @@ table.ros thead th.day.blockable:hover{outline:2px dashed #2f6fd0;outline-offset
 .colrow .field{padding:4px 8px}
 .colhead{font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
 @media print{.blockhint{display:none}}
-table.ros tbody tr:nth-child(5n) td{border-bottom:2px solid #111}
+table.ros tbody tr:nth-child(5n) td{border-bottom:2px solid var(--ink-sh)}
 table.ros thead th{font-size:11px}
 @media print{
   @page{size:letter landscape;margin:.4in}
+  .sheet{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #suite-nav,.backup-banner,.controls,.noprint{display:none!important}
   body{background:#fff}
   .wrap{max-width:none;padding:0}
@@ -130,8 +133,8 @@ table.ros thead th{font-size:11px}
         <div class="wk">Week of ${days[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' })} to ${days[4].toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</div></div>
       <table class="ros"><colgroup>${cols}</colgroup>
         <thead><tr><th class="name" rowspan="2">Students</th>${book ? '<th rowspan="2">Book</th>' : ''}${days.map((d, i) => `<th class="day${info[i].meets ? '' : ' off'}${info[i].fixed ? '' : ' blockable'}" colspan="${dayCols.length}"${info[i].fixed ? '' : ` data-block="${Suite.dateKey(d)}" data-cid="${esc(c.id)}" title="${info[i].own ? 'Click to unblock this day' : 'Click to block this day for ' + esc(c.name)}"`}>${d.toLocaleDateString(undefined, { weekday: 'short' })} ${fmt(d)}${info[i].meets ? '' : `<span class="why">${esc(info[i].why)}</span>`}</th>`).join('')}${set.end.map(e => `<th rowspan="2" class="day">${esc(e.label)}${e.type === 'total' ? `<br><span class="sub2">/${possible(e)}</span>` : ''}</th>`).join('')}</tr>
-          <tr>${info.map(x => dayCols.map((col, ci) => `<th class="sub2${x.meets ? '' : ' off'}"${ci === 0 ? ' style="border-left:2.5px solid #111"' : ''}>${esc(col.label)}</th>`).join('')).join('')}</tr></thead>
-        <tbody>${kids.map(s => `<tr><td class="name">${esc(lastFirst(s.name))}</td>${book ? `<td class="book">${esc(s.book || '')}</td>` : ''}${cells()}</tr>`).join('')}
+          <tr>${info.map(x => dayCols.map((col, ci) => `<th class="sub2${x.meets ? '' : ' off'}"${ci === 0 ? ' style="border-left:2.5px solid var(--ink-sh)"' : ''}>${esc(col.label)}</th>`).join('')).join('')}</tr></thead>
+        <tbody>${kids.map(s => `<tr><td class="name">${esc(s.name)}</td>${book ? `<td class="book">${esc(s.book || '')}</td>` : ''}${cells()}</tr>`).join('')}
           ${Array.from({ length: blanks }, () => `<tr class="blank"><td class="name"></td>${book ? '<td></td>' : ''}${cells()}</tr>`).join('')}</tbody>
       </table></section>`;
   }
