@@ -13,6 +13,7 @@ activities.html   Review game, station rotations, tally, partners and groups
 noise.html        Noise meter
 grader.html       Easy grader
 hallpass.html     Hall pass
+rosters.html      Weekly roster sheets
 seating.html      Seating charts and room setup (tables, seats, layout)
 planner.html      Weekly planner: courses, snow-day shift, printable week
 today.html        Today screen: class boards, warm-up timer, Flag of the Week, lesson deck

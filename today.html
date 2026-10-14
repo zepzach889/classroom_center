@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
-<script src="shared/core.js?v=2026-10-15a"></script>
-<script>window.PAGE_VERSION = '2026-10-15a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16c">
+<script src="shared/core.js?v=2026-10-16c"></script>
+<script>window.PAGE_VERSION = '2026-10-16c';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -127,6 +127,13 @@ body.full #suite-nav,body.full .rail{display:none}
 .plannote{background:var(--paper);border:1.5px solid var(--rule);border-radius:12px;padding:8px 12px;font-size:14px;margin:0 0 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .eqbox{display:flex;align-items:center;justify-content:center;gap:1cqw;text-align:center;font:600 1.6cqw/1.25 var(--sans);color:#24323d;background:rgba(255,255,255,.88);border-radius:1cqw;padding:.4cqw 1.2cqw}
 .eqbox .eqk{font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:1.1cqw;color:var(--ink-green)}
+.lesson-tools{position:absolute;inset:0;pointer-events:none;z-index:7}
+.ltool{pointer-events:auto;background:rgba(255,255,255,.94);border-radius:1.2cqw;box-shadow:0 .4cqw 1.4cqw rgba(0,0,0,.28);container-type:size}
+.ltool .lt-grip{position:absolute;left:4px;top:2px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#666;cursor:grab;user-select:none;touch-action:none;opacity:0;transition:opacity .15s}
+.ltool .lt-size{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;border-right:3px solid #999;border-bottom:3px solid #999;border-radius:0 0 12px 0;touch-action:none;opacity:0;transition:opacity .15s}
+.ltool .lt-x{position:absolute;right:4px;top:2px;width:28px;height:28px;font:700 18px var(--sans);background:none;border:0;color:#888;cursor:pointer;opacity:0;transition:opacity .15s}
+.ltool:hover .lt-grip,.ltool:hover .lt-size,.ltool:hover .lt-x,.ltool:focus-within .lt-x{opacity:1}
+.lt-shield{position:absolute;inset:0;z-index:8;cursor:grabbing}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 body.editing-screen .stage-wrap{background:#1b2633;padding-top:64px}
@@ -563,7 +570,7 @@ details.sec>summary .muted{font-weight:400}
     const handles = k => E ? `<span class="grip" data-g="move" data-k="${k}" title="Drag to move" aria-hidden="true">⠿</span><span class="rz" data-g="size" data-k="${k}" title="Drag to resize" aria-hidden="true"></span>` : '';
     const ce = (f, extra) => E ? ` contenteditable="true" spellcheck="true" data-f="${f}"${extra || ''}` : '';
     let html = '';
-    if (lesson) html = lessonHtml(cid, rec);
+    if (lesson) { html = lessonHtml(cid, rec); setTimeout(() => drawLessonTools(cid), 0); }
     else {
       const planBoard = (type === 'due' || type === 'agenda') && b.source !== 'custom';
       let lines = boardLines(viewDate, cid, type, rec);
@@ -627,8 +634,8 @@ details.sec>summary .muted{font-weight:400}
     const u = usual(cid), deck = deckFor(cid, rec), pid = publishedId(deck), link = slideLinkFor(cid, rec), did = docId(link) || docId(u.deckUrl), slide = slideParam(link) || slideParam(deck);
     const src = pid ? `https://docs.google.com/presentation/d/e/${pid}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}`
       : did ? `https://docs.google.com/presentation/d/${did}/embed?start=false&loop=false&delayms=60000${slide ? '&slide=' + slide : ''}` : '';
-    if (!src) return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Add a Google Slides link for this day in the Planner (Students see → Lesson slides), or in Day settings → Lesson slides.</p></div></div>`;
-    return `<div class="lesson"><span class="lessonbtns"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><button class="backboards" data-a="full" title="Full screen (F). Keeps the bell reminder and tools on top of your slides.">${full ? 'Exit full screen' : '⛶ Full screen'}</button></span><span class="fstools lessontools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><iframe title="Lesson slides" src="${src}"></iframe></div>`;
+    if (!src) return `<div class="lesson"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><span class="fstools lessontools">${pinMenu(cid)}${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><div class="lesson-tools" id="ltools"></div><div class="lesson-empty"><p class="t">No lesson deck linked yet</p><p>Add a Google Slides link for this day in the Planner (Students see → Lesson slides), or in Day settings → Lesson slides.</p></div></div>`;
+    return `<div class="lesson"><span class="lessonbtns"><button class="backboards" data-a="boards" title="Back to the boards">‹ Boards</button><button class="backboards" data-a="full" title="Full screen (F). Keeps the bell reminder and tools on top of your slides.">${full ? 'Exit full screen' : '⛶ Full screen'}</button></span><span class="fstools lessontools">${pinMenu(cid)}${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span><div class="lesson-tools" id="ltools"></div><iframe title="Lesson slides" src="${src}"></iframe></div>`;
   }
   function openInSlides(cid){
     const rec = dayFor(viewDate, cid), u = usual(cid), link = slideLinkFor(cid, rec), deck = deckFor(cid, rec), id = docId(link) || docId(deck), slide = slideParam(link) || slideParam(deck);
@@ -655,7 +662,7 @@ details.sec>summary .muted{font-weight:400}
   }
   const timerText = () => { const ms = timer.running ? Math.max(0, timer.end - Date.now()) : timer.left, s = Math.ceil(ms / 1000); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
   function drawTimer(){
-    if (timer.running && Date.now() >= timer.end) { timer.running = false; timer.left = 0; timer.done = true; renderRail(activeId()); }
+    if (timer.running && Date.now() >= timer.end) { timer.running = false; timer.left = 0; timer.done = true; renderRail(activeId()); if (document.visibilityState === 'visible') Suite.chimeFor('warmup'); }
     const b = $('#rTimer');
     const tin = document.getElementById('timerIn');
     if (b && tin) { const html = timerInner(usual(activeId()).timer.style); if (tin.dataset.h !== html) { tin.innerHTML = html; tin.dataset.h = html; } b.classList.toggle('done', timer.done); }
@@ -1008,7 +1015,7 @@ details.sec>summary .muted{font-weight:400}
     // a message is due once the time left drops under its mark; the chime plays once
     let msg = null;
     if (!info.passing && !info.brk) (B.messages || []).filter(x => x.text && x.min > 0).sort((a, b) => a.min - b.min).forEach(x => {
-      if (info.left <= x.min * 60000 && !msg) { msg = x; const k = info.key + '|' + x.min; if (!fired.has(k) && info.left > x.min * 60000 - 3000) { fired.add(k); if (x.chime && Suite.chime) Suite.chime(); } else fired.add(k); }
+      if (info.left <= x.min * 60000 && !msg) { msg = x; const k = info.key + '|' + x.min; if (!fired.has(k) && info.left > x.min * 60000 - 3000) { fired.add(k); if (x.chime && Suite.chime) Suite.chimeFor('bell'); } else fired.add(k); }
     });
     const lead = info.passing ? 'Passing period' : info.brk ? info.p.name + ' ends in' : 'Class ends in';
     const next = info.nx ? `${info.passing ? '' : 'Next: '}${esc(info.nx.name)}${info.passing ? ' starts' : ''} at ${Suite.fmt12(info.nx.start)}` : '';
@@ -1035,6 +1042,37 @@ details.sec>summary .muted{font-weight:400}
     ov.addEventListener('click', ev => { if (ev.target.closest('[data-o="close"]')) close(); });
   }
   const toolMenu = (act, title, list) => `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="${title}">${act === 'addtool' ? 'Add a tool' : 'Tools'} ▾</button><span class="tmenu-list" hidden>${Object.entries(list).map(([k, v]) => `<button data-a="${act}" data-id="${k}">${esc(v[0])}</button>`).join('')}</span></span>`;
+
+  /* ---------- widgets pinned on top of the lesson slides (per class, kept until removed) ---------- */
+  const LT_SIZE = { picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180] };
+  const pinMenu = cid => { const on = new Set((usual(cid).lessonTools || []).map(w => w.kind));
+    return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Keep a tool on top of your slides">Pin to slides ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="pintool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
+  function drawLessonTools(cid){
+    const el = document.getElementById('ltools'); if (!el) return;
+    const list = usual(cid).lessonTools || [];
+    el.innerHTML = list.map(w => `<div class="region tool tool-${w.kind} ltool" data-lt="${esc(w.id)}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>
+      <span class="lt-grip" data-lt-move title="Drag to move">⠿</span><span class="lt-size" data-lt-size title="Drag to resize"></span><button class="lt-x" data-a="ltdel" data-id="${esc(w.id)}" aria-label="Remove ${esc(WIDGETS[w.kind][0])}">×</button></div>`).join('');
+    fitAll && requestAnimationFrame(() => fitAll());
+  }
+  function togglePin(kind){
+    const cid = activeId(), u = usual(cid), list = u.lessonTools = u.lessonTools || [], i = list.findIndex(w => w.kind === kind);
+    if (i > -1) list.splice(i, 1); else list.push({ id: Suite.uid(), kind, box: LT_SIZE[kind].slice() });
+    save(); drawLessonTools(cid);
+    const menu = document.querySelector('.lessontools'); if (menu) { const old = menu.querySelector('.tmenu'); const tmp = document.createElement('span'); tmp.innerHTML = pinMenu(cid); old.replaceWith(tmp.firstElementChild); }
+  }
+  // drag to move or resize (a cover over the slides keeps the drag smooth)
+  document.addEventListener('pointerdown', e => {
+    const h = e.target.closest('[data-lt-move],[data-lt-size]'); if (!h) return;
+    const box = h.closest('.ltool'), st = document.getElementById('stage'), cid = activeId(), w = (usual(cid).lessonTools || []).find(x => x.id === box.dataset.lt); if (!w) return;
+    e.preventDefault(); const r = st.getBoundingClientRect(), sx = 1920 / r.width, sy = 1080 / r.height, x0 = e.clientX, y0 = e.clientY, b0 = w.box.slice(), resize = h.hasAttribute('data-lt-size');
+    const shield = document.createElement('div'); shield.className = 'lt-shield'; st.appendChild(shield);
+    const move = ev => { const dx = (ev.clientX - x0) * sx, dy = (ev.clientY - y0) * sy;
+      if (resize) { w.box[2] = Math.max(180, b0[2] + dx); w.box[3] = Math.max(110, b0[3] + dy); } else { w.box[0] = Math.max(0, Math.min(1920 - b0[2], b0[0] + dx)); w.box[1] = Math.max(0, Math.min(1080 - b0[3], b0[1] + dy)); }
+      Object.assign(box.style, { left: (w.box[0] / 19.2) + '%', top: (w.box[1] / 10.8) + '%', width: (w.box[2] / 19.2) + '%', height: (w.box[3] / 10.8) + '%' }); };
+    const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); shield.remove(); save(); };
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
+  });
+
   // the widgets themselves
   const picked = {};   // names already picked this session, per class
   function widgetHtml(kind, w){
@@ -1072,7 +1110,7 @@ details.sec>summary .muted{font-weight:400}
   }
   window.addEventListener('pagehide', () => { if (mic) { mic.stream.getTracks().forEach(t => t.stop()); try { mic.ctx.close(); } catch (e) {} } });
   setInterval(() => { const t = Suite.timerState(); document.querySelectorAll('[data-w="time"]').forEach(el => { el.textContent = Suite.fmtDuration(t.left || 0); }); document.querySelectorAll('[data-w="ttog"]').forEach(b => { b.textContent = t.state === 'running' ? 'Pause' : 'Go'; }); }, 300);
-  window.addEventListener('suite:change', e => { if (e.detail && e.detail.key === 'tracker' && document.querySelector('.w-pts')) render(); });
+  window.addEventListener('suite:change', e => { if (e.detail && e.detail.key === 'tracker' && document.querySelector('.w-pts')) { if (lesson) drawLessonTools(activeId()); else render(); } });
   $('#stage').addEventListener('click', e => {
     const b = e.target.closest('[data-w]'); if (!b || editMode) return;
     const w = b.dataset.w;
@@ -1106,6 +1144,8 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'edit') { editing = !editing; $('#drawer').hidden = !editing; if (editing) renderDrawer(); }
     else if (a === 'full') { full = !full; if (full && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); else if (!full && document.fullscreenElement) document.exitFullscreen().catch(() => {}); render(); }
     else if (a === 'startedit') startEdit();
+    else if (a === 'pintool') { togglePin(el.dataset.id); const l = el.closest('.tmenu-list'); if (l) l.hidden = true; }
+    else if (a === 'ltdel') { const cid = activeId(), u = usual(cid); u.lessonTools = (u.lessonTools || []).filter(w => w.id !== el.dataset.id); save(); drawLessonTools(cid); const menu = document.querySelector('.lessontools .tmenu'); if (menu) { const t = document.createElement('span'); t.innerHTML = pinMenu(cid); menu.replaceWith(t.firstElementChild); } }
     else if (a === 'dprev' || a === 'dnext' || a === 'dtoday') { viewDate = a === 'dtoday' ? Suite.dateKey(new Date()) : shiftDay(viewDate, a === 'dnext' ? 1 : -1); screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); }
     else if (a === 'dayprev' || a === 'daynext' || a === 'daytoday') { viewDate = a === 'daytoday' ? Suite.dateKey(new Date()) : shiftDay(viewDate, a === 'dayprev' ? -1 : 1); screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); }
     else if (a === 'piece') { const t = screens(viewDate, cid)[screen], r = editable(viewDate, cid), bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.hide = bd.hide || {}; if (el.checked) delete bd.hide[el.dataset.k]; else bd.hide[el.dataset.k] = true; save(); render(); return; }
@@ -1150,9 +1190,9 @@ details.sec>summary .muted{font-weight:400}
   if (window.ResizeObserver) { let rq = 0; const ro = new ResizeObserver(() => { cancelAnimationFrame(rq); rq = requestAnimationFrame(fitAll); }); ro.observe($('#stage')); }
   window.addEventListener('suite:change', e => {
     if (!e.detail || !(e.detail.external || e.detail.key === '*')) return;
-    if (e.detail.key && e.detail.key !== 'today' && e.detail.key !== '*' && !['classes', 'agenda', 'events', 'schedule', 'courses'].includes(e.detail.key)) return;
+    if (e.detail.key && e.detail.key !== 'today' && e.detail.key !== '*' && !['classes', 'agenda', 'events', 'schedule', 'courses', 'tracker', 'units', 'decks'].includes(e.detail.key)) return;
     T = Object.assign(clone(BLANK), Suite.get('today', {})); T.layouts = T.layouts || {};
-    if (lesson) { renderRail(activeId()); updateBell(); return; }         // the slides keep their place
+    if (lesson) { renderRail(activeId()); updateBell(); drawLessonTools(activeId()); return; }         // the slides keep their place (pinned widgets refresh)
     if (editMode && document.activeElement && document.activeElement.closest && document.activeElement.closest('#stage [data-f]')) return;   // don't redraw under your cursor
     render();
   });

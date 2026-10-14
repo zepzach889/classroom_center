@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
-<script src="shared/core.js?v=2026-10-15a"></script>
-<script>window.PAGE_VERSION = '2026-10-15a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16c">
+<script src="shared/core.js?v=2026-10-16c"></script>
+<script>window.PAGE_VERSION = '2026-10-16c';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -320,10 +320,24 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       else if (k === 'clear') { const had = ((Suite.agendaAll()[dateKey] || {})[target] || {}).materials || []; Suite.saveAgenda(dateKey, [target], null); close(); dropUnused(had.filter(m => m.kind === 'file').map(m => m.file.id).concat(added)); render(); }
       else if (k === 'prev') {
         const A2 = Suite.agendaAll(), before = Object.keys(A2).filter(d => d < dateKey && (A2[d][target] || (classOnly && A2[d][r.key]))).sort().pop();
-        if (!before) { Suite.toast('No earlier plan to copy'); return; }
-        const p = A2[before][target] || A2[before][r.key];
-        q('ed-target').value = p.target || ''; q('ed-items').value = (p.items || []).join('\n'); q('ed-hw').value = p.homework || '';
-        mats = JSON.parse(JSON.stringify(p.materials || [])); drawMats();
+        // what students saw (Today screen) on the most recent earlier day that has it
+        const TD = (Suite.get('today', {}) || {}).days || {}, tBefore = Object.keys(TD).filter(d => d < dateKey && (TD[d][target] || (classOnly && TD[d][r.key]))).sort().pop();
+        if (!before && !tBefore) { Suite.toast('No earlier plan to copy'); return; }
+        if (before) { const p = A2[before][target] || A2[before][r.key];
+          q('ed-target').value = p.target || ''; q('ed-items').value = (p.items || []).join('\n'); q('ed-hw').value = p.homework || '';
+          mats = JSON.parse(JSON.stringify(p.materials || [])); drawMats(); }
+        if (tBefore) {
+          const tr = TD[tBefore][target] || TD[tBefore][r.key] || {}, bd = tr.boards || {};
+          TODAY_BOARDS.forEach(([id]) => { const ta = q('st-' + id); if (ta) ta.value = bd[id] ? linesToText(bd[id].lines) : ''; });
+          ['agenda', 'due'].forEach(id => { const sel = q('st-src-' + id), ta = q('st-' + id); if (!sel || !ta) return; const custom = (bd[id] || {}).source === 'custom'; sel.value = custom ? 'custom' : 'plan'; ta.hidden = !custom; ta.value = custom ? linesToText(bd[id].lines) : ''; });
+          q('st-have').value = (tr.haveOut || []).join(', ');
+          q('st-slide').value = tr.slideLink && !/\/d\/e\//.test(tr.slideLink) ? tr.slideLink : '';
+          const box = q('st-custom'); box.innerHTML = '';
+          Object.entries(bd).filter(([id]) => /^c-/.test(id) && !/^c-rep-/.test(id)).forEach(([id, b2]) => { const d = document.createElement('div'); d.className = 'stc';
+            const nid = 'c-' + Suite.uid(); d.innerHTML = `<input class="field" data-hh="${nid}" value="${esc(String(b2.heading || '').replace(/<[^>]+>/g, ''))}" aria-label="Board heading"><textarea rows="3" data-sb="${nid}">${esc(linesToText(b2.lines))}</textarea>`; box.appendChild(d); });
+          const det = back.querySelector('details.students:not(.subsec)'); if (det) det.open = true;
+        }
+        Suite.toast('Copied from ' + parse(before && (!tBefore || before >= tBefore) ? before : tBefore).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) + '. Save to keep it.');
       }
       else if (k === 'save') {
         const links = mats.filter(m => m.kind === 'file' || (m.url || '').trim()).map(m => m.kind === 'link' ? Object.assign(m, { url: /^https?:\/\//i.test(m.url.trim()) ? m.url.trim() : 'https://' + m.url.trim() }) : m);

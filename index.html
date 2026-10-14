@@ -7,23 +7,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
-<script src="shared/core.js?v=2026-10-15a"></script>
-<script>window.PAGE_VERSION = '2026-10-15a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16c">
+<script src="shared/core.js?v=2026-10-16c"></script>
+<script>window.PAGE_VERSION = '2026-10-16c';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
-@media (min-width:861px){
+@media (min-width:861px) and (min-height:700px){
   .dash{height:calc(100vh - var(--navh,70px));height:calc(100dvh - var(--navh,70px));grid-template-rows:minmax(0,1fr)}
   .dash>section{display:flex;flex-direction:column;min-height:0;overflow:hidden}
   .fill{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;margin-top:min(16px,1.8vh)}
   /* the plan takes what's left and scrolls inside if it's long; the cards below keep their size */
-  .fill>#agenda{flex:0 1 auto;min-height:0;display:flex;flex-direction:column}
-  .fill>#agenda:empty{flex:0 0 auto}
-  .fill>#agenda .agendabox{margin-top:0;min-height:0;max-height:100%;overflow:auto}
+  /* the live class's plan always keeps its size (long plans scroll inside, up to half the screen); points and Coming up take what's left */
+  .fill>#agenda{flex:0 0 auto;display:flex;flex-direction:column}
+  .fill>#agenda .agendabox{margin-top:0;max-height:48vh;overflow:auto}
 .agadd{margin-top:0}
-  .fill>.cards-row{flex:1 0 auto;margin-top:0;align-items:stretch}
-  .cards-row>div{display:flex;flex-direction:column}
-  .cards-row .classbox,.cards-row .comingbox{flex:1 1 auto}
+  .fill>.cards-row{flex:1 1 auto;min-height:0;margin-top:0;align-items:stretch}
+  .cards-row>div{display:flex;flex-direction:column;min-height:0}
+  .cards-row .classbox,.cards-row .comingbox{flex:1 1 auto;min-height:0;overflow:auto}
   .dash .today{position:static;max-height:none;min-height:0}
 }
 .clock{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:clamp(52px,min(9vw,12vh),140px);line-height:1}
@@ -295,15 +295,20 @@
     $('#status').innerHTML = html;
 
     const cls = Suite.classForPeriod(focus, Suite.classes());
+    pointsCls = cls; renderPoints();
+    renderAgenda(cls, now);
+    renderComing();
+    $('#coming').hidden = !$('#coming').innerHTML;
+    if (st.cur !== lastScrollAt) { lastScrollAt = st.cur; keepCurrentInView(st); }
+    return { P, st };
+  }
+  let pointsCls = null, lastScrollAt = null;
+  function renderPoints(){
+    const cls = pointsCls;
     $('#classbox').innerHTML = cls ? `<div class="classbox">
         <div class="boxhead"><h2>${esc(cls.name)} this week</h2><a class="small" href="tracker.html#class=${esc(cls.id)}">Open</a></div>
         ${standings(cls) || '<p class="muted">No points yet this week.</p>'}</div>` : '';
     $('#classbox').hidden = !cls;
-    renderAgenda(cls, now);
-    renderComing();
-    $('#coming').hidden = !$('#coming').innerHTML;
-    keepCurrentInView(st);
-    return { P, st };
   }
 
   let state = null;
@@ -328,7 +333,13 @@
     tickCountdowns();
   }
 
-  window.addEventListener('suite:change', () => { state = null; tick(); });
+  const DAY_KEYS = ['schedule', 'classes', 'agenda', 'events', 'units', 'courses', 'decks', 'today', 'sub', 'prefs', 'countdowns', '*'];
+  window.addEventListener('suite:change', e => {
+    const k = e.detail && e.detail.key;
+    if (k === 'tracker') { renderPoints(); return; }
+    if (k && !DAY_KEYS.includes(k)) return;
+    state = null; tick();
+  });
   Suite.mountNav('dashboard');
   tick();
   setInterval(tick, 1000);

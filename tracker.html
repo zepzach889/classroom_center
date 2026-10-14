@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
-<script src="shared/core.js?v=2026-10-15a"></script>
-<script>window.PAGE_VERSION = '2026-10-15a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16c">
+<script src="shared/core.js?v=2026-10-16c"></script>
+<script>window.PAGE_VERSION = '2026-10-16c';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -109,6 +109,19 @@ body.proj .score{font-size:84px}
 body.proj .sub,body.proj .cap{font-size:20px}
 body.proj .cap.nocap{display:none}
 body.proj .tag{font-size:18px;padding:2px 12px}
+/* fit the tables in the window: two steps down when space is short (buttons stay easy to tap) */
+.cards.fit1 .band{min-height:42px;padding:4px 14px}.cards.fit1 .band h2{font-size:21px}
+.cards.fit1 .card-body{padding:6px 14px 10px;gap:4px}
+.cards.fit1 .score{font-size:46px}
+.cards.fit1 .sub{font-size:13px}.cards.fit1 .cap{font-size:13px}
+.cards.fit1 .tags{min-height:0}.cards.fit1 .tags:empty{display:none}
+.cards.fit1 .awards{gap:6px}.cards.fit1 .awards button{min-height:38px!important;font-size:14px}
+.cards.fit2 .band{min-height:36px;padding:3px 12px}.cards.fit2 .band h2{font-size:18px}.cards.fit2 .keynum{width:22px;height:22px;font-size:13px}
+.cards.fit2 .card-body{padding:4px 12px 8px;gap:3px}
+.cards.fit2 .card-top{gap:6px}.cards.fit2 .score{font-size:36px}
+.cards.fit2 .sub{display:none}
+.cards.fit2 .awards{gap:5px}.cards.fit2 .awards button{min-height:34px!important;font-size:13px;padding:2px 6px}
+.cards.fit3 .cap{display:none}
 </style>
 </head>
 <body>
@@ -544,6 +557,14 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog')) { proj = false; render(); } });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { load(); render(); } });
 
+  function fitCards(){
+    const g = document.querySelector('.cards'); if (!g || document.body.classList.contains('proj') || innerWidth <= 760) { if (g) g.classList.remove('fit1', 'fit2', 'fit3'); return; }
+    g.classList.remove('fit1', 'fit2', 'fit3');
+    const bottomOK = () => { const r = g.getBoundingClientRect(); return r.top + window.scrollY + r.height <= innerHeight - 8; };
+    for (const step of ['fit1', 'fit2', 'fit3']) { if (bottomOK()) return; g.classList.add(step); }
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(fitCards));
+  { const baseRender = render; render = function(){ const r = baseRender.apply(this, arguments); fitCards(); return r; }; }
   Suite.mountNav('tracker');
   render();
 })();

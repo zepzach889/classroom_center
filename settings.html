@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
-<script src="shared/core.js?v=2026-10-15a"></script>
-<script>window.PAGE_VERSION = '2026-10-15a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16c">
+<script src="shared/core.js?v=2026-10-16c"></script>
+<script>window.PAGE_VERSION = '2026-10-16c';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -167,6 +167,7 @@ main{min-width:0;max-width:820px}
 .libitem{border-top:1px solid var(--rule);padding:6px 0}.libitem:first-of-type{border-top:0}
 .repeat{background:var(--wash);border-radius:10px;padding:8px 10px;margin:4px 0 2px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .repeat .bar{gap:10px}
+.names li .bk{width:84px;font-size:14px;padding:3px 6px;border:1.5px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -225,6 +226,13 @@ main{min-width:0;max-width:820px}
         <summary><h2 id="h-words">Words and tools</h2><span class="fold-hint">Show</span></summary>
         <p class="hint">What your groups are called, and which tools appear in the menu. Turning a tool off only hides it; nothing is deleted.</p>
         <div id="words-area"></div>
+      </details>
+    </section>
+    <section class="block" id="sounds" aria-labelledby="h-sounds">
+      <details class="fold" data-fold="sounds">
+        <summary><h2 id="h-sounds">Sounds</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Pick a sound for each thing that chimes.</p>
+        <div id="chime-area"></div>
       </details>
     </section>
     <section class="block" id="appearance" aria-labelledby="h-look">
@@ -316,13 +324,13 @@ main{min-width:0;max-width:820px}
         <summary><h2 id="h-roster">Students in ${esc(c.name)} <span class="muted small" style="font-family:var(--sans)">${c.students.length}</span></h2><span class="fold-hint">${folds.has('roster') ? 'Hide' : 'Show'}</span></summary>
         <p class="hint">Who is in this class. Click a name to fix its spelling. To choose where students sit, or to set up ${esc(Suite.word('team', { plural: true }))}, use <a href="seating.html#class=${esc(c.id)}">Seating</a>.</p>
         ${c.students.length ? `<ul class="names">${c.students.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => { const t = c.tables.find(x => x.id === s.tableId);
-          return `<li><input class="nm" data-c="stname" data-id="${esc(s.id)}" value="${esc(s.name)}" aria-label="Student name">
+          return `<li><input class="nm" data-c="stname" data-id="${esc(s.id)}" value="${esc(s.name)}" aria-label="Student name"><input class="bk" data-c="stbook" data-id="${esc(s.id)}" value="${esc(s.book || '')}" placeholder="Book #" aria-label="${esc(s.name)} book number">
             <span class="where">${t ? `<span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}` : '<span class="muted">No seat yet</span>'}</span>
             <button class="btn quiet x" data-a="rms" data-id="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">×</button></li>`; }).join('')}</ul>` : '<p class="muted">No students yet.</p>'}
         <div class="add-names">
           <label for="names">Add students</label>
           <textarea id="names" rows="4" placeholder="One name per line"></textarea>
-          <div class="bar"><button class="btn primary" data-a="adds">Add students</button><span class="muted small">New students show up in Seating under "Not at a table," ready to be seated.</span></div>
+          <div class="bar"><button class="btn primary" data-a="adds">Add students</button><button class="btn" data-a="books">Paste book numbers</button><span class="muted small">New students show up in Seating under "Not at a table," ready to be seated.</span></div>
         </div>
       </details></section>
       <section class="block"><div class="roommove">
@@ -334,7 +342,7 @@ main{min-width:0;max-width:820px}
     renderSchedule();
     renderCountdowns();
     renderLook();
-    renderWords(); renderToday(); renderSubInfo();
+    renderWords(); renderToday(); renderSubInfo(); renderSounds();
   }
 
   function renderBackup(){
@@ -613,7 +621,7 @@ main{min-width:0;max-width:820px}
 
 
   /* ---------- words and tools ---------- */
-  const TOOL_LIST = [['points', 'Team points (and weekly prizes)'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['hallpass', 'Hall pass'], ['present', 'Present (Google Slides)']];
+  const TOOL_LIST = [['points', 'Team points (and weekly prizes)'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['hallpass', 'Hall pass'], ['rosters', 'Weekly roster sheets'], ['present', 'Present (Google Slides)']];
   function renderWords(){
     const P = Suite.prefs();
     const sel = (k, opts) => `<select data-word="${k}">${opts.map(o => `<option${P.words[k] === o ? ' selected' : ''}>${o}</option>`).join('')}${opts.includes(P.words[k]) ? '' : `<option selected>${esc(P.words[k])}</option>`}</select>`;
@@ -674,6 +682,7 @@ main{min-width:0;max-width:820px}
     const list = Suite.classes(), c = current(list);
 
     if (a === 'lookreset') { const l = Suite.get('appearance', {}); delete l[id]; Suite.set('appearance', l); renderLook(); return; }
+    if (a === 'chimetry') { const sel = document.querySelector(`[data-chime="${el.dataset.use}"]`); if (sel) Suite.chime(sel.value); return; }
     if (a === 'share') { shareSetup(document.getElementById('share-pics').checked); return; }
     if (a === 'tab') { showTab(id); history.replaceState(null, '', id === 'classes' ? (sel ? '#class=' + sel : '#') : '#' + id); return; }
     if (a === 'pick') { sel = id; render(); }
@@ -706,6 +715,23 @@ main{min-width:0;max-width:820px}
       list.splice(list.indexOf(gone), 1);
       if (sel === gone.id) sel = null;
       save(list); Suite.undoToast(gone.name + ' removed', snap);
+    }
+    else if (a === 'books') {
+      const k = list.find(x => x.id === sel); if (!k) return;
+      const order = k.students.slice().sort((x, y) => x.name.localeCompare(y.name));
+      const txt = await Suite.dialog({ title: 'Paste book numbers', body: 'Copy two columns from your spreadsheet (name, then book number) and paste them here; names are matched for you. Or paste just the numbers, one per line, in the order the students are listed here.', input: '', textarea: true, ok: 'Save numbers' });
+      if (!txt) return;
+      const lines = String(txt).split(/\r?\n/).map(l => l.trim()).filter(Boolean); let n = 0;
+      const norm = v => v.toLowerCase().replace(/[^a-z]/g, '');
+      lines.forEach((l, i) => {
+        const parts = (l.includes('\t') ? l.split('\t') : l.split(/,(?=[^,]*$)/)).map(x => x.trim()).filter(Boolean);
+        if (parts.length > 1) {   // name + number: match by name (first last, or last, first)
+          const nm = norm(parts[0].includes(',') ? parts[0].split(',').reverse().join(' ') : parts[0]);
+          const st = k.students.find(x => norm(x.name) === nm) || k.students.find(x => norm(x.name).includes(nm) || nm.includes(norm(x.name)));
+          if (st && parts[1]) { st.book = parts[1]; n++; }
+        } else if (order[i]) { order[i].book = l; n++; }
+      });
+      save(list); Suite.toast(`Saved ${n} book number${n === 1 ? '' : 's'}`);
     }
     else if (a === 'addt') {
       const name = await Suite.dialog({ title: 'New table name', input: '', ok: 'Add table' });
@@ -794,6 +820,7 @@ main{min-width:0;max-width:820px}
         if (other) { other.row = t.row; other.col = t.col; }   // trade places instead of stacking two tables
         t.row = row; t.col = col;
       }
+      else if (c === 'stbook') { const s = k.students.find(x => x.id === id); if (s) { s.book = el.value.trim(); if (!s.book) delete s.book; } }
       else if (c === 'stname') {
         const s = k.students.find(x => x.id === id); const name = el.value.trim();
         if (!s) return;
@@ -817,7 +844,7 @@ main{min-width:0;max-width:820px}
     const h = d.querySelector('.fold-hint'); if (h) h.textContent = d.open ? 'Hide' : 'Show';
   }, true);
   // each settings tab shows its own sections (they open automatically, since each tab is short)
-  const TAB_OF = { schedule: 'schedule', countdowns: 'schedule', today: 'today', subinfo: 'subinfo', words: 'look', appearance: 'look', backup: 'backup' };
+  const TAB_OF = { schedule: 'schedule', countdowns: 'schedule', today: 'today', subinfo: 'subinfo', words: 'look', sounds: 'look', appearance: 'look', backup: 'backup' };
   const TAB_IDS = ['classes', 'schedule', 'today', 'subinfo', 'look', 'backup'];
   function showTab(t){
     if (t === 'general') t = 'schedule';
@@ -985,6 +1012,13 @@ main{min-width:0;max-width:820px}
     Suite.toast('Setup added'); setTimeout(() => location.reload(), 600);
   }
 
+  function renderSounds(){
+    const el = document.getElementById('chime-area'); if (!el) return; const P = Suite.get('prefs', {}) || {}, base = P.chime || 'chime';
+    el.innerHTML = Suite.CHIME_USES.map(([use, label]) => { const cur = (P.chimes || {})[use] || base;
+      return `<div class="tsrow"><span style="flex:0 0 16em;font-weight:600">${Suite.esc(label)}</span><select data-chime="${use}" aria-label="${Suite.esc(label)} sound">${Object.entries(Suite.CHIMES).map(([k, v]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${Suite.esc(v.name)}</option>`).join('')}</select><button class="btn small" data-a="chimetry" data-use="${use}">Preview</button></div>`; }).join('');
+  }
+  document.addEventListener('change', e => { const use = e.target.dataset && e.target.dataset.chime; if (!use) return;
+    const P = Object.assign({}, Suite.get('prefs', {}) || {}); P.chimes = Object.assign({}, P.chimes || {}, { [use]: e.target.value }); Suite.set('prefs', P); Suite.chime(e.target.value); });
   function route(){
     const h = location.hash.replace('#', '');
     if (['schedule', 'countdowns', 'backup', 'appearance', 'words', 'general', 'today', 'subinfo', 'look'].includes(h)) { showTab(TAB_OF[h] || (h === 'look' ? 'look' : 'schedule')); if (TAB_OF[h]) openSection(h); }

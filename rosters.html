@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly roster sheets · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16c">
+<script src="shared/core.js?v=2026-10-16c"></script>
+<script>window.PAGE_VERSION = '2026-10-16c';</script>
+<style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.controls{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin-bottom:20px}
+.controls h1{font-size:30px;margin-bottom:8px}
+.crow{display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px;align-items:start;margin:10px 0}
+.crow .lb{font-weight:700;padding-top:6px}
+.pick{display:flex;flex-wrap:wrap;gap:6px 16px}
+.pick label{display:flex;align-items:center;gap:6px;font-size:15px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.num{width:70px}
+.hint{color:var(--ink-2);font-size:14px;margin:4px 0 0}
+/* the printed sheet */
+.sheet{background:#fff;color:#111;border:1px solid var(--rule);border-radius:8px;padding:.35in;margin:0 auto 22px;width:10.5in;max-width:100%;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:6px}
+.sh-head h2{font:700 18px Arial,Helvetica,sans-serif;margin:0;color:#111}
+.sh-head .sub{font-size:12px;color:#444}
+.sh-head .wk{font:700 14px Arial,Helvetica,sans-serif;text-align:right}
+table.ros{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
+table.ros th,table.ros td{border:1px solid #333;padding:0 4px;height:.27in;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+table.ros thead th{background:#f1f1f1;font-weight:700;text-align:center;height:auto;padding:3px 2px;white-space:normal}
+table.ros thead th.day{border-left:2.5px solid #111}
+table.ros td.wu{border-left:2.5px solid #111}
+table.ros th.name,table.ros td.name{text-align:left}
+table.ros td.book{text-align:center}
+table.ros .off{background:repeating-linear-gradient(135deg,#e2e2e2 0 6px,#f3f3f3 6px 12px)}
+table.ros thead .off{background:#e2e2e2;color:#555}
+table.ros th .why{display:block;font-weight:600;font-size:10px;color:#555}
+table.ros th .sub2{font-weight:600;font-size:10px;color:#444}
+table.ros td.tot{border-left:2.5px solid #111;text-align:right;color:#666;font-size:10px}
+table.ros tr.blank td{color:#999}
+table.ros.tight td{height:.2in;font-size:11px}
+table.ros tbody tr:nth-child(5n) td{border-bottom:2px solid #111}
+@media print{
+  @page{size:letter landscape;margin:.4in}
+  #suite-nav,.backup-banner,.controls,.noprint{display:none!important}
+  body{background:#fff}
+  .wrap{max-width:none;padding:0}
+  .sheet{border:0;border-radius:0;padding:0;margin:0;width:auto;break-after:page}
+  .sheet:last-child{break-after:auto}
+  table.ros thead{display:table-header-group}
+  table.ros tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<div class="wrap">
+  <section class="controls">
+    <h1>Weekly roster sheets</h1>
+    <p class="hint" style="margin-top:0">One page per class, for marking attendance and warm-ups. Dates fill in for the week you pick; days the class doesn't meet are shaded. Students come from your rosters, sorted by last name; book numbers are set in Settings → Classes.</p>
+    <div class="crow"><span class="lb">Week of</span><div class="bar"><input type="date" class="field" id="wk"><button class="btn quiet small" data-a="prev">‹ Previous</button><button class="btn quiet small" data-a="next">Next ›</button></div></div>
+    <div class="crow"><span class="lb">Classes</span><div class="pick" id="cls"></div></div>
+    <div class="crow"><span class="lb">Blank rows</span><div class="bar"><label>At least <input class="field num" type="number" min="0" max="15" id="blank"> for new students</label><label><input type="checkbox" id="fill"> Fill the rest of the page</label></div></div>
+    <div class="bar" style="margin-top:12px"><button class="btn primary" data-a="print">Print the sheets</button><span class="hint">Prints landscape, one class per page.</span></div>
+  </section>
+  <div id="sheets"></div>
+</div>
+<script>
+(function(){
+  const $ = q => document.querySelector(q), esc = Suite.esc;
+  const R = Object.assign({ skip: [], blank: 3, fill: true }, Suite.get('rosters', {}));
+  const save = () => Suite.set('rosters', R);
+  const parse = k => new Date(k + 'T12:00');
+  const mondayOf = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  // default: this week early on, next week from Thursday on (when you'd be printing ahead)
+  let week = (() => { const t = new Date(), m = mondayOf(t); if (t.getDay() >= 4 || t.getDay() === 0) m.setDate(m.getDate() + 7); return m; })();
+  const lastName = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
+  const lastFirst = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] + ', ' + p.slice(0, -1).join(' ') : n; };
+  const ROWS_PER_PAGE = 24;   // letter landscape, at the row height above
+
+  // does this class meet on this day? (and if not, why)
+  function meets(c, d){
+    const day = Suite.scheduleFor(d);
+    if (!day.periods.length) return { meets: false, why: day.label && !/regular/i.test(day.label) ? day.label : 'No school' };
+    const list = Suite.classes(), hit = day.periods.some(p => !Suite.isPassing(p) && Suite.classForPeriod(p, list) && Suite.classForPeriod(p, list).id === c.id);
+    return hit ? { meets: true } : { meets: false, why: 'No class' };
+  }
+
+  function sheet(c){
+    const days = Array.from({ length: 5 }, (_, i) => { const d = new Date(week); d.setDate(d.getDate() + i); return d; });
+    const info = days.map(d => meets(c, d)), count = info.filter(x => x.meets).length;
+    const kids = c.students.slice().sort((a, b) => lastName(a.name).localeCompare(lastName(b.name)) || a.name.localeCompare(b.name));
+    const withBooks = kids.some(s => s.book);
+    // bigger classes get shorter rows so the page still fits on one sheet
+    const tight = kids.length + R.blank > ROWS_PER_PAGE, cap = tight ? 32 : ROWS_PER_PAGE;
+    const blanks = Math.max(R.blank > 0 && tight ? Math.min(R.blank, Math.max(1, cap - kids.length)) : R.blank, R.fill ? cap - kids.length : 0);
+    const co = Suite.courseOf(c.id), un = Suite.unitFor(c.id, Suite.dateKey(days[0]));
+    const fmt = d => (d.getMonth() + 1) + '/' + d.getDate();
+    const cells = () => info.map(x => x.meets ? '<td class="wu"></td><td></td>' : '<td class="wu off"></td><td class="off"></td>').join('');
+    // column widths: name, book, then (warm-up narrow + attendance wide) for each day, then the total
+    const cols = `<col style="width:${withBooks ? 19 : 24}%">${withBooks ? '<col style="width:5%">' : ''}${days.map(() => '<col style="width:4.4%"><col style="width:9.6%">').join('')}<col style="width:6%">`;
+    return `<section class="sheet">
+      <div class="sh-head"><div><h2>${esc(c.name)}${co ? ` <span class="sub">${esc(co.name)}</span>` : ''}</h2><div class="sub">${un ? 'Unit: ' + esc(un.name) + ' · ' : ''}${kids.length} student${kids.length === 1 ? '' : 's'}</div></div>
+        <div class="wk">Week of ${days[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' })} to ${days[4].toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</div></div>
+      <table class="ros${tight ? ' tight' : ''}"><colgroup>${cols}</colgroup>
+        <thead><tr><th class="name" rowspan="2">Students</th>${withBooks ? '<th rowspan="2">Book</th>' : ''}${days.map((d, i) => `<th class="day${info[i].meets ? '' : ' off'}" colspan="2">${d.toLocaleDateString(undefined, { weekday: 'short' })} ${fmt(d)}${info[i].meets ? '' : `<span class="why">${esc(info[i].why)}</span>`}</th>`).join('')}<th rowspan="2" class="day">Warm-up<br><span class="sub2">/${count}</span></th></tr>
+          <tr>${info.map(x => `<th class="sub2${x.meets ? '' : ' off'}" style="border-left:2.5px solid #111">WU</th><th class="sub2${x.meets ? '' : ' off'}">Attendance</th>`).join('')}</tr></thead>
+        <tbody>${kids.map(s => `<tr><td class="name">${esc(lastFirst(s.name))}</td>${withBooks ? `<td class="book">${esc(s.book || '')}</td>` : ''}${cells()}<td class="tot">/${count}</td></tr>`).join('')}
+          ${Array.from({ length: blanks }, () => `<tr class="blank"><td class="name"></td>${withBooks ? '<td></td>' : ''}${cells()}<td class="tot">/${count}</td></tr>`).join('')}</tbody>
+      </table></section>`;
+  }
+
+  function render(){
+    const list = Suite.classes();
+    $('#wk').value = Suite.dateKey(week);
+    $('#blank').value = R.blank; $('#fill').checked = !!R.fill;
+    $('#cls').innerHTML = list.map(c => `<label><input type="checkbox" data-c="${esc(c.id)}"${R.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="hint">Add your classes in Settings first.</span>';
+    const chosen = list.filter(c => !R.skip.includes(c.id));
+    $('#sheets').innerHTML = chosen.map(sheet).join('') || '<p class="hint">Pick at least one class.</p>';
+  }
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.id === 'wk' && t.value) { week = mondayOf(parse(t.value)); render(); }
+    else if (t.dataset.c) { R.skip = R.skip.filter(x => x !== t.dataset.c); if (!t.checked) R.skip.push(t.dataset.c); save(); render(); }
+    else if (t.id === 'blank') { R.blank = Math.max(0, Math.min(15, parseInt(t.value, 10) || 0)); save(); render(); }
+    else if (t.id === 'fill') { R.fill = t.checked; save(); render(); }
+  });
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-a]'); if (!a) return;
+    if (a.dataset.a === 'print') window.print();
+    else if (a.dataset.a === 'prev' || a.dataset.a === 'next') { week.setDate(week.getDate() + (a.dataset.a === 'next' ? 7 : -7)); render(); }
+  });
+  Suite.mountNav('rosters');
+  render();
+})();
+</script>
+</body>
+</html>

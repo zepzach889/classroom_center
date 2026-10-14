@@ -27,8 +27,9 @@
       { group: 'Classroom management' },
       { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' },
       { id: 'hallpass', label: 'Hall pass', href: 'hallpass.html', feature: 'hallpass' },
-      { group: 'Grading' },
-      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' }
+      { group: 'Grading and records' },
+      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
+      { id: 'rosters', label: 'Weekly roster sheets', href: 'rosters.html', feature: 'rosters' }
     ] }
   ];
   const GEAR_MENU = [
@@ -37,12 +38,12 @@
     { id: 'general', label: 'Settings', href: 'settings.html#schedule' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
-  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader', 'hallpass'];
+  const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader', 'hallpass', 'rosters'];
   const GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-15a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-16c';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -69,7 +70,7 @@
 
 
   /* ---------- this user's words and tools ---------- */
-  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true, grader: true, hallpass: true };
+  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true, grader: true, hallpass: true, rosters: true };
   S.prefs = () => { const p = S.get('prefs', {}); return { words: Object.assign({ team: 'table', lead: 'captain' }, p.words || {}), features: Object.assign({}, FEATURE_DEFAULTS, p.features || {}) }; };
   S.feature = f => S.prefs().features[f] !== false;
   // S.word('team') -> "table"; S.word('team', { plural: true, cap: true }) -> "Tables"
@@ -228,15 +229,22 @@
     const rrect = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
     let top = M;
     if (title) { g.fillStyle = '#111'; g.font = font(78, true); g.textBaseline = 'alphabetic'; g.fillText(title, M, M + 60); top = M + 110; }
-    const lay = S.roomLayout(c.tables), RS = S.roomSize(c, lay), cols = RS.cols, rows = RS.rows;
+    const lay0 = S.roomLayout(c.tables), RS = S.roomSize(c, lay0);
+    // trim empty rows and columns at the edges (no paper spent on spots kept for rearranging)
+    const spots = Object.values(lay0.at), r0 = spots.length ? Math.min(...spots.map(p => p.row)) : 1, r1 = spots.length ? Math.max(...spots.map(p => p.row)) : 1, c0 = spots.length ? Math.min(...spots.map(p => p.col)) : 1, c1 = spots.length ? Math.max(...spots.map(p => p.col)) : 1;
+    const lay = opts.trim === false ? lay0 : { at: Object.fromEntries(Object.entries(lay0.at).map(([k, p]) => [k, { row: p.row - r0 + 1, col: p.col - c0 + 1 }])) };
+    const cols = opts.trim === false ? RS.cols : c1 - c0 + 1, rows = opts.trim === false ? RS.rows : r1 - r0 + 1;
+    const PW = opts.panel ? Math.round(W * .24) : 0;   // side panel: count, not seated, date, notes
     const frontH = 70, gap = 50;
     let gridTop = top, gridBottom = H - M;
-    const drawFront = y => { g.setLineDash([18, 14]); g.strokeStyle = '#888'; g.lineWidth = 4; rrect(M, y, W - 2 * M, frontH, 16); g.stroke(); g.setLineDash([]); g.fillStyle = '#555'; g.font = font(40, true); g.textAlign = 'center'; g.fillText('FRONT OF THE ROOM', W / 2, y + 50); g.textAlign = 'left'; };
+    const drawFront = y => { g.setLineDash([18, 14]); g.strokeStyle = '#888'; g.lineWidth = 4; rrect(M, y, W - 2 * M - PW - (PW ? 50 : 0), frontH, 16); g.stroke(); g.setLineDash([]); g.fillStyle = '#555'; g.font = font(40, true); g.textAlign = 'center'; g.fillText('FRONT OF THE ROOM', (W - PW - (PW ? 50 : 0)) / 2, y + 50); g.textAlign = 'left'; };
     if (front === 'bottom') { drawFront(H - M - frontH); gridBottom = H - M - frontH - gap; } else { drawFront(top); gridTop = top + frontH + gap; }
-    const cellW = (W - 2 * M - gap * (cols - 1)) / cols, cellH = (gridBottom - gridTop - gap * (rows - 1)) / rows;
+    const usableW = W - 2 * M - PW - (PW ? 50 : 0);
+    const cellW = Math.min((usableW - gap * (cols - 1)) / cols, 1000), cellH = Math.min((gridBottom - gridTop - gap * (rows - 1)) / rows, 820);
+    const gridLeft = M + (usableW - (cellW * cols + gap * (cols - 1))) / 2;
     c.tables.forEach(t => {
       const p = lay.at[t.id]; if (!p) return; const r = front === 'bottom' ? rows - p.row + 1 : p.row;
-      const x = M + (p.col - 1) * (cellW + gap), y = gridTop + (r - 1) * (cellH + gap);
+      const x = gridLeft + (p.col - 1) * (cellW + gap), y = gridTop + (r - 1) * (cellH + gap);
       rrect(x, y, cellW, cellH, 26); g.lineWidth = 6; g.strokeStyle = t.open ? '#111' : '#999'; g.setLineDash(t.open ? [] : [20, 14]); g.stroke(); g.setLineDash([]);
       const headH = Math.min(110, cellH * .16);
       g.fillStyle = '#111'; const hp = fitText(t.name, cellW * .62, headH, 56, true); g.fillText(t.name, x + 30, y + headH * .5 + hp * .35);
@@ -258,6 +266,20 @@
         g.textAlign = 'center'; g.fillText(label, sx + sw / 2, sy + sh / 2 + px * .35); g.textAlign = 'left';
       });
     });
+    if (PW) {   // the side panel
+      const px = W - M - PW; let y = top;
+      g.textAlign = 'left'; g.fillStyle = '#111';
+      const seated = c.students.filter(s => c.tables.some(t => t.id === s.tableId));
+      g.font = font(150, true); g.fillText(String(c.students.length), px, y + 130);
+      g.font = font(44); g.fillStyle = '#444'; g.fillText(c.students.length === 1 ? 'student' : 'students', px + g.measureText(String(c.students.length)).width * 0 + 10, y + 190);
+      y += 240;
+      g.font = font(36); g.fillStyle = '#555'; g.fillText('Seating as of ' + new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }), px, y); y += 70;
+      const loose = c.students.filter(s => !seated.includes(s));
+      if (loose.length) { g.font = font(40, true); g.fillStyle = '#111'; g.fillText('Not seated yet', px, y); y += 52; g.font = font(36); g.fillStyle = '#333';
+        loose.slice(0, 12).forEach(s => { g.fillText('• ' + s.name, px, y); y += 46; }); if (loose.length > 12) { g.fillText('and ' + (loose.length - 12) + ' more', px, y); y += 46; } y += 24; }
+      g.font = font(40, true); g.fillStyle = '#111'; g.fillText('Notes', px, y); y += 30;
+      g.strokeStyle = '#999'; g.lineWidth = 2; for (let ly = y + 60; ly < H - M; ly += 66) { g.beginPath(); g.moveTo(px, ly); g.lineTo(W - M, ly); g.stroke(); }
+    }
     return cv;
   };
   // Lesson decks: one published Google Slides link per course (or class), kept all year.
@@ -522,7 +544,7 @@
     back.className = 'suite-dialog-back';
     back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" aria-labelledby="sd-title">
       <h2 id="sd-title">${S.esc(o.title)}</h2>${o.body ? `<p>${S.esc(o.body)}</p>` : ''}
-      ${hasInput ? `<input class="field" id="sd-input" value="${S.esc(o.input)}" aria-label="${S.esc(o.title)}">` : ''}
+      ${hasInput ? (o.textarea ? `<textarea class="field" id="sd-input" rows="10" style="width:100%;font-family:inherit" aria-label="${S.esc(o.title)}">${S.esc(o.input)}</textarea>` : `<input class="field" id="sd-input" value="${S.esc(o.input)}" aria-label="${S.esc(o.title)}">`) : ''}
       ${o.select ? `<select class="field" id="sd-select" aria-label="${S.esc(o.title)}" style="width:100%">${selectHtml(o.select)}</select>` : ''}
       <div class="suite-dialog-actions">${o.alert ? '' : `<button class="btn" data-r="no">${S.esc(o.cancel || 'Cancel')}</button>`}
       <button class="btn ${o.danger ? 'danger-fill' : 'primary'}" data-r="yes">${S.esc(o.ok || 'OK')}</button></div></div>`;
@@ -534,7 +556,7 @@
     const done = v => { back.remove(); document.removeEventListener('keydown', onKey); if (prevFocus && prevFocus.focus) prevFocus.focus(); resolve(v); };
     const yes = () => done(sel ? sel.value : hasInput ? (inp.value.trim() || null) : true);
     const no = () => done(hasInput || sel ? null : false);
-    const onKey = e => { if (e.key === 'Escape') no(); else if (e.key === 'Enter' && inp && document.activeElement === inp) { e.preventDefault(); yes(); } };
+    const onKey = e => { if (e.key === 'Escape') no(); else if (e.key === 'Enter' && inp && !o.textarea && document.activeElement === inp) { e.preventDefault(); yes(); } };
     document.addEventListener('keydown', onKey);
     back.addEventListener('click', e => { if (e.target === back) return no(); const r = e.target.closest('[data-r]'); if (r) (r.dataset.r === 'yes' ? yes() : no()); });
   });
@@ -585,19 +607,31 @@
   let audio = null;
   const wakeAudio = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) {} };
   document.addEventListener('pointerdown', wakeAudio, true);
-  function chime(){
+  // Chime sounds: [delay, frequency, wave, length, loudness] notes
+  S.CHIMES = {
+    chime: { name: 'Chime (rising three notes)', notes: [[0, 880, 'sine', 1.3, .35], [.38, 1108.7, 'sine', 1.3, .35], [.76, 1318.5, 'sine', 1.3, .35], [1.5, 1318.5, 'sine', 1.3, .35]] },
+    bell: { name: 'School bell (ding-dong)', notes: [[0, 784, 'sine', 1.6, .4], [0, 1568, 'sine', 1.2, .12], [.55, 622.3, 'sine', 2, .4], [.55, 1244.5, 'sine', 1.4, .12]] },
+    marimba: { name: 'Marimba (soft)', notes: [[0, 523.3, 'triangle', .7, .45], [.18, 659.3, 'triangle', .7, .45], [.36, 784, 'triangle', .9, .45]] },
+    beeps: { name: 'Beeps (three short)', notes: [[0, 1046.5, 'square', .16, .12], [.3, 1046.5, 'square', .16, .12], [.6, 1046.5, 'square', .3, .12]] },
+    gong: { name: 'Gong (low and long)', notes: [[0, 130.8, 'sine', 3.2, .5], [0, 196, 'sine', 2.6, .25], [0, 311, 'sine', 1.8, .12]] },
+    arcade: { name: 'Arcade (level up)', notes: [[0, 523.3, 'square', .1, .1], [.1, 659.3, 'square', .1, .1], [.2, 784, 'square', .1, .1], [.3, 1046.5, 'square', .35, .1]] }
+  };
+  function chime(kind){
     try {
       wakeAudio(); if (!audio) return;
+      const pick = S.CHIMES[kind] || S.CHIMES[(S.get('prefs', {}) || {}).chime] || S.CHIMES.chime;
       const t0 = audio.currentTime + .05;
-      [[0, 880], [.38, 1108.7], [.76, 1318.5], [1.5, 1318.5]].forEach(([d, f]) => {
+      pick.notes.forEach(([d, f, wave, len, vol]) => {
         const o = audio.createOscillator(), g = audio.createGain();
-        o.type = 'sine'; o.frequency.value = f;
-        g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(.35, t0 + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + 1.3);
-        o.connect(g); g.connect(audio.destination); o.start(t0 + d); o.stop(t0 + d + 1.4);
+        o.type = wave; o.frequency.value = f;
+        g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(vol, t0 + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + len);
+        o.connect(g); g.connect(audio.destination); o.start(t0 + d); o.stop(t0 + d + len + .1);
       });
     } catch (e) {}
   }
   S.chime = chime;
+  S.CHIME_USES = [['timer', 'Timer'], ['warmup', 'Warm-up timer (Today screen)'], ['bell', 'Bell reminder messages'], ['stations', 'Stations (time to rotate)']];
+  S.chimeFor = use => { const P = S.get('prefs', {}) || {}; chime(((P.chimes || {})[use]) || P.chime || 'chime'); };
   const PRESETS = [1, 2, 3, 5, 10, 15];
   let tEl = null, tOpen = false;
   function timerMarkup(){
@@ -695,9 +729,10 @@
   setInterval(() => {
     const t = tget();
     if (t.state === 'running' && Date.now() >= t.end) {
-      t.state = 'done'; t.left = 0; tsave(t);
-      if (document.visibilityState === 'visible') { S.openTimer(); if (t.sound) chime(); }
+      t.state = 'done'; t.left = 0; t.doneAt = Date.now(); tsave(t);
+      if (document.visibilityState === 'visible') { S.openTimer(); if (t.sound) S.chimeFor('timer'); }
     }
+    else if (t.state === 'done' && Date.now() - (t.doneAt || 0) > 5000) tReset();   // back to the time you set, ready to go again
     timerDraw();
   }, 250);
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.key === 'timer' || e.detail.key === '*')) timerDraw(); });
@@ -990,12 +1025,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-15', items: [
-    'Units in the Planner (Units button), with optional pacing, countdowns, and an essential question. Your lesson deck is now set once per course.',
-    'Hall pass (Tools menu): sign students out and back, with timers and a weekly log.',
-    'Planner: Copy week, and Repeat weekly in each day. Countdowns now live in the Planner as events (yours were moved there).',
-    'Dashboard: Show Today, status signs on the plan, and a one-tap switch for today\'s schedule. Undo after deleting. Saved boards can repeat (Settings → Today screen).',
-    'Settings has tabs, and Backup can share your setup with a colleague (no student names).'] };
+  const NEWS = { id: '2026-10-16b', items: [
+    'New: Weekly roster sheets (Tools → Grading and records), with book numbers from Settings → Classes.',
+    'Pin tools on your slides: in the lesson view, use Pin to slides to keep points, a name picker, a timer, or the noise meter on top.',
+    'Pick a chime sound for each use (timer, warm-up timer, bell messages, stations) in Settings → Look and tools → Sounds. The warm-up timer chimes now, and the timer resets itself after it finishes.',
+    'Planner: Copy from the day before now copies what students see, too. Seating printouts are trimmed, with a student count and notes.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
