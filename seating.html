@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-16i">
-<script src="shared/core.js?v=2026-10-16i"></script>
-<script>window.PAGE_VERSION = '2026-10-16i';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-17a">
+<script src="shared/core.js?v=2026-10-17a"></script>
+<script>window.PAGE_VERSION = '2026-10-17a';</script>
 <style>
 .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -177,6 +177,7 @@ body.proj .tbl h2{font-size:28px}
         <div class="bar"><button class="btn" data-a="fill">Fill empty seats</button><button class="btn" data-a="shuffle" title="Mix students into new ${esc(TEAMS())} and seats, with rules for who sits apart">Shuffle into new ${esc(TEAMS())}</button>${lastSeats && lastSeats.classId === c.id ? '<button class="btn quiet" data-a="unshuffle">Undo shuffle</button>' : ''}
           <button class="btn" data-a="print">Print</button>${classes().length > 1 ? '<button class="btn" data-a="printall" title="Print every class\'s seating chart, one per page">Print all classes</button>' : ''}<button class="btn quiet" data-a="savepic" title="Save the chart as a picture you can print or share">Save as picture</button><button class="btn" data-a="proj">Projector view</button></div></div>
       ${needSeats(c) ? `<p class="needs ctl"><b>${needSeats(c)} student${needSeats(c) === 1 ? ' needs' : 's need'} a seat.</b> Drag them into place, or press Fill empty seats.</p>` : ''}
+      ${sel && Suite.feature('hallpass') ? `<div class="bar ctl" style="margin-bottom:6px"><button class="btn small" data-a="blog" title="Log a behavior note for this student">Log behavior for ${esc(((c.students.find(s => s.id === sel) || {}).name || '').split(' ')[0])}</button></div>` : ''}
       <p class="help ctl">${sel ? `<b>${esc((c.students.find(s => s.id === sel) || {}).name || '')}</b> is selected. Tap a seat to move them there, or tap another student to trade places. Tap them again to cancel.`
         : 'Drag a name onto a seat to move them, or onto another student to trade places. Moving someone to a different table changes their table too. (You can also tap a name, then tap a seat.)'}</p>
       <div id="printarea"><div class="printhead">${esc(c.name)} seating chart</div>
@@ -481,6 +482,7 @@ body.proj .tbl h2{font-size:28px}
     if (a === 'pick') { if (el.dataset.id === 'auto') AUTO.set(true); else { AUTO.set(false); UI.cur = el.dataset.id; saveUI(); } sel = null; render(); return; }
     if (a === 'proj') { proj = !proj; sel = null; render(); return; }
     if (a === 'print') { sel = null; render(); printChart(); return; }
+    if (a === 'blog') { const c = curClass(classes()), st = c && c.students.find(x => x.id === sel); if (st) Suite.logBehavior(c.id, st, () => { sel = null; render(); }); return; }
     if (a === 'printall') { sel = null; render(); printChart(true); return; }
     if (a === 'savepic') { saveChartPicture(); return; }
     if (a === 'flip') { UI.front = UI.front === 'top' ? 'bottom' : 'top'; saveUI(); render(); return; }

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-16i">
-<script src="shared/core.js?v=2026-10-16i"></script>
-<script>window.PAGE_VERSION = '2026-10-16i';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-17a">
+<script src="shared/core.js?v=2026-10-17a"></script>
+<script>window.PAGE_VERSION = '2026-10-17a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -201,6 +201,13 @@ main{min-width:0;max-width:820px}
         <div id="schedule-area"></div>
       </details>
     </section>
+    <section class="block" id="quarters" aria-labelledby="h-q">
+      <details class="fold" data-fold="quarters">
+        <summary><h2 id="h-q">Grading quarters</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">The last day of each quarter. The Student log uses these to remind you to save and clear behavior records each quarter.</p>
+        <div class="bar" id="q-area"></div>
+      </details>
+    </section>
     <section class="block" id="countdowns" aria-labelledby="h-cd">
       <details class="fold" data-fold="countdowns">
         <summary><h2 id="h-cd">Countdowns</h2><span class="fold-hint">Show</span></summary>
@@ -342,7 +349,7 @@ main{min-width:0;max-width:820px}
     renderSchedule();
     renderCountdowns();
     renderLook();
-    renderWords(); renderToday(); renderSubInfo(); renderSounds();
+    renderWords(); renderToday(); renderSubInfo(); renderSounds(); renderQuarters();
   }
 
   function renderBackup(){
@@ -844,7 +851,7 @@ main{min-width:0;max-width:820px}
     const h = d.querySelector('.fold-hint'); if (h) h.textContent = d.open ? 'Hide' : 'Show';
   }, true);
   // each settings tab shows its own sections (they open automatically, since each tab is short)
-  const TAB_OF = { schedule: 'schedule', countdowns: 'schedule', today: 'today', subinfo: 'subinfo', words: 'look', sounds: 'look', appearance: 'look', backup: 'backup' };
+  const TAB_OF = { schedule: 'schedule', quarters: 'schedule', countdowns: 'schedule', today: 'today', subinfo: 'subinfo', words: 'look', sounds: 'look', appearance: 'look', backup: 'backup' };
   const TAB_IDS = ['classes', 'schedule', 'today', 'subinfo', 'look', 'backup'];
   function showTab(t){
     if (t === 'general') t = 'schedule';
@@ -1019,6 +1026,11 @@ main{min-width:0;max-width:820px}
   }
   document.addEventListener('change', e => { const use = e.target.dataset && e.target.dataset.chime; if (!use) return;
     const P = Object.assign({}, Suite.get('prefs', {}) || {}); P.chimes = Object.assign({}, P.chimes || {}, { [use]: e.target.value }); Suite.set('prefs', P); Suite.chime(e.target.value); });
+  function renderQuarters(){
+    const el = document.getElementById('q-area'); if (!el) return; const Q = Suite.get('quarters', []) || [];
+    el.innerHTML = [1, 2, 3, 4].map(n => `<label class="small" style="display:flex;flex-direction:column;gap:3px;font-weight:700">Quarter ${n} ends<input type="date" class="field" data-qe="${n - 1}" value="${Suite.esc(Q[n - 1] || '')}"></label>`).join('');
+  }
+  document.addEventListener('change', e => { const i = e.target.dataset && e.target.dataset.qe; if (i === undefined) return; const Q = (Suite.get('quarters', []) || []).slice(); Q[+i] = e.target.value; Suite.set('quarters', Q); Suite.toast('Quarter dates saved'); });
   function route(){
     const h = location.hash.replace('#', '');
     if (['schedule', 'countdowns', 'backup', 'appearance', 'words', 'general', 'today', 'subinfo', 'look'].includes(h)) { showTab(TAB_OF[h] || (h === 'look' ? 'look' : 'schedule')); if (TAB_OF[h]) openSection(h); }

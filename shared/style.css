@@ -180,3 +180,11 @@ button.gear{background:none;cursor:pointer;font:inherit}
   .nav-inner ul{width:max-content}
   .wordmark{font-size:0}
 }
+
+/* behavior log chips (shared by the Student log and Seating) */
+.bchips{display:flex;flex-wrap:wrap;gap:6px}
+.bchip{font:inherit;font-weight:700;font-size:14px;border-radius:999px;padding:6px 14px;border:2px solid;background:#fff;cursor:pointer}
+.bchip.c{border-color:#c9573f;color:#8c2f1c}.bchip.c.on{background:#c9573f;color:#fff}
+.bchip.p{border-color:#3f8a55;color:#245c32}.bchip.p.on{background:#3f8a55;color:#fff}
+.btag{font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.btag.c{background:#f3dcd5;color:#8c2f1c}.btag.p{background:#dceee0;color:#245c32}.btag.k{background:#dfe6ef;color:#2b4766}

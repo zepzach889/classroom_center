@@ -26,7 +26,7 @@
       { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups', feature: 'groups' },
       { group: 'Classroom management' },
       { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' },
-      { id: 'hallpass', label: 'Hall pass', href: 'hallpass.html', feature: 'hallpass' },
+      { id: 'hallpass', label: 'Student log', href: 'hallpass.html', feature: 'hallpass', beta: true },
       { group: 'Grading and records' },
       { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
       { id: 'rosters', label: 'Weekly roster sheets', href: 'rosters.html', feature: 'rosters' }
@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-16i';   // bump with every build; pages check they match
+  const VERSION = '2026-10-17a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -325,6 +325,29 @@
       S.set('events', ev); S.set('countdowns', []); S.set('countdownsMoved', true);
     } catch (e) {}
   })();
+  // Grading quarters: end dates set in Settings → Schedule. A quarter runs from the day after the previous end.
+  S.quarterEnds = () => (S.get('quarters', []) || []).filter(Boolean).sort();
+  S.quarterFor = dateKey => { const ends = S.quarterEnds(); for (let i = 0; i < ends.length; i++) if (dateKey <= ends[i]) { let start = null; if (i) { const d = new Date(ends[i - 1] + 'T12:00'); d.setDate(d.getDate() + 1); start = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); } return { n: i + 1, start, end: ends[i] }; } return null; };
+  // Behavior log (beta): your own working notes. Never shown on Today, in sub plans, or in a shared setup.
+  S.BEHAVIOR_TYPES = [['off-task', 'Off task', 'c'], ['disruptive', 'Disruptive', 'c'], ['phone', 'Phone out', 'c'], ['unprepared', 'Unprepared', 'c'], ['tardy', 'Tardy', 'c'], ['unkind', 'Unkind words', 'c'], ['helped', 'Helped a classmate', 'p'], ['participation', 'Great participation', 'p'], ['leadership', 'Leadership', 'p']].map(([id, name, kind]) => ({ id, name, kind }));
+  S.behavior = () => { const B = Object.assign({ types: null, log: [], contacts: [], showCounts: true, saved: {} }, S.get('behavior', {}) || {}); if (!B.types) B.types = S.BEHAVIOR_TYPES.map(x => Object.assign({}, x)); return B; };
+  S.saveBehavior = B => S.set('behavior', B);
+  // quick "log behavior" pop-up (used from Seating)
+  S.logBehavior = (cid, st, after) => {
+    const B = S.behavior(), back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const chip = t => `<button type="button" class="bchip ${t.kind === 'p' ? 'p' : 'c'}" data-bt="${S.esc(t.id)}">${S.esc(t.name)}</button>`;
+    back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" aria-labelledby="bl-t" style="max-width:520px"><h2 id="bl-t">${S.esc(st.name)}</h2>
+      <p class="small" style="margin:0 0 4px;font-weight:700">Concerns</p><div class="bchips">${B.types.filter(t => t.kind !== 'p').map(chip).join('')}</div>
+      ${B.types.some(t => t.kind === 'p') ? `<p class="small" style="margin:10px 0 4px;font-weight:700">Positives</p><div class="bchips">${B.types.filter(t => t.kind === 'p').map(chip).join('')}</div>` : ''}
+      <input class="field" id="bl-note" placeholder="Note (optional)" style="width:100%;margin-top:10px">
+      <div class="suite-dialog-actions"><button class="btn" data-b="x">Cancel</button><button class="btn primary" data-b="go" disabled>Log it</button></div></div>`;
+    document.body.appendChild(back); let pick = null;
+    back.addEventListener('click', e => {
+      if (e.target === back || e.target.closest('[data-b="x"]')) return back.remove();
+      const c = e.target.closest('[data-bt]'); if (c) { pick = c.dataset.bt; back.querySelectorAll('[data-bt]').forEach(x => x.classList.toggle('on', x === c)); back.querySelector('[data-b="go"]').disabled = false; return; }
+      if (e.target.closest('[data-b="go"]') && pick) { const B2 = S.behavior(); B2.log.push({ id: S.uid(), cid, sid: st.id, name: st.name, type: pick, note: back.querySelector('#bl-note').value.trim(), at: Date.now() }); S.saveBehavior(B2); back.remove(); S.toast('Logged for ' + st.name); if (after) after(); }
+    });
+  };
   S.schoolDays = (a, b) => { let n = 0; const d = new Date(a + 'T12:00'); const end = new Date(b + 'T12:00'); while (d <= end) { if (S.scheduleFor(d).periods.length) n++; d.setDate(d.getDate() + 1); } return n; };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
@@ -1042,11 +1065,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-16b', items: [
-    'New: Weekly roster sheets (Tools → Grading and records): your own columns for each class, block days for one class, and book numbers from Settings → Classes.',
-    'Pin tools on your slides: in the lesson view, use Pin to slides to keep points, a name picker, a timer, or the noise meter on top.',
-    'Pick a chime sound for each use (timer, warm-up timer, bell messages, stations) in Settings → Look and tools → Sounds. The warm-up timer chimes now, and the timer resets itself after it finishes.',
-    'Planner: Copy from the day before now copies what students see, too. Seating printouts are trimmed, with a student count and notes.'] };
+  const NEWS = { id: '2026-10-17', items: [
+    'New (beta): Student log. The hall pass now has a Behavior tab for logging concerns and positives, parent contacts, and printable student reports.',
+    'Add your quarter end dates in Settings → Schedule to get a reminder to save and clear behavior records each quarter.',
+    'In Seating, select a student and press Log behavior. Print all classes prints every seating chart at once.',
+    'Roster sheets: names read First Last, each class can have its own columns, and you can block a day for one class.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
@@ -1070,7 +1093,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
       const toolItems = NAV.find(n => n.menu).menu.filter(on);
       const menu = (key, items, title) => `<div class="ddmenu" data-ddm="${key}" hidden role="menu"${title ? ` aria-label="${S.esc(title)}"` : ''}>${items.filter((n, i, arr) => !n.group || (arr[i + 1] && !arr[i + 1].group)).map(n => n.group ? `<div class="ddgroup" role="presentation">${S.esc(n.group)}</div>` : n.pop
         ? `<button role="menuitem" data-pop="${n.pop}">${S.esc(n.label)}</button>`
-        : `<a role="menuitem" href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`).join('')}${key === 'pop' ? '<span class="ddnote">Floats on top of Google Slides in Chrome or Edge.</span>' : ''}</div>`;
+        : `<a role="menuitem" href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}${n.beta ? ' <span class="beta">Beta</span>' : ''}</a>`).join('')}${key === 'pop' ? '<span class="ddnote">Floats on top of Google Slides in Chrome or Edge.</span>' : ''}</div>`;
       el.innerHTML = `<div class="nav-inner">
         <a class="wordmark" href="index.html">${S.esc(S.suiteName())} <span class="speed" aria-hidden="true"><i></i><i></i><i></i></span></a>
         <nav aria-label="Main"><ul>${NAV.filter(n => n.menu ? toolItems.length : on(n)).map(n => n.menu

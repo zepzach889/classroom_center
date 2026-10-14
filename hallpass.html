@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hall pass · Classroom Suite</title>
+<title>Student log · Classroom Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-16i">
-<script src="shared/core.js?v=2026-10-16i"></script>
-<script>window.PAGE_VERSION = '2026-10-16i';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-17a">
+<script src="shared/core.js?v=2026-10-17a"></script>
+<script>window.PAGE_VERSION = '2026-10-17a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -47,6 +47,47 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
 .set{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:14px;margin-top:8px}
 .num{width:70px}
 @media print{#suite-nav,.noprint,.backup-banner{display:none!important}.card{border:0;padding:0}}
+.tt{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ltabs{display:inline-flex;border:2px solid var(--edge);border-radius:999px;overflow:hidden}
+.ltabs button{font:inherit;font-weight:700;font-size:15px;border:0;background:transparent;color:var(--ink);padding:6px 16px;cursor:pointer}
+.ltabs button[aria-selected="true"]{background:var(--sea);color:var(--on-sea)}
+.ltabs .beta{font-size:9px;vertical-align:2px}
+.bnote{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--wash);border-left:5px solid var(--land);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-weight:600}
+.bnote.quiet{font-weight:500;font-size:14px;border-left-color:var(--rule)}.bnote.warn{border-left-color:#c4281c;background:#fbe3df;color:#5b1610}
+.kid{position:relative}
+.kid .cnt{position:absolute;right:6px;top:6px;font-style:normal;font-size:11px;font-weight:700;border-radius:999px;padding:0 6px;background:#f3dcd5;color:#8c2f1c}
+.logbox{margin-top:12px;border:2px solid var(--sea);border-radius:16px;padding:12px 14px;background:var(--wash)}
+.logbox h3{font-size:19px;margin:0 0 6px}
+.logbox .grp{font-size:13px;font-weight:700;color:var(--ink-2);margin:8px 0 4px}
+.logbox .note{display:flex;gap:8px;margin-top:10px}.logbox .note input{flex:1}
+.blist{list-style:none;margin:0;padding:0}
+.blist li{display:grid;grid-template-columns:70px 1fr auto;gap:8px;padding:8px 0;border-top:1px solid var(--rule);align-items:start}.blist li:first-child{border-top:0}
+.blist .t{font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.blist .n{display:block;font-size:13.5px;color:var(--ink-2);margin-top:2px}
+#bprint{display:none}
+.rpage{background:#fff;color:#1C2B3A;font-family:var(--sans);padding:.5in .55in;box-sizing:border-box}
+.rhd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--land);padding-bottom:8px}
+.rhd h1{font:400 32px/1 var(--serif);margin:0;color:#1C2B3A}.rhd .sub{font-size:13px;color:#55606b;margin-top:4px}
+.rng{text-align:right;font-weight:700;font-size:14px}.rng span{display:block;font-weight:500;color:#55606b;font-size:12px}
+.rpage h2{font:400 19px var(--serif);margin:18px 0 6px;color:#1C2B3A}
+.rpage .counts{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px;font-size:13.5px}
+.rpage .row{display:grid;grid-template-columns:150px 1fr 26px;align-items:center;gap:8px;margin:2px 0}
+.rpage .bar2{height:10px;border-radius:5px;display:block}.rpage .c .bar2{background:#c9573f}.rpage .p .bar2{background:#3f8a55}
+.rpage .row b{text-align:right}.rpage .grp{font-weight:700;font-size:13px;color:#55606b;margin-bottom:2px}
+.rpage table{width:100%;border-collapse:collapse;font-size:12.5px}
+.rpage th{text-align:left;font-size:11.5px;color:#55606b;border-bottom:2px solid #1C2B3A;padding:4px 6px}
+.rpage td{border-bottom:1px solid #d6d9dc;padding:5px 6px;vertical-align:top}
+.rpage .hp{display:flex;gap:28px;font-size:13.5px}.rpage .hp b{font-size:20px;display:block}
+.rpage .lines div{border-bottom:1px solid #aab0b6;height:26px}
+.rpage .mut{color:#7a848d;font-size:13px}
+.rpage .ft{margin-top:16px;font-size:11px;color:#7a848d;display:flex;justify-content:space-between}
+@media print{
+  body.bprinting > *:not(#bprint){display:none!important}
+  body.bprinting #bprint{display:block}
+  .rpage{padding:0;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rpage:last-child{break-after:auto}
+  @page{size:letter portrait;margin:.5in}
+}
 </style>
 </head>
 <body>
@@ -70,8 +111,11 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
   const fmtT = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const dayOf = t => Suite.dateKey(new Date(t));
 
+  let TAB = /behavior/.test(location.hash) ? 'behavior' : (sessionStorage.getItem('suite:logtab') || 'hall');
+  const tabsHtml = () => `<span class="ltabs" role="tablist"><button role="tab" data-a="tab" data-v="hall" aria-selected="${TAB === 'hall'}">Hall pass</button><button role="tab" data-a="tab" data-v="behavior" aria-selected="${TAB === 'behavior'}">Behavior <span class="beta">Beta</span></button></span>`;
   function render(){
     const list = classes(), c = curClass();
+    if (c && TAB === 'behavior') { H.cur = c.id; renderBehavior(list, c); return; }
     if (!c) { $('#app').innerHTML = '<div class="card"><h2>Add your classes first</h2><p>The hall pass uses your class rosters. <a href="settings.html">Go to Classes</a>.</p></div>'; return; }
     H.cur = c.id;
     const outIds = new Set(H.out.map(o => o.sid));
@@ -84,7 +128,7 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
     const wk = {}; H.log.filter(x => (logAll || x.cid === c.id) && dayOf(x.start) >= wk0 && dayOf(x.start) <= wk4).forEach(x => { const k = x.sid; wk[k] = wk[k] || { name: x.name, n: 0, ms: 0 }; wk[k].n++; wk[k].ms += x.end - x.start; });
     const wkRows = Object.values(wk).sort((a, b) => b.n - a.n || b.ms - a.ms);
     $('#app').innerHTML = `
-      <div class="top"><h1>Hall pass</h1>
+      <div class="top"><div class="tt"><h1>Student log</h1>${tabsHtml()}</div>
         <nav class="pills" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav></div>
       <div class="grid2">
         <section class="card">
@@ -107,6 +151,178 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
         <div class="set noprint"><label>Keep the log for <input class="field num" type="number" min="1" max="365" data-s="keep" value="${H.keep}"> days</label><span class="muted small">Older trips clear automatically.</span></div>
       </section>`;
   }
+
+  /* ================= Behavior (beta) ================= */
+  let bSel = null, bType = null, bView = 'today';
+  const todayKey = () => Suite.dateKey(new Date());
+  const dk = t => Suite.dateKey(new Date(t));
+  const typeOf = (B, id) => B.types.find(t => t.id === id) || { name: id, kind: 'c' };
+  const fmtDay = k => new Date(k + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const weekStart = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return Suite.dateKey(d); };
+  function quarterNotice(B){
+    const tk = todayKey(), ends = Suite.quarterEnds();
+    if (!ends.length) return `<div class="bnote quiet"><span>Add your quarter end dates in <a href="settings.html#schedule">Settings → Schedule</a> to get a reminder to save these records each quarter.</span><button class="btn small" data-a="bsave">Save records</button></div>`;
+    // an ended quarter with entries still here
+    for (let i = 0; i < ends.length; i++) { const q = Suite.quarterFor(ends[i]); if (ends[i] >= tk) break;
+      const has = B.log.concat(B.contacts).some(e => dk(e.at) <= q.end && (!q.start || dk(e.at) >= q.start)); if (!has) continue;
+      const late = (new Date(tk + 'T12:00') - new Date(q.end + 'T12:00')) / 86400000 > 14;
+      if (B.saved[q.n]) return `<div class="bnote"><span>Quarter ${q.n}'s behavior records are saved. Clear them to start the new quarter fresh.</span><span class="bar"><button class="btn small primary" data-a="bclear" data-q="${q.n}">Clear Quarter ${q.n}</button><button class="btn small quiet" data-a="bsave" data-q="${q.n}">Save again</button></span></div>`;
+      return `<div class="bnote${late ? ' warn' : ''}"><span>${late ? `Quarter ${q.n} ended ${fmtDay(q.end)} and its behavior records haven't been cleared. Save them, then clear them.` : `Quarter ${q.n} ended ${fmtDay(q.end)}. Save its behavior records, then clear them for the new quarter.`}</span><span class="bar"><button class="btn small primary" data-a="bsave" data-q="${q.n}">Save Quarter ${q.n} records</button><button class="btn small quiet" data-a="bclear" data-q="${q.n}">Clear Quarter ${q.n}…</button></span></div>`; }
+    const q = Suite.quarterFor(tk); if (!q) return '';
+    const left = Math.round((new Date(q.end + 'T12:00') - new Date(tk + 'T12:00')) / 86400000);
+    if (left <= 7 && B.log.concat(B.contacts).length) return `<div class="bnote"><span>Quarter ${q.n} ends ${new Date(q.end + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}. Save your behavior records before they clear.</span><button class="btn small primary" data-a="bsave" data-q="${q.n}">Save quarter records</button></div>`;
+    return '';
+  }
+  function renderBehavior(list, c){
+    const B = Suite.behavior(), wk = weekStart(), tk = todayKey();
+    const kids = c.students.slice().sort((a, b) => H.sort === 'last' ? lastName(a.name).localeCompare(lastName(b.name)) || a.name.localeCompare(b.name) : a.name.localeCompare(b.name));
+    const weekC = sid => B.log.filter(e => e.sid === sid && e.cid === c.id && dk(e.at) >= wk && typeOf(B, e.type).kind !== 'p').length;
+    const st = bSel && c.students.find(x => x.id === bSel);
+    const since = bView === 'today' ? tk : wk;
+    const items = B.log.filter(e => e.cid === c.id && dk(e.at) >= since).map(e => Object.assign({ kind: 'b' }, e)).concat(B.contacts.filter(e => e.cid === c.id && dk(e.at) >= since).map(e => Object.assign({ kind: 'k' }, e))).sort((a, b) => b.at - a.at);
+    const chip = t => `<button class="bchip ${t.kind === 'p' ? 'p' : 'c'}${bType === t.id ? ' on' : ''}" data-a="btype" data-id="${esc(t.id)}">${esc(t.name)}</button>`;
+    $('#app').innerHTML = `
+      <div class="top"><div class="tt"><h1>Student log</h1>${tabsHtml()}</div>
+        <nav class="pills" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav></div>
+      ${quarterNotice(B)}
+      <div class="grid2">
+        <section class="card">
+          <div class="hd"><h2>${esc(c.name)}</h2><span class="bar small">Sort: <button class="btn quiet small" data-a="sort" data-v="first" aria-pressed="${H.sort !== 'last'}">First name</button><button class="btn quiet small" data-a="sort" data-v="last" aria-pressed="${H.sort === 'last'}">Last name</button></span></div>
+          <p class="muted small" style="margin:0 0 8px">Tap a student, then what happened.${B.showCounts ? " Numbers show this week's concerns." : ''}</p>
+          <div class="kids">${kids.map(s => { const n = B.showCounts ? weekC(s.id) : 0; return `<button class="kid${bSel === s.id ? ' pick' : ''}" data-a="bkid" data-id="${esc(s.id)}">${esc(s.name)}${n ? `<i class="cnt">${n}</i>` : ''}</button>`; }).join('') || '<p class="empty">No students in this class yet.</p>'}</div>
+          ${st ? `<div class="logbox"><h3>${esc(st.name)}</h3>
+            <div class="grp">Concerns</div><div class="bchips">${B.types.filter(t => t.kind !== 'p').map(chip).join('')}</div>
+            ${B.types.some(t => t.kind === 'p') ? `<div class="grp">Positives</div><div class="bchips">${B.types.filter(t => t.kind === 'p').map(chip).join('')}</div>` : ''}
+            <div class="note"><input class="field" id="bnote" placeholder="Note (optional)"><button class="btn primary" data-a="blog"${bType ? '' : ' disabled'}>Log it</button></div>
+            <div class="bar" style="margin-top:8px"><button class="btn small quiet" data-a="bcontact">Log a parent contact</button><button class="btn small quiet" data-a="bhist">${esc(st.name.split(' ')[0])}'s history</button><button class="btn small quiet" data-a="breport">Print ${esc(st.name.split(' ')[0])}'s report</button></div></div>` : ''}
+        </section>
+        <section class="card">
+          <div class="hd"><h2>${bView === 'today' ? 'Today' : 'This week'}</h2><span class="bar small"><button class="btn quiet small" data-a="bview" data-v="today" aria-pressed="${bView === 'today'}">Today</button><button class="btn quiet small" data-a="bview" data-v="week" aria-pressed="${bView === 'week'}">This week</button></span></div>
+          ${items.length ? `<ul class="blist">${items.map(e => `<li><span class="t">${bView === 'week' ? fmtDay(dk(e.at)) + '<br>' : ''}${new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span><span><b>${esc(e.name)}</b> ${e.kind === 'k' ? '<span class="btag k">Parent contact</span>' : `<span class="btag ${typeOf(B, e.type).kind === 'p' ? 'p' : 'c'}">${esc(typeOf(B, e.type).name)}</span>`}${(e.kind === 'k' ? [e.how, e.with].filter(Boolean).join(' with ') + (e.summary ? ': ' + e.summary : '') : e.note) ? `<span class="n">${esc(e.kind === 'k' ? [e.how, e.with].filter(Boolean).join(' with ') + (e.summary ? ': ' + e.summary : '') : e.note)}</span>` : ''}</span><button class="btn quiet danger small" data-a="bdel" data-id="${esc(e.id)}" data-k="${e.kind}" aria-label="Delete">×</button></li>`).join('')}</ul>` : `<p class="empty">Nothing logged ${bView === 'today' ? 'today' : 'this week'}.</p>`}
+          <div class="bar" style="margin-top:10px"><button class="btn small quiet" data-a="btypes">Edit behavior types</button><button class="btn small quiet" data-a="bcsv">Download (CSV)</button><button class="btn small quiet" data-a="bclassrep">Print class report</button>
+            <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-s="bcounts"${B.showCounts ? ' checked' : ''}> Show counts on names</label></div>
+          <p class="muted small" style="margin:10px 0 0">Your own working notes: kept only in this browser (and your backups), never shown on Today, in sub plans, or in a shared setup.</p>
+        </section>
+      </div>`;
+  }
+
+  // ---- reports: one page per student, plus an optional class summary ----
+  function studentPage(B, sid, from, to, label){
+    const all = classes(), ents = B.log.filter(e => e.sid === sid && dk(e.at) >= from && dk(e.at) <= to).sort((a, b) => a.at - b.at);
+    const cons = B.contacts.filter(e => e.sid === sid && dk(e.at) >= from && dk(e.at) <= to).sort((a, b) => a.at - b.at);
+    const any = ents[0] || cons[0], cls = all.find(k => k.students.some(s => s.id === sid)) || {}, co = cls.id ? Suite.courseOf(cls.id) : null;
+    const name = (cls.students || []).find(s => s.id === sid) ? cls.students.find(s => s.id === sid).name : (any ? any.name : 'Student');
+    const counts = kind => B.types.filter(t => (t.kind === 'p') === (kind === 'p')).map(t => [t, ents.filter(e => e.type === t.id).length]).filter(x => x[1]);
+    const cc = counts('c'), pc = counts('p'), max = Math.max(1, ...cc.concat(pc).map(x => x[1]));
+    const bars = (arr, k) => arr.map(([t, n]) => `<div class="row ${k}"><span>${esc(t.name)}</span><span class="bar2" style="width:${Math.round(n / max * 100)}%"></span><b>${n}</b></div>`).join('') || '<p class="mut">None</p>';
+    const trips = H.log.filter(x => x.sid === sid && dk(x.start) >= from && dk(x.start) <= to), mins = trips.reduce((n, x) => n + (x.end - x.start), 0) / 60000;
+    const dest = trips.length ? Object.entries(trips.reduce((m, x) => (m[x.dest] = (m[x.dest] || 0) + 1, m), {})).sort((a, b) => b[1] - a[1])[0][0] : '';
+    const timeline = ents.map(e => ({ at: e.at, what: `<span class="btag ${typeOf(B, e.type).kind === 'p' ? 'p' : 'c'}">${esc(typeOf(B, e.type).name)}</span>`, note: e.note || '' })).concat(cons.map(e => ({ at: e.at, what: '<span class="btag k">Parent contact</span>', note: [e.how, e.with].filter(Boolean).join(' with ') }))).sort((a, b) => a.at - b.at);
+    return `<section class="rpage">
+      <div class="rhd"><div><h1>${esc(name)}</h1><div class="sub">${esc(cls.name || '')}${co ? ', ' + esc(co.name) : ''}</div></div><div class="rng">${esc(label)}<span>${new Date(from + 'T12:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric' })} to ${new Date(to + 'T12:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span></div></div>
+      <h2>At a glance</h2><div class="counts"><div><div class="grp">Concerns (${cc.reduce((n, x) => n + x[1], 0)})</div>${bars(cc, 'c')}</div>${B.types.some(t => t.kind === 'p') ? `<div><div class="grp">Positives (${pc.reduce((n, x) => n + x[1], 0)})</div>${bars(pc, 'p')}</div>` : ''}</div>
+      ${cons.length ? `<h2>Parent contacts</h2><table><tr><th style="width:80px">Date</th><th style="width:100px">How</th><th style="width:120px">With</th><th>Summary</th></tr>${cons.map(e => `<tr><td>${fmtDay(dk(e.at))}</td><td>${esc(e.how || '')}</td><td>${esc(e.with || '')}</td><td>${esc(e.summary || '')}</td></tr>`).join('')}</table>` : ''}
+      <h2>Timeline</h2>${timeline.length ? `<table><tr><th style="width:80px">Date</th><th style="width:70px">Time</th><th style="width:160px">What</th><th>Note</th></tr>${timeline.map(e => `<tr><td>${fmtDay(dk(e.at))}</td><td>${new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</td><td>${e.what}</td><td>${esc(e.note)}</td></tr>`).join('')}</table>` : '<p class="mut">Nothing logged in these dates.</p>'}
+      <h2>Hall pass</h2><div class="hp"><span><b>${trips.length}</b>trips</span><span><b>${Math.round(mins)}</b>total minutes</span><span><b>${trips.length ? Math.round(mins / trips.length) : 0}</b>average minutes</span>${dest ? `<span><b>${esc(dest)}</b>most common</span>` : ''}</div>
+      <h2>Notes</h2><div class="lines"><div></div><div></div><div></div></div>
+      <div class="ft"><span>Teacher's working notes, not an official record</span><span>Printed ${new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span></div>
+    </section>`;
+  }
+  function classSummary(B, cls, from, to, label){
+    const rows = cls.students.map(s => { const e = B.log.filter(x => x.sid === s.id && dk(x.at) >= from && dk(x.at) <= to); return [s, e.filter(x => typeOf(B, x.type).kind !== 'p').length, e.filter(x => typeOf(B, x.type).kind === 'p').length, B.contacts.filter(x => x.sid === s.id && dk(x.at) >= from && dk(x.at) <= to).length]; }).filter(r => r[1] + r[2] + r[3]).sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name));
+    return `<section class="rpage"><div class="rhd"><div><h1>${esc(cls.name)}</h1><div class="sub">Class summary</div></div><div class="rng">${esc(label)}<span>${fmtDay(from)} to ${fmtDay(to)}</span></div></div>
+      ${rows.length ? `<table><tr><th>Student</th><th style="width:110px">Concerns</th><th style="width:110px">Positives</th><th style="width:130px">Parent contacts</th></tr>${rows.map(([s, c1, p1, k1]) => `<tr><td>${esc(s.name)}</td><td>${c1}</td><td>${p1}</td><td>${k1}</td></tr>`).join('')}</table>` : '<p class="mut">Nothing logged for this class in these dates.</p>'}
+      <div class="ft"><span>Teacher's working notes, not an official record</span><span>Printed ${new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span></div></section>`;
+  }
+  function printPages(html){
+    let host = document.getElementById('bprint'); if (!host) { host = document.createElement('div'); host.id = 'bprint'; document.body.appendChild(host); }
+    host.innerHTML = html; document.body.classList.add('bprinting');
+    const done = () => { document.body.classList.remove('bprinting'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done); setTimeout(() => window.print(), 80);
+  }
+  async function askRange(title){
+    const q = Suite.quarterFor(todayKey()), d30 = new Date(); d30.setDate(d30.getDate() - 30);
+    const B0 = Suite.behavior(), first = B0.log.concat(B0.contacts).reduce((m, e) => Math.min(m, e.at), Infinity);
+    const from0 = q && q.start ? q.start : (q && isFinite(first) ? dk(first) : Suite.dateKey(d30)), to0 = todayKey();
+    return new Promise(res => { const back = document.createElement('div'); back.className = 'suite-dialog-back';
+      back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>${esc(title)}</h2><div class="bar"><label>From <input type="date" class="field" id="rf" value="${from0}"></label><label>to <input type="date" class="field" id="rt" value="${to0}"></label></div>
+        <div class="suite-dialog-actions"><button class="btn" data-r="x">Cancel</button><button class="btn primary" data-r="go">Print</button></div></div>`;
+      document.body.appendChild(back);
+      back.addEventListener('click', e => { if (e.target === back || e.target.closest('[data-r="x"]')) { back.remove(); res(null); } if (e.target.closest('[data-r="go"]')) { const a = back.querySelector('#rf').value, b = back.querySelector('#rt').value; back.remove(); res(a && b ? [a <= b ? a : b, a <= b ? b : a] : null); } }); });
+  }
+  function csvOf(B, from, to){
+    const all = classes(), q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const rows = B.log.filter(e => (!from || dk(e.at) >= from) && (!to || dk(e.at) <= to)).map(e => [dk(e.at), new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), (all.find(k => k.id === e.cid) || {}).name || '', e.name, typeOf(B, e.type).kind === 'p' ? 'Positive' : 'Concern', typeOf(B, e.type).name, e.note || ''])
+      .concat(B.contacts.filter(e => (!from || dk(e.at) >= from) && (!to || dk(e.at) <= to)).map(e => [dk(e.at), new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), (all.find(k => k.id === e.cid) || {}).name || '', e.name, 'Parent contact', [e.how, e.with].filter(Boolean).join(' with '), e.summary || '']))
+      .sort((a, b) => a[0] < b[0] ? -1 : 1);
+    return ['Date,Time,Class,Student,Kind,Type,Note'].concat(rows.map(r => r.map(q).join(','))).join('\n');
+  }
+  const download = (name, text) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); };
+  async function saveQuarter(n){
+    const B = Suite.behavior(), q = n ? Suite.quarterFor(Suite.quarterEnds()[n - 1]) : null;
+    let from, to, label;
+    if (q) { const first = B.log.concat(B.contacts).reduce((m, e) => Math.min(m, e.at), Infinity); from = q.start || (isFinite(first) ? dk(first) : '2000-01-01'); to = q.end; label = 'Quarter ' + q.n; } else { const r = await askRange('Save behavior records'); if (!r) return; [from, to] = r; label = 'Records'; }
+    const sids = [...new Set(B.log.concat(B.contacts).filter(e => dk(e.at) >= from && dk(e.at) <= to).map(e => e.sid))];
+    if (!sids.length) { Suite.toast('Nothing logged in those dates'); return; }
+    download(`behavior-${label.toLowerCase().replace(/\s+/g, '-')}.csv`, csvOf(B, from, to));
+    await Suite.dialog({ title: 'Save the report as a PDF', body: 'A spreadsheet file just downloaded. Next, your print window opens with a summary for each class and a page for each student. Choose "Save as PDF" as the printer to keep a copy in your files.', ok: 'Open the print window', alert: true });
+    printPages(classes().map(k => classSummary(B, k, from, to, label)).join('') + sids.map(sid => studentPage(B, sid, from, to, label)).join(''));
+    if (q) { B.saved[q.n] = Date.now(); Suite.saveBehavior(B); }
+  }
+  async function clearQuarter(n){
+    const q = Suite.quarterFor(Suite.quarterEnds()[n - 1]); if (!q) return; const B = Suite.behavior();
+    const inQ = e => dk(e.at) <= q.end && (!q.start || dk(e.at) >= q.start);
+    const count = B.log.filter(inQ).length + B.contacts.filter(inQ).length;
+    if (!await Suite.dialog({ title: `Clear Quarter ${q.n} behavior records?`, body: `${count} entr${count === 1 ? 'y' : 'ies'} from Quarter ${q.n} will be deleted from this browser.${B.saved[q.n] ? '' : ' You haven\'t saved them yet: press Cancel, then Save Quarter ' + q.n + ' records first if you want a copy.'}`, ok: 'Clear them', danger: true })) return;
+    B.log = B.log.filter(e => !inQ(e)); B.contacts = B.contacts.filter(e => !inQ(e)); Suite.saveBehavior(B); render(); Suite.toast(`Quarter ${q.n} records cleared`);
+  }
+  function editTypes(){
+    const B = Suite.behavior(), back = document.createElement('div'); back.className = 'suite-dialog-back';
+    const draw = () => { back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" style="max-width:560px"><h2>Behavior types</h2>
+      ${['c', 'p'].map(k => `<p style="font-weight:700;margin:10px 0 4px">${k === 'c' ? 'Concerns' : 'Positives'}</p>${B.types.filter(t => (t.kind === 'p') === (k === 'p')).map(t => `<div class="tsrow"><input class="field" data-tn="${esc(t.id)}" value="${esc(t.name)}" style="flex:1"><button class="btn quiet danger small" data-trm="${esc(t.id)}" aria-label="Remove">×</button></div>`).join('') || '<p class="muted small">None.</p>'}<button class="btn small" data-tadd="${k}">Add a ${k === 'c' ? 'concern' : 'positive'}</button>`).join('')}
+      <p class="muted small">Removing a type keeps entries already logged with it.</p>
+      <div class="suite-dialog-actions"><button class="btn primary" data-tx="1">Done</button></div></div>`; };
+    document.body.appendChild(back); draw();
+    back.addEventListener('change', e => { const id = e.target.dataset.tn; if (!id) return; const t = B.types.find(x => x.id === id); if (t && e.target.value.trim()) t.name = e.target.value.trim(); Suite.saveBehavior(B); });
+    back.addEventListener('click', e => { const a = e.target.closest('[data-trm],[data-tadd],[data-tx]'); if (!a && e.target !== back) return;
+      if (e.target === back || (a && a.dataset.tx)) { back.remove(); render(); return; }
+      if (a.dataset.trm) B.types = B.types.filter(x => x.id !== a.dataset.trm);
+      if (a.dataset.tadd) B.types.push({ id: 't-' + Suite.uid(), name: a.dataset.tadd === 'p' ? 'New positive' : 'New concern', kind: a.dataset.tadd });
+      Suite.saveBehavior(B); draw(); });
+  }
+  async function behaviorClick(a, el, c){
+    const B = Suite.behavior(), st = bSel && c.students.find(x => x.id === bSel);
+    if (a === 'tab') { TAB = el.dataset.v; sessionStorage.setItem('suite:logtab', TAB); history.replaceState(null, '', TAB === 'behavior' ? '#behavior' : '#'); render(); return true; }
+    if (a === 'bkid') { bSel = bSel === el.dataset.id ? null : el.dataset.id; bType = null; render(); return true; }
+    if (a === 'btype') { bType = bType === el.dataset.id ? null : el.dataset.id; const note = ($('#bnote') || {}).value; render(); if (note && $('#bnote')) $('#bnote').value = note; return true; }
+    if (a === 'blog' && st && bType) { B.log.push({ id: Suite.uid(), cid: c.id, sid: st.id, name: st.name, type: bType, note: ($('#bnote').value || '').trim(), at: Date.now() }); Suite.saveBehavior(B); Suite.toast('Logged ' + typeOf(B, bType).name.toLowerCase() + ' for ' + st.name); bType = null; render(); return true; }
+    if (a === 'bview') { bView = el.dataset.v; render(); return true; }
+    if (a === 'bdel') { const snap = Suite.snapshot(['behavior']); if (el.dataset.k === 'k') B.contacts = B.contacts.filter(x => x.id !== el.dataset.id); else B.log = B.log.filter(x => x.id !== el.dataset.id); Suite.saveBehavior(B); render(); Suite.undoToast('Entry deleted', snap); return true; }
+    if (a === 'bcontact' && st) {
+      const back = document.createElement('div'); back.className = 'suite-dialog-back';
+      back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>Parent contact: ${esc(st.name)}</h2>
+        <div class="bar"><label>How <select id="kh" class="field"><option>Phone call</option><option>Email</option><option>In person</option><option>Text message</option><option>Note home</option></select></label><label>With <input class="field" id="kw" placeholder="Mom, dad, guardian…"></label></div>
+        <label class="lb" for="ks">Summary</label><textarea id="ks" class="field" rows="3" style="width:100%" placeholder="What you talked about, and any next steps"></textarea>
+        <div class="suite-dialog-actions"><button class="btn" data-k="x">Cancel</button><button class="btn primary" data-k="go">Log contact</button></div></div>`;
+      document.body.appendChild(back);
+      back.addEventListener('click', e => { if (e.target === back || e.target.closest('[data-k="x"]')) return back.remove(); if (!e.target.closest('[data-k="go"]')) return;
+        B.contacts.push({ id: Suite.uid(), cid: c.id, sid: st.id, name: st.name, how: back.querySelector('#kh').value, with: back.querySelector('#kw').value.trim(), summary: back.querySelector('#ks').value.trim(), at: Date.now() }); Suite.saveBehavior(B); back.remove(); render(); Suite.toast('Parent contact logged'); });
+      return true;
+    }
+    if (a === 'bhist' && st) {
+      const ents = B.log.filter(e => e.sid === st.id).map(e => Object.assign({ kind: 'b' }, e)).concat(B.contacts.filter(e => e.sid === st.id).map(e => Object.assign({ kind: 'k' }, e))).sort((x, y) => y.at - x.at);
+      await Suite.dialog({ title: st.name + "'s history", body: ents.length ? ents.slice(0, 40).map(e => `${fmtDay(dk(e.at))}: ${e.kind === 'k' ? 'Parent contact (' + [e.how, e.with].filter(Boolean).join(' with ') + ')' : typeOf(B, e.type).name}${e.note ? ' (' + e.note + ')' : e.summary ? ' (' + e.summary + ')' : ''}`).join('\n') : 'Nothing logged yet.', ok: 'Close', alert: true });
+      return true;
+    }
+    if (a === 'breport' && st) { const r = await askRange('Print ' + st.name + "'s report"); if (r) printPages(studentPage(B, st.id, r[0], r[1], Suite.quarterFor(r[1]) && Suite.quarterFor(r[1]).start === r[0] ? 'Quarter ' + Suite.quarterFor(r[1]).n : 'Report')); return true; }
+    if (a === 'bclassrep') { const r = await askRange('Print the ' + c.name + ' report'); if (!r) return true; const sids = c.students.map(s => s.id).filter(id => B.log.concat(B.contacts).some(e => e.sid === id && dk(e.at) >= r[0] && dk(e.at) <= r[1])); printPages(classSummary(B, c, r[0], r[1], 'Report') + sids.map(id => studentPage(B, id, r[0], r[1], 'Report')).join('')); return true; }
+    if (a === 'bcsv') { download('behavior-log.csv', csvOf(B)); return true; }
+    if (a === 'btypes') { editTypes(); return true; }
+    if (a === 'bsave') { saveQuarter(el.dataset.q ? +el.dataset.q : 0); return true; }
+    if (a === 'bclear') { clearQuarter(+el.dataset.q); return true; }
+    return false;
+  }
+
   // live timers
   setInterval(() => { document.querySelectorAll('#outlist li').forEach(li => { const ms = Date.now() - +li.dataset.start, w = H.warn * 60000; li.querySelector('.t').textContent = mmss(ms); li.classList.toggle('warn', ms >= w && ms < w * 1.5); li.classList.toggle('long', ms >= w * 1.5); }); }, 1000);
   setInterval(() => { if (AUTO.on) { const id = Suite.classNow(); if (id && id !== H.cur) render(); } }, 15000);
@@ -114,6 +330,7 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, c = curClass();
+    if (c && (a === 'tab' || TAB === 'behavior') && await behaviorClick(a, el, c)) return;
     if (a === 'pick') { if (el.dataset.id === 'auto') AUTO.set(true); else { AUTO.set(false); H.cur = el.dataset.id; save(); } picked = null; render(); }
     else if (a === 'sort') { H.sort = el.dataset.v; save(); render(); }
     else if (a === 'kid') {
@@ -137,6 +354,7 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
   });
   function back(id){ const i = H.out.findIndex(o => o.id === id); if (i < 0) return; const o = H.out.splice(i, 1)[0]; H.log.push(Object.assign({}, o, { end: Date.now() })); save(); render(); Suite.toast(o.name + ' is back · ' + mins(Date.now() - o.start) + ' min'); }
   document.addEventListener('change', e => { const k = e.target.dataset && e.target.dataset.s; if (!k) return;
+    if (k === 'bcounts') { const B = Suite.behavior(); B.showCounts = e.target.checked; Suite.saveBehavior(B); render(); return; }
     if (k === 'warn') H.warn = Math.max(1, Math.min(60, parseInt(e.target.value, 10) || 8));
     else if (k === 'keep') H.keep = Math.max(1, Math.min(365, parseInt(e.target.value, 10) || 30));
     else if (k === 'day') logDate = e.target.value || logDate;
