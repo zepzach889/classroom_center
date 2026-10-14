@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
-<script src="shared/core.js?v=2026-10-14a"></script>
-<script>window.PAGE_VERSION = '2026-10-14a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
+<script src="shared/core.js?v=2026-10-15a"></script>
+<script>window.PAGE_VERSION = '2026-10-15a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -314,6 +314,10 @@ body.proj .group li{font-size:24px}
     const G = A.groups, skip = out[c.id] || new Set();
     const people = c.students.filter(s => !skip.has(s.id));
     if (!people.length) return [];
+    if (G.mode === 'tables') {   // the class's current tables are the groups
+      const by = {}; people.forEach(s => { const k = s.tableId || 'none'; (by[k] = by[k] || []).push(s.id); });
+      const order = Suite.roomLayout(c.tables).at; return Object.keys(by).sort((a, b) => ((order[a] || {}).row || 99) - ((order[b] || {}).row || 99) || ((order[a] || {}).col || 99) - ((order[b] || {}).col || 99)).map(k => by[k]);
+    }
     let count;
     if (G.mode === 'pairs') count = Math.max(1, Math.floor(people.length / 2));
     else if (G.mode === 'size') count = Math.max(1, Math.floor(people.length / Math.max(2, G.n)));
@@ -325,6 +329,17 @@ body.proj .group li{font-size:24px}
     } else order = shuffle(people);
     const groups = Array.from({ length: count }, () => []);
     order.forEach((s, i) => groups[i % count].push(s.id));
+    // keep-apart rules from Seating ("not in the same group"): swap people until no pair shares a group
+    const rules = (c.apart || []).filter(p => p[2] !== 'near');
+    const clash = g => rules.find(([a, b]) => g.includes(a) && g.includes(b));
+    for (let pass = 0; pass < 60; pass++) {
+      const gi = groups.findIndex(clash); if (gi < 0) break;
+      const [a] = clash(groups[gi]); let done = false;
+      for (let gj = 0; gj < groups.length && !done; gj++) { if (gj === gi) continue;
+        for (let k = 0; k < groups[gj].length && !done; k++) { const other = groups[gj][k], A2 = groups[gi].map(x => x === a ? other : x), B2 = groups[gj].map(x => x === other ? a : x);
+          if (!clash(A2) && !clash(B2)) { groups[gi] = A2; groups[gj] = B2; done = true; } } }
+      if (!done) break;
+    }
     return groups;
   }
   function groupsView(c){
@@ -342,9 +357,10 @@ body.proj .group li{font-size:24px}
             <option value="pairs"${G.mode === 'pairs' ? ' selected' : ''}>Partners</option>
             <option value="size"${G.mode === 'size' ? ' selected' : ''}>Groups of a size</option>
             <option value="count"${G.mode === 'count' ? ' selected' : ''}>A number of groups</option>
+            <option value="tables"${G.mode === 'tables' ? ' selected' : ''}>Use the current tables</option>
           </select>
-          ${G.mode === 'pairs' ? '' : `<input class="field num" type="number" min="2" max="30" data-c="gn" value="${G.n}" aria-label="${G.mode === 'size' ? 'Students per group' : 'Number of groups'}"><span>${G.mode === 'size' ? 'students per group' : 'groups'}</span>`}
-          <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-c="gmix"${G.mix ? ' checked' : ''}> Mix up the tables</label>
+          ${G.mode === 'pairs' || G.mode === 'tables' ? '' : `<input class="field num" type="number" min="2" max="30" data-c="gn" value="${G.n}" aria-label="${G.mode === 'size' ? 'Students per group' : 'Number of groups'}"><span>${G.mode === 'size' ? 'students per group' : 'groups'}</span>`}
+          ${G.mode === 'tables' ? '' : `<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-c="gmix"${G.mix ? ' checked' : ''}> Mix up the tables</label>`}
           <button class="btn primary" data-a="gmake">${res.length ? 'Shuffle again' : 'Make groups'}</button>
         </div>
         <details style="margin-top:10px"><summary class="small">Leave someone out this round${skip.size ? ` (${skip.size} left out)` : ''}</summary>

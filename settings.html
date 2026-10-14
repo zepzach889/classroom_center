@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
-<script src="shared/core.js?v=2026-10-14a"></script>
-<script>window.PAGE_VERSION = '2026-10-14a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
+<script src="shared/core.js?v=2026-10-15a"></script>
+<script>window.PAGE_VERSION = '2026-10-15a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -164,6 +164,9 @@ main{min-width:0;max-width:820px}
 #subinfo-area .lbl{display:block;font-weight:700;font-size:14px;margin-top:6px}
 @media (max-width:760px){.subgrid{grid-template-columns:1fr}}
 .gauge{height:10px;border-radius:999px;background:var(--wash);border:1.5px solid var(--rule);overflow:hidden}.gauge span{display:block;height:100%;background:var(--sea)}
+.libitem{border-top:1px solid var(--rule);padding:6px 0}.libitem:first-of-type{border-top:0}
+.repeat{background:var(--wash);border-radius:10px;padding:8px 10px;margin:4px 0 2px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.repeat .bar{gap:10px}
 </style>
 </head>
 <body>
@@ -199,9 +202,8 @@ main{min-width:0;max-width:820px}
     </section>
     <section class="block" id="countdowns" aria-labelledby="h-cd">
       <details class="fold" data-fold="countdowns">
-        <summary><h2 id="h-cd">Your countdowns</h2><span class="fold-hint">Show</span></summary>
-        <p class="hint">Dates of your own for the dashboard, like a unit test or the end of a school day. (Events in the Planner can count down too: check "Count down to it" when you add one.) The dashboard shows the three closest. Add a time (like 3:45) to count down to that moment; without one, it counts days. Each one drops off once it passes.</p>
-        <div id="cd-area"></div>
+        <summary><h2 id="h-cd">Countdowns</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Countdowns now live in the <a href="planner.html">Planner</a>: add an event and check <b>Count down to it</b> (and <b>Just for me</b> for personal ones). You can add a time, too. Your earlier countdowns were moved there.</p><div id="cd-area" hidden></div>
       </details>
     </section>
     <section class="block" id="today" aria-labelledby="h-today">
@@ -241,6 +243,10 @@ main{min-width:0;max-width:820px}
           <button class="btn primary" data-a="export">Download backup</button>
           <label class="btn">Restore from a backup<input type="file" accept=".json,application/json" id="import-file" hidden></label>
         </div>
+        <h3 class="tsh">Share your setup with a colleague</h3>
+        <p class="hint" style="margin-top:0">Downloads your bell schedule, room layout, Today screen designs and settings, saved boards, school events, and preferences, with <b>no student names, plans, points, or bitmojis</b>.</p>
+        <div class="bar"><button class="btn" data-a="share">Download my setup</button><label class="rv" style="margin:0"><input type="checkbox" id="share-pics"> Include my background pictures</label></div>
+        <div class="bar" style="margin-top:8px"><label class="btn quiet">Use a shared setup<input type="file" accept=".json,application/json" id="share-file" hidden></label><span class="muted small">Adds a colleague's setup. Your students, plans, and points stay as they are.</span></div>
         <div class="danger-zone">
           <button class="btn danger" data-a="wipe">Erase all data in this browser</button>
         </div>
@@ -668,6 +674,7 @@ main{min-width:0;max-width:820px}
     const list = Suite.classes(), c = current(list);
 
     if (a === 'lookreset') { const l = Suite.get('appearance', {}); delete l[id]; Suite.set('appearance', l); renderLook(); return; }
+    if (a === 'share') { shareSetup(document.getElementById('share-pics').checked); return; }
     if (a === 'tab') { showTab(id); history.replaceState(null, '', id === 'classes' ? (sel ? '#class=' + sel : '#') : '#' + id); return; }
     if (a === 'pick') { sel = id; render(); }
     else if (a === 'addc') {
@@ -686,6 +693,7 @@ main{min-width:0;max-width:820px}
       if (!gone) return;
       const n = gone.students.length;
       if (!await Suite.dialog({ title: 'Remove ' + gone.name + '?', body: (n ? 'Its ' + n + ' student' + (n === 1 ? '' : 's') + ', tables, and points' : 'Its tables and any points') + ' will be deleted from this browser.', ok: 'Remove class', danger: true })) return;
+      const snap = Suite.snapshot(['classes', 'tracker', 'topics', 'courses', 'agenda', 'spinner']);
       const tr = Suite.get('tracker', null);
       if (tr) { tr.log = (tr.log || []).filter(x => x.c !== gone.id); tr.prizes = (tr.prizes || []).filter(x => x.c !== gone.id); tr.captainLog = (tr.captainLog || []).filter(x => x.c !== gone.id); ['goals', 'streaks', 'captains'].forEach(k => { if (tr[k]) delete tr[k][gone.id]; }); Suite.set('tracker', tr); }
       const tp = Suite.get('topics', null);
@@ -697,7 +705,7 @@ main{min-width:0;max-width:820px}
       if (sp) { if (sp.absent) delete sp.absent[gone.id]; if (sp.picked) Object.keys(sp.picked).forEach(k => { if (k.startsWith(gone.id + ':')) delete sp.picked[k]; }); Suite.set('spinner', sp); }
       list.splice(list.indexOf(gone), 1);
       if (sel === gone.id) sel = null;
-      save(list); Suite.toast(gone.name + ' removed');
+      save(list); Suite.undoToast(gone.name + ' removed', snap);
     }
     else if (a === 'addt') {
       const name = await Suite.dialog({ title: 'New table name', input: '', ok: 'Add table' });
@@ -865,7 +873,13 @@ main{min-width:0;max-width:820px}
       <div class="bar"><label class="btn small">Add a bitmoji<input type="file" accept="image/png,image/webp,image/*" data-ts="badd" hidden></label><span class="muted small">PNGs with a see-through background work best.</span></div>
 
       <h3 class="tsh">My boards</h3>
-      ${(T.library || []).map((x, i) => `<div class="tsrow"><span>${esc(x.name)}</span><button class="btn quiet danger small" data-ts="ldel" data-i="${i}">Delete</button></div>`).join('') || '<p class="muted small">Save a custom board from Today (Day settings → Custom boards) to reuse it here.</p>'}`;
+      ${(T.library || []).map((x, i) => { const r = Object.assign({ on: false, days: [], from: '', to: '', keys: [], first: true }, x.repeat || {}), rowsAll = Suite.courses().map(co => ['course:' + co.id, co.name]).concat(Suite.classes().filter(c => !Suite.courseOf(c.id)).map(c => [c.id, c.name]));
+        return `<div class="libitem"><div class="tsrow"><span>${esc(x.name)}</span><label class="rv" style="margin:0"><input type="checkbox" data-ts="ron" data-i="${i}"${r.on ? ' checked' : ''}> Repeat</label><button class="btn quiet danger small" data-ts="ldel" data-i="${i}">Delete</button></div>
+          ${r.on ? `<div class="repeat">
+            <div class="bar">On ${[[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri']].map(([d, n]) => `<label class="rv" style="margin:0"><input type="checkbox" data-ts="rday" data-i="${i}" value="${d}"${r.days.includes(d) ? ' checked' : ''}> ${n}</label>`).join('')}</div>
+            <div class="bar">From <input type="date" class="field" data-ts="rfrom" data-i="${i}" value="${esc(r.from)}"> to <input type="date" class="field" data-ts="rto" data-i="${i}" value="${esc(r.to)}"> <span class="muted small">(leave empty for no end)</span></div>
+            <div class="bar">For ${rowsAll.map(([k, n]) => `<label class="rv" style="margin:0"><input type="checkbox" data-ts="rkey" data-i="${i}" value="${esc(k)}"${r.keys.includes(k) ? ' checked' : ''}> ${esc(n)}</label>`).join('')} <span class="muted small">(none checked: every class)</span></div>
+            <label class="rv"><input type="checkbox" data-ts="rfirst" data-i="${i}"${r.first ? ' checked' : ''}> Show it right after the Welcome board (otherwise last)</label></div>` : ''}</div>`; }).join('') || '<p class="muted small">Save a custom board from Today (Day settings → Custom boards) to reuse it here.</p>'}`;
   }
   const tsArea = () => document.getElementById('today-area');
   document.addEventListener('change', async e => {
@@ -881,6 +895,11 @@ main{min-width:0;max-width:820px}
       try { const f = t.files[0], meta = await Suite.files.put(f), name = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
         if (k === 'radd') T.custom['room-' + Suite.uid()] = { name, fileId: meta.id }; else T.bitmojis['bm-' + Suite.uid()] = { name, fileId: meta.id };
         Suite.toast(name + ' added'); } catch (err) { Suite.toast(err.message || "Couldn't add that picture"); return; }
+    }
+    else if (['ron', 'rday', 'rfrom', 'rto', 'rkey', 'rfirst'].includes(k)) {
+      const x = T.library[+t.dataset.i]; if (!x) return; const r = x.repeat = Object.assign({ on: false, days: [1, 2, 3, 4, 5], from: '', to: '', keys: [], first: true }, x.repeat || {});
+      if (k === 'ron') r.on = t.checked; else if (k === 'rfrom') r.from = t.value; else if (k === 'rto') r.to = t.value; else if (k === 'rfirst') r.first = t.checked;
+      else { const arr = k === 'rday' ? r.days : r.keys, v = k === 'rday' ? +t.value : t.value, i2 = arr.indexOf(v); if (t.checked && i2 < 0) arr.push(v); if (!t.checked && i2 > -1) arr.splice(i2, 1); }
     }
     else if (k === 'pack' && t.files[0]) { try { const r = await Suite.importRoomPack(t.files[0]); Suite.toast(`Imported ${r.rooms} backgrounds and ${r.bitmojis} bitmojis`); } catch (err) { Suite.toast(err.message || "Couldn't read that file"); } renderToday(); return; }
     else return;
@@ -919,10 +938,52 @@ main{min-width:0;max-width:820px}
         <label class="lbl" for="sicn-${esc(c.id)}">Notes about this class</label>
         <textarea id="sicn-${esc(c.id)}" rows="3" data-sicn="${esc(c.id)}" placeholder="Routines, reminders, anything the sub should know">${esc(S.classNotes[c.id] || '')}</textarea></div>`).join('')}`;
   }
+  document.addEventListener('change', e => { if (e.target.id === 'share-file' && e.target.files[0]) { useSetup(e.target.files[0]); e.target.value = ''; } });
   document.addEventListener('input', e => { const t = e.target, area = document.getElementById('subinfo-area'); if (!area || !area.contains(t)) return;
     const S = SUB(); if (t.dataset.si) S[t.dataset.si] = t.value; else if (t.dataset.sicn) { S.classNotes[t.dataset.sicn] = t.value; } else return; Suite.set('sub', S); });
   document.addEventListener('change', e => { const t = e.target; if (!t.dataset || !t.dataset.sih) return;
     const S = SUB(), set = new Set(S.helpers[t.dataset.sih] || []); if (t.checked) set.add(t.value); else set.delete(t.value); S.helpers[t.dataset.sih] = [...set]; Suite.set('sub', S); });
+
+
+  /* ---------- share a setup (no student data) ---------- */
+  const blobToURL = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+  async function shareSetup(withPics){
+    const T = JSON.parse(JSON.stringify(Suite.get('today', {}) || {}));
+    delete T.days; delete T.bitmojis; delete T.bmAdj; delete T.flags; delete T.mode;
+    Object.values(T.rows || {}).forEach(r => { r.bitmoji = 'none'; delete r.deckUrl; });
+    (T.library || []).forEach(x => { if (x.board) { delete x.board.pic; } });
+    const files = [];
+    if (withPics) for (const [id, room] of Object.entries(T.custom || {})) { const f = await Suite.files.get(room.fileId); if (f && f.blob) files.push({ room: id, name: room.name, data: await blobToURL(f.blob) }); }
+    if (!withPics) T.custom = {};
+    const classes = Suite.classes().map(c => ({ id: c.id, name: c.name, tables: c.tables, roomCols: c.roomCols, roomRows: c.roomRows }));
+    const tr = Suite.get('tracker', {}) || {};
+    const payload = { app: 'classroom-suite-setup', version: 1, exported: new Date().toISOString(), data: {
+      schedule: Suite.getSchedule(), courses: Suite.courses(), classes, prefs: Suite.get('prefs', {}), appearance: Suite.get('appearance', null),
+      events: Suite.events().filter(e => !e.mine), today: T, tracker: { menu: tr.menu, rotateEvery: tr.rotateEvery, capOrder: tr.capOrder } }, files };
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type: 'application/json' })); a.download = 'classroom-suite-setup.json';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  async function useSetup(file){
+    let p; try { p = JSON.parse(await file.text()); } catch (e) { Suite.toast("That file isn't a shared setup"); return; }
+    if (!p || p.app !== 'classroom-suite-setup') { Suite.toast("That file isn't a shared setup (for a full backup, use Restore)"); return; }
+    const d = p.data || {}, mine = Suite.classes();
+    if (!await Suite.dialog({ title: 'Use this shared setup?', body: `This sets your bell schedule, Today screen designs, and settings from the file${mine.length ? '' : ', and adds its classes with their tables (no students)'}. Your students, plans, and points stay as they are. Download a backup first if you might want to go back.`, ok: 'Use this setup' })) return;
+    if (d.schedule) Suite.saveSchedule(d.schedule);
+    if (d.prefs) Suite.set('prefs', Object.assign({}, Suite.get('prefs', {}), d.prefs));
+    if (d.appearance) Suite.set('appearance', d.appearance);
+    if (!mine.length && d.classes) { Suite.saveClasses(d.classes.map(c => Object.assign({ students: [] }, c))); if (d.courses) Suite.saveCourses(d.courses); }
+    if (d.events) { const ev = Suite.events(); d.events.forEach(e => { if (!ev.some(x => x.title === e.title && x.start === e.start)) ev.push(Object.assign({}, e, { id: Suite.uid() })); }); Suite.saveEvents(ev); }
+    if (d.tracker) Suite.set('tracker', Object.assign({}, Suite.get('tracker', {}), Object.fromEntries(Object.entries(d.tracker).filter(([k, v]) => v !== undefined))));
+    if (d.today) {
+      const T = Object.assign({}, Suite.get('today', {}) || {}), S = d.today;
+      ['layouts', 'bell', 'idle', 'library'].forEach(k => { if (S[k]) T[k] = Array.isArray(S[k]) ? (T[k] || []).concat(S[k]) : Object.assign({}, T[k] || {}, S[k]); });
+      if (!mine.length && S.rows) T.rows = S.rows;
+      T.custom = Object.assign({}, T.custom || {});
+      for (const f of p.files || []) { try { const blob = await (await fetch(f.data)).blob(), meta = await Suite.files.put(new File([blob], f.name + '.jpg')); const room = (S.custom || {})[f.room] || {}; T.custom[f.room] = { name: room.name || f.name, fileId: meta.id, layout: room.layout }; } catch (e) {} }
+      Suite.set('today', T);
+    }
+    Suite.toast('Setup added'); setTimeout(() => location.reload(), 600);
+  }
 
   function route(){
     const h = location.hash.replace('#', '');

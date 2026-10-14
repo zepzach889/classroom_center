@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
-<script src="shared/core.js?v=2026-10-14a"></script>
-<script>window.PAGE_VERSION = '2026-10-14a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
+<script src="shared/core.js?v=2026-10-15a"></script>
+<script>window.PAGE_VERSION = '2026-10-15a';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
 @media (min-width:861px){
@@ -20,7 +20,6 @@
   .fill>#agenda{flex:0 1 auto;min-height:0;display:flex;flex-direction:column}
   .fill>#agenda:empty{flex:0 0 auto}
   .fill>#agenda .agendabox{margin-top:0;min-height:0;max-height:100%;overflow:auto}
-  .fill>#agenda .unitpace{font-size:14px;font-weight:600;color:var(--ink-2);margin:-4px 0 6px}.udot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 .agadd{margin-top:0}
   .fill>.cards-row{flex:1 0 auto;margin-top:0;align-items:stretch}
   .cards-row>div{display:flex;flex-direction:column}
@@ -108,6 +107,11 @@
 .coming .when span{font-size:13px;color:var(--ink-2)}
 .today .none{color:var(--ink-2);padding:10px 0}
 @media (max-width:860px){.dash{grid-template-columns:1fr;gap:28px}.today{position:static;max-height:none}.today ol{overflow:visible}}
+.signs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.sign{font-size:12px;font-weight:600;color:var(--ink-2);border:1.5px solid var(--rule);border-radius:999px;padding:1px 9px}
+.sign.ok{color:var(--ink);border-color:var(--sea)}.sign.sub{background:var(--plum);border-color:var(--plum);color:#fff}
+.swap{display:inline-flex;align-items:center;gap:6px;margin-bottom:4px}.swap select{font:inherit;font-size:13px}
+.unitpace{font-size:14px;font-weight:600;color:var(--ink-2);margin:-4px 0 6px}.udot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 </style>
 </head>
 <body>
@@ -128,7 +132,7 @@
     <h2 id="day-label"></h2>
     <div class="why" id="day-why"></div>
     <ol id="sched"></ol>
-    <div class="edit small"><a href="settings.html#schedule">Edit the bell schedule</a> · <a href="planner.html">Planner</a> · <a href="sub.html">Sub page</a></div>
+    <div class="edit small"><label class="swap">Today's schedule <select id="swapday" aria-label="Change today's schedule"></select></label><br><a href="settings.html#schedule">Edit the bell schedule</a> · <a href="planner.html">Planner</a> · <a href="sub.html">Sub plans</a></div>
   </aside>
 </main>
 <script>
@@ -171,9 +175,16 @@
     const plan = `planner.html#date=${key}&class=${encodeURIComponent(cls.id)}`;
     const pace = (() => { const un = Suite.unitFor(cls.id, key); if (!un || !(un.opts || {}).pacing || !un.end) return '';
       return `<div class="unitpace"><span class="udot" style="background:${esc(un.color || '#6a8caf')}"></span>${esc(un.name)} · day ${Suite.schoolDays(un.start, key)} of ${Suite.schoolDays(un.start, un.end)}</div>`; })();
-    if (!a) { el.innerHTML = `${pace}<div class="agadd"><a class="btn quiet small" href="${plan}">+ Add today's plan for ${esc(cls.name)}</a></div>`; return; }
+    // small status signs: student boards ready, slides linked, sub day
+    const TD = Suite.get('today', {}) || {}, co = Suite.courseOf(cls.id), dayRec = ((TD.days || {})[key] || {}), rec = dayRec[cls.id] || (co ? dayRec[Suite.courseKey(co.id)] : null);
+    const boards = !!rec && Object.values(rec.boards || {}).some(b => (b.lines || []).some(l => (l.text || '').trim()));
+    const deck = Suite.deckFor(cls.id) || (rec && rec.slideLink) || ((a && a.materials) || []).some(m => /docs\.google\.com\/presentation/.test(m.url || ''));
+    const out = !!(((Suite.get('sub', {}) || {}).out || {})[key]);
+    const status = `<div class="signs">${[[boards, 'Student boards ready', 'No student boards yet'], [deck, 'Slides linked', 'No slides linked']].map(([ok, y, n]) => `<span class="sign${ok ? ' ok' : ''}">${ok ? '✓' : '○'} ${ok ? y : n}</span>`).join('')}${out ? '<span class="sign sub">Sub day</span>' : ''}</div>`;
+    if (!a) { el.innerHTML = `${pace}${status}<div class="agadd"><a class="btn quiet small" href="${plan}">+ Add today's plan for ${esc(cls.name)}</a> <a class="btn small" href="today.html">Show Today</a></div>`; return; }
     el.innerHTML = `<div class="agendabox">
-      <div class="boxhead"><h2>Today in ${esc(cls.name)}</h2><a class="btn quiet small" href="${plan}">Edit</a></div>
+      <div class="boxhead"><h2>Today in ${esc(cls.name)}</h2><span class="bar"><a class="btn quiet small" href="${plan}">Edit</a><a class="btn small" href="today.html" title="Open the Today screen for your projector">Show Today</a></span></div>
+      ${status}
       ${(() => { const k = Suite.dateKey(now), un = Suite.unitFor(cls.id, k); if (!un || !(un.opts || {}).pacing || !un.end) return '';
         return `<div class="unitpace"><span class="udot" style="background:${esc(un.color || '#6a8caf')}"></span>${esc(un.name)} · day ${Suite.schoolDays(un.start, k)} of ${Suite.schoolDays(un.start, un.end)}</div>`; })()}
       ${a.target ? `<div class="ag-target"><span class="k">Target</span>${esc(a.target)}</div>` : ''}
@@ -206,7 +217,7 @@
     for (let i = 1; i <= 7; i++) { const d = new Date(now); d.setDate(d.getDate() + i); const k = Suite.dateKey(d);
       Suite.eventsOn(k).forEach(e => { if (!e.countdown && !soon.some(x => x.e.id === e.id) && !evToday.some(x => x.id === e.id)) soon.push({ e, d }); }); }
     // your countdowns, plus Planner events marked "count down to it"
-    const fromEvents = Suite.events().filter(e => e.countdown).map(e => ({ id: 'ev-' + e.id, date: e.start, label: e.title, fromPlanner: true }))
+    const fromEvents = Suite.events().filter(e => e.countdown).map(e => ({ id: 'ev-' + e.id, date: e.start, time: e.time || '', label: e.title, fromPlanner: true }))
       .concat(Suite.units().filter(u => (u.opts || {}).countdown && u.end).map(u => ({ id: 'un-' + u.id, date: u.end, label: u.name + ' ends', fromPlanner: true })));
     const all = Suite.countdowns().concat(fromEvents).filter(cd => Suite.countdownLive(cd, now)).sort((a, b) => Suite.countdownEnd(a) - Suite.countdownEnd(b));
     const list = all.slice(0, soon.length ? 2 : 3), more = all.length - list.length;
@@ -237,7 +248,19 @@
     if (ended) renderComing();
   }
 
+  // one-tap change of today's schedule (assembly, delayed start, early release...)
+  function renderSwap(){
+    const sel = document.getElementById('swapday'); if (!sel) return;
+    const S = Suite.getSchedule(), key = Suite.dateKey(new Date()), sp = S.special.find(x => x.date === key);
+    sel.innerHTML = `<option value="">As usual</option>${S.schedules.map(x => `<option value="${esc(x.id)}"${sp && sp.scheduleId === x.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}<option value="none"${sp && sp.scheduleId === 'none' ? ' selected' : ''}>No school</option>`;
+  }
+  document.addEventListener('change', e => { if (e.target.id !== 'swapday') return;
+    const S = Suite.getSchedule(), key = Suite.dateKey(new Date()), v = e.target.value;
+    S.special = S.special.filter(x => x.date !== key);
+    if (v) S.special.push({ date: key, label: v === 'none' ? 'No school' : (S.schedules.find(x => x.id === v) || {}).name || 'Special schedule', scheduleId: v });
+    Suite.saveSchedule(S); location.reload(); });
   function renderDay(now){
+    renderSwap();
     const day = Suite.scheduleFor(now);
     const st = Suite.periodStatus(day.periods, now);
     const P = day.periods;

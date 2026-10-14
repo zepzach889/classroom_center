@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
-<script src="shared/core.js?v=2026-10-14a"></script>
-<script>window.PAGE_VERSION = '2026-10-14a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
+<script src="shared/core.js?v=2026-10-15a"></script>
+<script>window.PAGE_VERSION = '2026-10-15a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -146,7 +146,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
-        <div class="bar"><button class="btn" data-a="units">Units</button><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
+        <div class="bar"><button class="btn" data-a="copyweek" title="Copy this week's plans to another week">Copy week…</button><button class="btn" data-a="units">Units</button><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
       <div class="printonly">Plans for ${esc(label)}</div>
       ${mergeable() ? `<div class="banner noprint"><span><b>Some days still have a separate plan for each period</b>, saved before you set up courses. Combine the ones that match into the course plan? Periods with a different plan keep their own.</span><button class="btn primary" data-a="merge">Combine them</button></div>` : ''}
       ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
@@ -242,7 +242,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       </details>
       <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
         <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
-        <span class="bar"><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
+        <span class="bar"><button class="btn quiet" data-e="repeat" title="Save, then copy this plan to the same weekday each week">Repeat weekly…</button><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
     document.body.appendChild(back);
     const close = () => { back.remove(); document.removeEventListener('keydown', onKey, true); };
     const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); close(); } };
@@ -306,6 +306,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       if (ev.target === back) return close();
       const b = ev.target.closest('[data-e]'); if (!b) return;
       const k = b.dataset.e;
+      if (k === 'repeat') { back.querySelector('[data-e="save"]').click(); setTimeout(() => openRepeat(target, dateKey), 120); return; }
       if (k === 'cancel') { close(); dropUnused(added); backToToday(); }
       else if (k === 'subnote' || k === 'sublink') { const S = SUBS(); S.materials[dateKey] = (S.materials[dateKey] || []).concat({ id: Suite.uid(), kind: k === 'subnote' ? 'note' : 'link', title: '', text: '', url: '', classes: subIds.slice() }); subSave(S); const f = [...back.querySelectorAll('.sitem [data-sf]')].pop(); if (f) f.focus(); }
       else if (k === 'subrm') { const id = b.closest('[data-sid]').dataset.sid, S = SUBS(), M = S.materials[dateKey] || [], i = M.findIndex(x => x.id === id); if (i < 0) return; const m = M.splice(i, 1)[0]; subSave(S); if (m.kind === 'file' && m.file && !Suite.fileInUse(m.file.id)) Suite.files.del(m.file.id).catch(() => {}); }
@@ -417,7 +418,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       else if (v === 'new') draw();
       else if (v === 'edit') draw(b.dataset.id);
       else if (v === 'color') { back._color = b.dataset.c; back.querySelectorAll('.cswatch').forEach(x => x.classList.toggle('on', x === b)); }
-      else if (v === 'del') { if (!await Suite.dialog({ title: 'Delete this unit?', body: 'Plans stay. Only the unit (its dates and Today look) is removed.', ok: 'Delete', danger: true })) return; Suite.saveUnits(Suite.units().filter(x => x.id !== b.dataset.id)); draw(); }
+      else if (v === 'del') { const snap = Suite.snapshot(['units']), gone = Suite.units().find(x => x.id === b.dataset.id); Suite.saveUnits(Suite.units().filter(x => x.id !== b.dataset.id)); draw(); Suite.undoToast((gone ? gone.name : 'Unit') + ' deleted', snap); }
       else if (v === 'save') {
         const name = q('un-name').value.trim(); if (!name) { Suite.toast('Give the unit a name'); return; }
         let start = q('un-start').value, end = q('un-end').value; if (!start) { Suite.toast('Pick a start date'); return; } if (end && end < start) [start, end] = [end, start];
@@ -436,6 +437,50 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     if (moved) Suite.saveUnits(L); return moved;
   }
 
+
+  /* ---------- planning shortcuts: copy a week, repeat a day weekly ---------- */
+  function copyDay(from, to, keys, replace){
+    const A = Suite.agendaAll(), T = Suite.get('today', {}) || {}; T.days = T.days || {};
+    let n = 0;
+    keys.forEach(k => {
+      const src = (A[from] || {})[k]; if (!src) return;
+      if (!replace && (A[to] || {})[k]) return;
+      Suite.saveAgenda(to, [k], JSON.parse(JSON.stringify(src))); n++;
+      const tr = (T.days[from] || {})[k]; if (tr) { T.days[to] = T.days[to] || {}; if (replace || !T.days[to][k]) T.days[to][k] = JSON.parse(JSON.stringify(tr)); }
+    });
+    Suite.set('today', T); return n;
+  }
+  function shortcutDialog(title, body, fields, go){
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    back.innerHTML = `<div class="suite-dialog ed" role="dialog" aria-modal="true"><h2>${title}</h2><p>${body}</p>${fields}
+      <label class="rv" style="margin-top:10px"><input type="checkbox" id="sc-rep"> Replace days that already have a plan</label>
+      <div class="suite-dialog-actions"><button class="btn" data-k="x">Cancel</button><button class="btn primary" data-k="go">Copy</button></div></div>`;
+    document.body.appendChild(back);
+    back.addEventListener('click', e => { if (e.target === back || e.target.closest('[data-k="x"]')) return back.remove(); if (e.target.closest('[data-k="go"]')) { const msg = go(back, back.querySelector('#sc-rep').checked); if (msg !== false) { back.remove(); render(); Suite.toast(msg); } } });
+  }
+  function openCopyWeek(){
+    const D = days(), next = new Date(D[0]); next.setDate(next.getDate() + 7);
+    shortcutDialog('Copy this week', `Copies every plan from the week of ${D[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}, plus what students see on Today, to another week (Monday to Monday, and so on).`,
+      `<label class="lb" for="cw-to">To the week of</label><input type="date" class="field" id="cw-to" value="${keyOf(next)}">`,
+      (back, replace) => {
+        const v = back.querySelector('#cw-to').value; if (!v) return false;
+        const to = monday(parse(v)), keys = rows().flatMap(r => [r.key].concat(r.kind === 'course' ? r.classes.map(c => c.id) : []));
+        let n = 0; D.forEach((d, i) => { const t = new Date(to); t.setDate(t.getDate() + i); n += copyDay(keyOf(d), keyOf(t), keys, replace); });
+        return n ? `Copied ${n} plan${n === 1 ? '' : 's'} to the week of ${to.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'Nothing to copy (or those days already have plans)';
+      });
+  }
+  function openRepeat(rowKey, dateKey){
+    const end = parse(dateKey); end.setDate(end.getDate() + 28);
+    shortcutDialog('Repeat weekly', `Copies this ${parse(dateKey).toLocaleDateString(undefined, { weekday: 'long' })} plan to every ${parse(dateKey).toLocaleDateString(undefined, { weekday: 'long' })} until the date you pick, skipping days with no school.`,
+      `<label class="lb" for="rw-to">Until</label><input type="date" class="field" id="rw-to" value="${keyOf(end)}">`,
+      (back, replace) => {
+        const until = back.querySelector('#rw-to').value; if (!until) return false;
+        let n = 0; const d = parse(dateKey); d.setDate(d.getDate() + 7);
+        while (keyOf(d) <= until) { if (Suite.scheduleFor(d).periods.length) n += copyDay(dateKey, keyOf(d), [rowKey], replace); d.setDate(d.getDate() + 7); }
+        return n ? `Repeated on ${n} day${n === 1 ? '' : 's'}` : 'Nothing copied (save the plan first, or those days already have plans)';
+      });
+  }
+
   /* ---------- school events ---------- */
   function openEvents(dateKey, editId){
     const back = document.createElement('div'); back.className = 'suite-dialog-back';
@@ -451,6 +496,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         <div class="evgrid"><label>Starts<input type="date" class="field" id="ev-start" value="${esc(ev ? ev.start : dateKey)}"></label><label>Ends <span class="muted small">(for events longer than a day)</span><input type="date" class="field" id="ev-end" value="${esc(ev ? (ev.end || ev.start) : dateKey)}"></label></div>
         <label class="lb" for="ev-note">Note <span class="muted small">(optional)</span></label><input class="field" id="ev-note" value="${esc(ev ? ev.note || '' : '')}" placeholder="Wear green and gold">
         <label class="rv"><input type="checkbox" id="ev-cd"${ev && ev.countdown ? ' checked' : ''}> Count down to it on the dashboard</label>
+        <label class="rv" style="margin-left:26px">at <input type="time" class="field" id="ev-time" value="${esc(ev ? ev.time || '' : '')}" style="width:130px"> <span class="muted small">(optional; leave empty to count down to the day)</span></label>
         <label class="rv"><input type="checkbox" id="ev-mine"${ev && ev.mine ? ' checked' : ''}> Just for me (don't show it on the Today screen or the sub page)</label>
         <div class="suite-dialog-actions"><button class="btn" data-v="close">Done</button><button class="btn primary" data-v="save" data-id="${ev ? esc(ev.id) : ''}">${ev ? 'Save changes' : 'Add event'}</button></div></div>`;
       back.querySelector('#ev-title').focus();
@@ -465,12 +511,12 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       const v = b.dataset.v;
       if (v === 'close') close();
       else if (v === 'edit') draw(b.dataset.id);
-      else if (v === 'del') { Suite.saveEvents(Suite.events().filter(x => x.id !== b.dataset.id)); draw(); }
+      else if (v === 'del') { const snap = Suite.snapshot(['events']); const gone = Suite.events().find(x => x.id === b.dataset.id); Suite.saveEvents(Suite.events().filter(x => x.id !== b.dataset.id)); draw(); Suite.undoToast((gone ? gone.title : 'Event') + ' deleted', snap); }
       else if (v === 'save') {
         const title = back.querySelector('#ev-title').value.trim(); if (!title) { Suite.toast('Add a name for the event'); return; }
         let start = back.querySelector('#ev-start').value || dateKey, end = back.querySelector('#ev-end').value || start;
         if (end < start) [start, end] = [end, start];
-        const list = Suite.events(), id = b.dataset.id, item = { id: id || Suite.uid(), title, start, end, note: back.querySelector('#ev-note').value.trim(), countdown: back.querySelector('#ev-cd').checked, mine: back.querySelector('#ev-mine').checked };
+        const list = Suite.events(), id = b.dataset.id, item = { id: id || Suite.uid(), title, start, end, note: back.querySelector('#ev-note').value.trim(), countdown: back.querySelector('#ev-cd').checked, mine: back.querySelector('#ev-mine').checked, time: back.querySelector('#ev-time').value || '' };
         const i = list.findIndex(x => x.id === id); if (i > -1) list[i] = item; else list.push(item);
         Suite.saveEvents(list); draw();
       }
@@ -512,7 +558,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       else if (k === 'add') edit(null);
       else if (k === 'edit') edit(b.dataset.id);
       else if (k === 'back') draw();
-      else if (k === 'del') { Suite.saveCourses(Suite.courses().filter(x => x.id !== b.dataset.id)); draw(); Suite.toast('Course removed. Its periods keep any plans made just for them.'); }
+      else if (k === 'del') { const snap = Suite.snapshot(['courses', 'agenda', 'units', 'decks']); Suite.saveCourses(Suite.courses().filter(x => x.id !== b.dataset.id)); draw(); Suite.undoToast('Course removed. Its periods keep any plans made just for them.', snap); }
       else if (k === 'save') {
         const name = back.querySelector('#co-name').value.trim(), ids = [...back.querySelectorAll('.checks input:checked')].map(x => x.value);
         if (!name) { Suite.toast('Give the course a name'); return; }
@@ -559,6 +605,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     else if (a === 'courses') openCourses();
     else if (a === 'daysoff') openDaysOff();
     else if (a === 'units') openUnits();
+    else if (a === 'copyweek') openCopyWeek();
     else if (a === 'subout') { const S = Object.assign({}, Suite.get('sub', {}) || {}); S.out = Object.assign({}, S.out || {}); if (S.out[el.dataset.date]) delete S.out[el.dataset.date]; else S.out[el.dataset.date] = true; Suite.set('sub', S); render(); }
     else if (a === 'subprint') { const D = days(), outs = (Suite.get('sub', {}) || {}).out || {}, any = D.some(d => outs[keyOf(d)]); location.href = `sub.html#from=${keyOf(D[0])}&to=${keyOf(D[D.length - 1])}${any ? '&out=1' : ''}`; }
     else if (a === 'dayoff') { (async () => { const name = await Suite.dialog({ title: 'Mark ' + parse(el.dataset.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' as a day off?', input: 'No school', ok: 'Mark day off' }); if (name) { setDaysOff([el.dataset.date], name); render(); } })(); }

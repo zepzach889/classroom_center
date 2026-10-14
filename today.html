@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
-<script src="shared/core.js?v=2026-10-14a"></script>
-<script>window.PAGE_VERSION = '2026-10-14a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
+<script src="shared/core.js?v=2026-10-15a"></script>
+<script>window.PAGE_VERSION = '2026-10-15a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -52,15 +52,7 @@ body.full #suite-nav,body.full .rail{display:none}
 .have-out{margin:0 0 .2em;font-family:"Chelsea Market","Arial Rounded MT Bold",sans-serif;font-weight:400;font-size:1.45em;line-height:1.05;white-space:normal;color:var(--ink-green);text-transform:uppercase}
 .have-list{margin:0;padding-left:1.1em;font-family:"Chelsea Market","Arial Rounded MT Bold",sans-serif;font-weight:400;line-height:1.35;color:var(--ink-blue);text-transform:uppercase}
 .have-list li{white-space:normal;overflow-wrap:normal;word-break:normal}
-.rs{position:fixed;inset:0;z-index:90;background:rgba(10,16,24,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}
-.rs-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;width:min(1200px,96vw);color:#fff}
 .rs-head h2{color:#fff;font-size:22px}
-.rs-stage{position:relative;width:min(1200px,96vw,calc((100vh - 170px) * 16 / 9));aspect-ratio:16/9;background:#333 center/cover no-repeat;border-radius:8px;overflow:hidden;touch-action:none}
-.rsbox{position:absolute;border:3px dashed var(--c);background:color-mix(in srgb,var(--c) 18%,transparent);cursor:move;touch-action:none}
-.rsbox span{position:absolute;left:4px;top:3px;background:var(--c);color:#fff;font:700 13px var(--sans);padding:1px 8px;border-radius:999px;pointer-events:none}
-.rsbox i{position:absolute;right:-8px;bottom:-8px;width:18px;height:18px;border-radius:50%;background:var(--c);border:2px solid #fff;cursor:nwse-resize}
-.rsbox.off{display:none}
-.rs-note{color:#dfe6ec;font-size:14px;margin:0}
 .lines{text-align:var(--ta,left)}
 .region[style*="--ta:center"] .lines,.region[style*="--ta:right"] .lines{list-style:none;padding-left:0}
 .region[style*="--ta:center"] .lines li,.region[style*="--ta:right"] .lines li{list-style:none;margin-left:0;padding-left:0}
@@ -151,8 +143,6 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .rline:empty::before{content:attr(data-ph);color:var(--ink-2)}
 .lrow.lv1 .rline{margin-left:22px}.lrow.lv2 .rline{margin-left:44px}
 .bmrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.sched li{display:grid;grid-template-columns:130px 1fr 1fr auto;gap:6px;align-items:center;padding:4px 0}
-.sched{list-style:none;margin:6px 0;padding:0}
 .stage.bg-paper{background-color:#f4eee1;background-image:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.7),transparent 60%),repeating-linear-gradient(0deg,rgba(120,100,70,.035) 0 2px,transparent 2px 5px)}
 .stage.bg-chalk{background:#2f3d36;background-image:radial-gradient(ellipse at 50% 40%,rgba(255,255,255,.07),transparent 65%),radial-gradient(ellipse at 20% 80%,rgba(255,255,255,.04),transparent 40%);box-shadow:inset 0 0 0 1.4cqw #6b4a2e,inset 0 0 0 1.7cqw #3e2a18}
 .stage.bg-cork{background:#c79d68;background-image:radial-gradient(rgba(90,55,20,.25) 1px,transparent 1.6px),radial-gradient(rgba(255,240,210,.18) 1px,transparent 1.8px);background-size:.9cqw .9cqw,1.3cqw 1.3cqw;background-position:0 0,.4cqw .5cqw}
@@ -183,12 +173,6 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .timer.done{animation:blink .6s steps(2,jump-none) 6}
 @keyframes blink{50%{opacity:.25}}
 /* move-text mode */
-.mv{position:absolute;inset:0;z-index:20}
-.mvbox{position:absolute;border:3px dashed var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);cursor:move;touch-action:none}
-.mvbox .mvl{position:absolute;left:4px;top:3px;display:flex;gap:4px;align-items:center}
-.mvbox .mvl b{background:var(--c);color:#fff;font:700 12px var(--sans);padding:1px 8px;border-radius:999px}
-.mvbox .mvl button{font:600 11px var(--sans);background:#fff;color:#222;border:1.5px solid var(--c);border-radius:999px;padding:0 7px;cursor:pointer}
-.mvbox i{position:absolute;right:-9px;bottom:-9px;width:18px;height:18px;border-radius:50%;background:var(--c);border:2px solid #fff;cursor:nwse-resize}
 /* lesson and overlay */
 .lesson{position:absolute;inset:0;background:#0f1720;z-index:5}
 .lesson iframe{width:100%;height:100%;border:0;display:block}
@@ -379,8 +363,20 @@ details.sec>summary .muted{font-weight:400}
   function dayFor(date, cid){
     const d = T.days[date] || {}, own = d[cid], co = d[rowKeyOf(cid)];
     const u = usual(cid), rec = own || co;
-    if (!rec) return { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' };
-    return Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
+    const base = !rec ? { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' }
+      : Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
+    return withRepeats(base, date, cid);
+  }
+  // saved boards set to repeat (My boards → Repeat) join the lineup on matching days
+  function withRepeats(rec, date, cid){
+    const wd = new Date(date + 'T12:00').getDay(), keys = [cid, rowKeyOf(cid)];
+    const reps = (T.library || []).filter(x => x.repeat && x.repeat.on && (x.repeat.days || []).includes(wd) && (!x.repeat.from || x.repeat.from <= date) && (!x.repeat.to || date <= x.repeat.to)
+      && (!(x.repeat.keys || []).length || x.repeat.keys.some(k => keys.includes(k))));
+    if (!reps.length) return rec;
+    const out = Object.assign({}, rec, { lineup: (rec.lineup || []).slice(), boards: Object.assign({}, rec.boards) });
+    reps.forEach(x => { const id = 'c-rep-' + String(x.from || x.name || 'board').replace(/[^\w-]+/g, '-').slice(0, 40); if (out.lineup.includes(id)) return; if (!out.boards[id]) out.boards[id] = JSON.parse(JSON.stringify(x.board));
+      const at = x.repeat.first ? Math.max(0, out.lineup.indexOf('welcome') + 1) : out.lineup.length; out.lineup.splice(at, 0, id); });
+    return out;
   }
   let scope = 'course';   // edit for the course, or just this period
   function editable(date, cid){
@@ -797,12 +793,10 @@ details.sec>summary .muted{font-weight:400}
     if (d === 'cadd') { const name = await Suite.dialog({ title: 'Name this board', body: 'This becomes the heading. You can change it on screen.', input: 'REMINDERS', ok: 'Add board' }); if (!name) return;
       const r = editable(viewDate, cid), id = 'c-' + Suite.uid(); r.boards = r.boards || {}; r.boards[id] = { heading: esc(name), lines: [] }; r.lineup = (r.lineup || []).concat(id); save();
       editing = false; $('#drawer').hidden = true; editMode = true; lesson = false; screen = Math.max(0, screens(viewDate, cid).indexOf(id)); render(); Suite.toast('Your new board is ready. Click to type, or use the switches above to choose its pieces.'); return; }
-    if (d === 'crm') { if (!await Suite.dialog({ title: 'Delete this board?', body: 'It is removed from this day. Other days keep their copy.', ok: 'Delete', danger: true })) return; const r = editable(viewDate, cid); r.lineup = r.lineup.filter(x => x !== el.dataset.t); delete (r.boards || {})[el.dataset.t]; commit(true); return; }
+    if (d === 'crm') { if (!await Suite.dialog({ title: 'Delete this board?', body: 'It is removed from this day. Other days keep their copy.', ok: 'Delete', danger: true })) return; const snap = Suite.snapshot(['today']); const r = editable(viewDate, cid); r.lineup = r.lineup.filter(x => x !== el.dataset.t); delete (r.boards || {})[el.dataset.t]; commit(true); Suite.undoToast('Board deleted', snap); return; }
     if (d === 'cpicrm') { const r = editable(viewDate, cid); const bd = r.boards[el.dataset.t]; if (bd) delete bd.pic; commit(true); return; }
     if (d === 'xadd') { const look = roomFor(viewDate, cid).look, lay = clone(getLayout(look)); lay.extras.push({ id: Suite.uid(), box: [760, 420, 420, 220], panel: 'card', html: '' }); T.layouts[look] = lay; commit(true); return; }
     if (d === 'xrm') { const look = roomFor(viewDate, cid).look, lay = clone(getLayout(look)); lay.extras = lay.extras.filter(x => x.id !== el.dataset.x); T.layouts[look] = lay; commit(true); return; }
-    if (d === 'schadd') { const u = usual(cid), r = roomFor(viewDate, cid); (u.schedule = u.schedule || []).push({ from: viewDate, look: r.look, bitmoji: r.bitmoji }); commit(true); return; }
-    if (d === 'schrm') { usual(cid).schedule.splice(+el.dataset.k, 1); commit(true); return; }
     if (d === 'copyprev') {
       const prevDay = shiftDay(viewDate, -1), p = dayFor(prevDay, cid), r = editable(viewDate, cid);
       Object.assign(r, clone({ lineup: p.lineup, haveOut: p.haveOut, boards: p.boards })); commit(true); Suite.toast('Copied from ' + longDate(prevDay)); return;
@@ -837,7 +831,6 @@ details.sec>summary .muted{font-weight:400}
     if (d === 'tstyle' || d === 'tcolor') { usual(cid).timer[d === 'tstyle' ? 'style' : 'color'] = el.value; commit(true); return; }
     if (d === 'bm') { usual(cid).bitmoji = el.value; commit(true); return; }
     if (d === 'daylook' || d === 'daybm') { const r = editable(viewDate, cid), k = d === 'daylook' ? 'look' : 'bitmoji'; if (el.value) r[k] = el.value; else delete r[k]; commit(true); return; }
-    if (d === 'schfrom' || d === 'schlook' || d === 'schbm') { const x = usual(cid).schedule[+el.dataset.k], k = d === 'schfrom' ? 'from' : d === 'schlook' ? 'look' : 'bitmoji'; if (el.value) x[k] = el.value; else delete x[k]; commit(true); return; }
     if (d === 'ton' || d === 'tauto') { usual(cid).timer[d === 'ton' ? 'on' : 'auto'] = el.checked; if (d === 'ton') resetTimer(cid); commit(true); return; }
     if (d === 'tmin') { usual(cid).timer.min = Math.max(1, Math.min(30, parseInt(el.value, 10) || 3)); if (!timer.running) resetTimer(cid); commit(false); return; }
   });

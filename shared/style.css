@@ -156,3 +156,27 @@ button.gear{background:none;cursor:pointer;font:inherit}
 #suite-news h2{font-size:20px;margin:0 0 6px}
 #suite-news ul{margin:0 0 10px;padding-left:18px;font-size:14px;line-height:1.4}
 #suite-news li{margin-bottom:4px}
+
+.suite-toast.has-undo{display:flex;align-items:center;gap:12px;pointer-events:auto}
+.toast-undo{font:inherit;font-weight:700;background:none;border:1.5px solid currentColor;color:inherit;border-radius:999px;padding:2px 12px;cursor:pointer}
+
+.ddgroup{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);padding:8px 12px 2px}
+.ddgroup:first-child{padding-top:4px}
+/* shared print style: same margins and type everywhere */
+@media print{
+  @page{margin:.5in}
+  html,body{background:#fff!important;color:#111}
+  #suite-nav,.backup-banner,.suite-toast,#suite-news,.noprint{display:none!important}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h1,h2,h3{break-after:avoid}
+  tr,li,img{break-inside:avoid}
+}
+
+/* phones: the page links get their own swipeable row under the logo and buttons */
+@media (max-width:760px){
+  .nav-inner{flex-wrap:wrap;height:auto;padding:6px 12px;row-gap:2px}
+  .nav-inner > nav, .nav-inner nav[aria-label]{order:3;width:100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav-inner nav::-webkit-scrollbar{display:none}
+  .nav-inner ul{width:max-content}
+  .wordmark{font-size:0}
+}

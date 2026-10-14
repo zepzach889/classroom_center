@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-14a">
-<script src="shared/core.js?v=2026-10-14a"></script>
-<script>window.PAGE_VERSION = '2026-10-14a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-15a">
+<script src="shared/core.js?v=2026-10-15a"></script>
+<script>window.PAGE_VERSION = '2026-10-15a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -332,6 +332,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
             <option value="2"${T.rotateEvery === 2 ? ' selected' : ''}>New captains every 2 weeks</option>
             <option value="0"${!T.rotateEvery ? ' selected' : ''}>Only when I pick them</option>
           </select>
+          <select data-c="caporder" aria-label="Who's next">
+            <option value="fair"${T.capOrder !== 'seat' ? ' selected' : ''}>Next: whoever has had the fewest turns</option>
+            <option value="seat"${T.capOrder === 'seat' ? ' selected' : ''}>Next: the next seat at each table</option>
+          </select>
           <label for="repq" style="display:block;margin-top:16px"><b>Quarter report</b></label>
           <p class="hint" style="margin-top:0">A spreadsheet file (CSV) with every class's weekly points, captains, and prizes. It opens in Google Sheets or Excel.</p>
           <div class="bar"><select id="repq">${quarters.map(q => `<option value="${q}">Quarter ${q}</option>`).join('')}</select>
@@ -372,6 +376,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const members = c.students.filter(s => s.tableId === tid);
     if (!members.length) return null;
     const cur = (T.captains[c.id] || {})[tid];
+    if (T.capOrder === 'seat') {   // follow the seating chart: the next seat around the table
+      const bySeat = members.slice().sort((a, b) => (Number.isInteger(a.seat) ? a.seat : 99) - (Number.isInteger(b.seat) ? b.seat : 99) || a.name.localeCompare(b.name));
+      const i = bySeat.findIndex(s => s.name === cur); return bySeat[(i + 1) % bySeat.length];
+    }
     const weeks = captainWeeks(c), last = lastCaptained(c);
     const pool = members.length > 1 ? members.filter(s => s.name !== cur) : members;
     return pool.slice().sort((a, b) => (weeks[a.id] || 0) - (weeks[b.id] || 0) || (last[a.id] || 0) - (last[b.id] || 0) || a.name.localeCompare(b.name))[0];
@@ -520,6 +528,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (el.id === 'menu') { T.menu = el.value; save(); render(); return; }
     if (!c || !k) return;
     if (k === 'rot') { T.rotateEvery = +el.value; save(); render(); return; }
+    if (k === 'caporder') { T.capOrder = el.value; save(); render(); return; }
     if (k === 'given') { const x = T.prizes.find(p => p.id === id); if (x) { x.given = el.checked; save(); render(); } return; }
     if (k === 'cap') { (T.captains[c.id] = T.captains[c.id] || {})[id] = el.value; }
     else if (k === 'goal') { const g = T.goals[c.id] = T.goals[c.id] || {}; const key = gkey(id); g[key] = Object.assign({}, g[key], { text: el.value }); }

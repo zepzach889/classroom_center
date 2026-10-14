@@ -16,21 +16,25 @@
     { id: 'seating', label: 'Seating', href: 'seating.html' },
     { id: 'planner', label: 'Planner', href: 'planner.html' },
     { id: 'tools', label: 'Tools', menu: [
+      { group: 'Pick students' },
       { id: 'spinner', label: 'Name spinner', href: 'spinner.html', feature: 'spinner' },
       { id: 'topics', label: 'Topic picker', href: 'topics.html', feature: 'topics' },
+      { group: 'Groups and activities' },
       { id: 'act-game', label: 'Review game', href: 'activities.html#tool=game', feature: 'game' },
       { id: 'act-stations', label: 'Stations', href: 'activities.html#tool=stations', feature: 'stations' },
       { id: 'act-tally', label: 'Tally', href: 'activities.html#tool=tally', feature: 'tally' },
       { id: 'act-groups', label: 'Partners and groups', href: 'activities.html#tool=groups', feature: 'groups' },
+      { group: 'Classroom management' },
       { id: 'noise', label: 'Noise meter', href: 'noise.html', feature: 'noise' },
-      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
-      { id: 'hallpass', label: 'Hall pass', href: 'hallpass.html', feature: 'hallpass' }
+      { id: 'hallpass', label: 'Hall pass', href: 'hallpass.html', feature: 'hallpass' },
+      { group: 'Grading' },
+      { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' }
     ] }
   ];
   const GEAR_MENU = [
     { id: 'settings', label: 'Classes and rosters', href: 'settings.html#classes' },
     { id: 'sub', label: 'Print sub plans', href: 'sub.html' },
-    { id: 'general', label: 'General settings', href: 'settings.html#general' },
+    { id: 'general', label: 'Settings', href: 'settings.html#schedule' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
   const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader', 'hallpass'];
@@ -38,7 +42,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-14a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-15a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -278,6 +282,15 @@
         row.schedule = []; });
       if (add.length) S.saveUnits(S.units().concat(add));
       T.unitsMoved = true; S.set('today', T);
+    } catch (e) {}
+  })();
+  // Countdowns now live in the Planner as events ("count down to it", "just for me"), once.
+  (function moveCountdowns(){
+    try {
+      const cds = S.get('countdowns', []) || []; if (!cds.length || S.get('countdownsMoved')) return;
+      const ev = S.get('events', []) || [];
+      cds.forEach(cd => { if (cd.date) ev.push({ id: 'cd-' + (cd.id || S.uid()), title: cd.label || 'Countdown', start: cd.date, end: cd.date, note: '', countdown: true, mine: true, time: cd.time || '' }); });
+      S.set('events', ev); S.set('countdowns', []); S.set('countdownsMoved', true);
     } catch (e) {}
   })();
   S.schoolDays = (a, b) => { let n = 0; const d = new Date(a + 'T12:00'); const end = new Date(b + 'T12:00'); while (d <= end) { if (S.scheduleFor(d).periods.length) n++; d.setDate(d.getDate() + 1); } return n; };
@@ -525,12 +538,20 @@
     document.addEventListener('keydown', onKey);
     back.addEventListener('click', e => { if (e.target === back) return no(); const r = e.target.closest('[data-r]'); if (r) (r.dataset.r === 'yes' ? yes() : no()); });
   });
-  S.toast = msg => {
+  S.toast = (msg, opts) => {
     const t = document.createElement('div');
     t.className = 'suite-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    if (opts && opts.undo) { const b = document.createElement('button'); b.className = 'toast-undo'; b.textContent = 'Undo'; b.addEventListener('click', () => { t.remove(); opts.undo(); }); t.appendChild(b); t.classList.add('has-undo'); }
+    document.querySelectorAll('.suite-toast.has-undo').forEach(x => x.remove());
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2800);
+    setTimeout(() => t.remove(), opts && opts.undo ? 8000 : 2800);
   };
+  // Undo for deletions: remember the saved data before a change, and put it all back if asked.
+  S.snapshot = keys => keys.map(k => [k, localStorage.getItem('suite:' + k)]);
+  S.undoToast = (msg, snap) => S.toast(msg, { undo: () => {
+    snap.forEach(([k, raw]) => { if (raw === null) localStorage.removeItem('suite:' + k); else localStorage.setItem('suite:' + k, raw); });
+    S.toast('Restored'); setTimeout(() => location.reload(), 500);
+  } });
 
   (function paletteV2(){
     try {
@@ -969,11 +990,12 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-14', items: [
-    'Units in the Planner: name a unit and its dates; Today can switch its background and bitmoji on its own. Extras like pacing and countdowns are optional.',
-    'Your lesson deck is now set once per course in the Planner, with an optional "start at slide" for each day.',
-    'New Hall pass tool (Tools menu): sign students out and back, with timers and a weekly log.',
-    'Settings is split into tabs, and Backup shows how much storage you are using.'] };
+  const NEWS = { id: '2026-10-15', items: [
+    'Units in the Planner (Units button), with optional pacing, countdowns, and an essential question. Your lesson deck is now set once per course.',
+    'Hall pass (Tools menu): sign students out and back, with timers and a weekly log.',
+    'Planner: Copy week, and Repeat weekly in each day. Countdowns now live in the Planner as events (yours were moved there).',
+    'Dashboard: Show Today, status signs on the plan, and a one-tap switch for today\'s schedule. Undo after deleting. Saved boards can repeat (Settings → Today screen).',
+    'Settings has tabs, and Backup can share your setup with a colleague (no student names).'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
@@ -995,7 +1017,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
       const label = n => n.id === 'tracker' ? S.word('team', { cap: true }) + ' points' : n.label;
       const link = n => `<a href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(label(n))}${n.beta ? '<span class="beta" title="Still being refined">Beta</span>' : ''}</a>`;
       const toolItems = NAV.find(n => n.menu).menu.filter(on);
-      const menu = (key, items, title) => `<div class="ddmenu" data-ddm="${key}" hidden role="menu"${title ? ` aria-label="${S.esc(title)}"` : ''}>${items.map(n => n.pop
+      const menu = (key, items, title) => `<div class="ddmenu" data-ddm="${key}" hidden role="menu"${title ? ` aria-label="${S.esc(title)}"` : ''}>${items.filter((n, i, arr) => !n.group || (arr[i + 1] && !arr[i + 1].group)).map(n => n.group ? `<div class="ddgroup" role="presentation">${S.esc(n.group)}</div>` : n.pop
         ? `<button role="menuitem" data-pop="${n.pop}">${S.esc(n.label)}</button>`
         : `<a role="menuitem" href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}</a>`).join('')}${key === 'pop' ? '<span class="ddnote">Floats on top of Google Slides in Chrome or Edge.</span>' : ''}</div>`;
       el.innerHTML = `<div class="nav-inner">
