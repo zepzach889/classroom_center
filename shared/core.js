@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-16c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-16e';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -219,66 +219,76 @@
   };
   S.roomSize = (c, lay) => ({ cols: Math.max(lay.cols, c.roomCols || 0, 1), rows: Math.max(lay.rows, c.roomRows || 0, 1) });
   // Draw a class's seating chart as a picture: tables where they sit in the room, each student in their seat.
+  // Draw a class's seating chart as a picture: tables fill the page, each student in their seat.
+  // opts: front ('top'|'bottom'), title (default: the class name; '' for none), info (count + notes box), trim (default true)
   S.drawSeatingChart = (c, opts = {}) => {
-    const front = opts.front || ((S.get('seating', {}) || {}).front) || 'top', title = opts.title === undefined ? c.name + ' seating chart' : opts.title;
+    const front = opts.front || ((S.get('seating', {}) || {}).front) || 'top', title = opts.title === undefined ? c.name : opts.title;
     const T0 = S.get('tracker', {}) || {}, caps = (T0.captains || {})[c.id] || {};
-    const W = opts.width || 3300, H = opts.height || 2550, M = opts.margin || 150, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const W = opts.width || 3300, H = opts.height || 2550, M = opts.margin === undefined ? 120 : opts.margin, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
     const font = (px, bold) => `${bold ? '700 ' : ''}${px}px Georgia, "Times New Roman", serif`;
-    const fitText = (txt, maxW, maxH, start, bold) => { let px = start; g.font = font(px, bold); while (px > 14 && g.measureText(txt).width > maxW) { px -= 2; g.font = font(px, bold); } if (px > maxH * .8) { px = Math.floor(maxH * .8); g.font = font(px, bold); } return px; };
+    const fit = (txt, maxW, maxH, start, bold) => { let px = start; g.font = font(px, bold); while (px > 14 && g.measureText(txt).width > maxW) { px -= 2; g.font = font(px, bold); } if (px > maxH * .8) { px = Math.floor(maxH * .8); g.font = font(px, bold); } return px; };
     const rrect = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
     let top = M;
-    if (title) { g.fillStyle = '#111'; g.font = font(78, true); g.textBaseline = 'alphabetic'; g.fillText(title, M, M + 60); top = M + 110; }
-    const lay0 = S.roomLayout(c.tables), RS = S.roomSize(c, lay0);
-    // trim empty rows and columns at the edges (no paper spent on spots kept for rearranging)
-    const spots = Object.values(lay0.at), r0 = spots.length ? Math.min(...spots.map(p => p.row)) : 1, r1 = spots.length ? Math.max(...spots.map(p => p.row)) : 1, c0 = spots.length ? Math.min(...spots.map(p => p.col)) : 1, c1 = spots.length ? Math.max(...spots.map(p => p.col)) : 1;
-    const lay = opts.trim === false ? lay0 : { at: Object.fromEntries(Object.entries(lay0.at).map(([k, p]) => [k, { row: p.row - r0 + 1, col: p.col - c0 + 1 }])) };
-    const cols = opts.trim === false ? RS.cols : c1 - c0 + 1, rows = opts.trim === false ? RS.rows : r1 - r0 + 1;
-    const PW = opts.panel ? Math.round(W * .24) : 0;   // side panel: count, not seated, date, notes
-    const frontH = 70, gap = 50;
-    let gridTop = top, gridBottom = H - M;
-    const drawFront = y => { g.setLineDash([18, 14]); g.strokeStyle = '#888'; g.lineWidth = 4; rrect(M, y, W - 2 * M - PW - (PW ? 50 : 0), frontH, 16); g.stroke(); g.setLineDash([]); g.fillStyle = '#555'; g.font = font(40, true); g.textAlign = 'center'; g.fillText('FRONT OF THE ROOM', (W - PW - (PW ? 50 : 0)) / 2, y + 50); g.textAlign = 'left'; };
-    if (front === 'bottom') { drawFront(H - M - frontH); gridBottom = H - M - frontH - gap; } else { drawFront(top); gridTop = top + frontH + gap; }
-    const usableW = W - 2 * M - PW - (PW ? 50 : 0);
-    const cellW = Math.min((usableW - gap * (cols - 1)) / cols, 1000), cellH = Math.min((gridBottom - gridTop - gap * (rows - 1)) / rows, 820);
-    const gridLeft = M + (usableW - (cellW * cols + gap * (cols - 1))) / 2;
+    if (title) {
+      g.fillStyle = '#111'; g.font = font(78, true); g.textBaseline = 'alphabetic'; g.fillText(title, M, M + 60);
+      if (opts.info) { g.font = font(40); g.fillStyle = '#555'; g.textAlign = 'right'; g.fillText('Seating as of ' + new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }), W - M, M + 60); g.textAlign = 'left'; }
+      top = M + 100;
+    }
+    // the room, trimmed to the rows and columns that have tables
+    const lay0 = S.roomLayout(c.tables), RS = S.roomSize(c, lay0), spots = Object.values(lay0.at);
+    const trim = opts.trim !== false && spots.length;
+    const r0 = trim ? Math.min(...spots.map(p => p.row)) : 1, c0 = trim ? Math.min(...spots.map(p => p.col)) : 1;
+    const rows = trim ? Math.max(...spots.map(p => p.row)) - r0 + 1 : RS.rows, cols = trim ? Math.max(...spots.map(p => p.col)) - c0 + 1 : RS.cols;
+    const used = new Set(spots.map(p => (p.row - r0) + ',' + (p.col - c0)));
+    // where the count and notes go: the empty spot nearest the bottom left; otherwise a strip along the bottom
+    let infoCell = null; if (opts.info) for (let r = rows - 1; r >= 0 && !infoCell; r--) for (let k = 0; k < cols && !infoCell; k++) if (!used.has(r + ',' + k)) infoCell = { r, k };
+    const stripH = opts.info && !infoCell ? Math.round(H * .17) : 0;
+    const frontH = 64, gap = 46;
+    let gridTop = top, gridBottom = H - M - (stripH ? stripH + gap : 0);
+    const drawFront = y => { g.setLineDash([18, 14]); g.strokeStyle = '#888'; g.lineWidth = 4; rrect(M, y, W - 2 * M, frontH, 16); g.stroke(); g.setLineDash([]); g.fillStyle = '#555'; g.font = font(38, true); g.textAlign = 'center'; g.fillText('FRONT OF THE ROOM', W / 2, y + 46); g.textAlign = 'left'; };
+    if (front === 'bottom') { drawFront(gridBottom - frontH); gridBottom -= frontH + gap; } else { drawFront(top); gridTop = top + frontH + gap; }
+    const cellW = (W - 2 * M - gap * (cols - 1)) / cols, cellH = (gridBottom - gridTop - gap * (rows - 1)) / rows;
+    const cellXY = (row, col) => { const r = front === 'bottom' ? rows - row - 1 : row; return [M + col * (cellW + gap), gridTop + r * (cellH + gap)]; };
     c.tables.forEach(t => {
-      const p = lay.at[t.id]; if (!p) return; const r = front === 'bottom' ? rows - p.row + 1 : p.row;
-      const x = gridLeft + (p.col - 1) * (cellW + gap), y = gridTop + (r - 1) * (cellH + gap);
-      rrect(x, y, cellW, cellH, 26); g.lineWidth = 6; g.strokeStyle = t.open ? '#111' : '#999'; g.setLineDash(t.open ? [] : [20, 14]); g.stroke(); g.setLineDash([]);
+      const p = lay0.at[t.id]; if (!p) return; const [x, y] = cellXY(p.row - r0, p.col - c0);
+      rrect(x, y, cellW, cellH, 28); g.lineWidth = 6; g.strokeStyle = t.open ? '#111' : '#999'; g.setLineDash(t.open ? [] : [20, 14]); g.stroke(); g.setLineDash([]);
       const headH = Math.min(110, cellH * .16);
-      g.fillStyle = '#111'; const hp = fitText(t.name, cellW * .62, headH, 56, true); g.fillText(t.name, x + 30, y + headH * .5 + hp * .35);
+      g.fillStyle = '#111'; const hp = fit(t.name, cellW * .62, headH, 60, true); g.fillText(t.name, x + 32, y + headH * .5 + hp * .35);
       const m = S.seatMap(c, t), count = m.seats.filter(Boolean).length + m.loose.length;
-      g.font = font(34); g.fillStyle = '#555'; g.textAlign = 'right'; g.fillText(t.open ? `${count} of ${t.seats}` : 'not in use', x + cellW - 30, y + headH * .5 + 12); g.textAlign = 'left';
+      g.font = font(38); g.fillStyle = '#555'; g.textAlign = 'right'; g.fillText(t.open ? `${count} of ${t.seats}` : 'not in use', x + cellW - 32, y + headH * .5 + 13); g.textAlign = 'left';
       g.beginPath(); g.moveTo(x, y + headH); g.lineTo(x + cellW, y + headH); g.lineWidth = 4; g.strokeStyle = '#111'; g.stroke();
-      const L = S.seatLayout(t), pad = 26, ax = x + pad, ay = y + headH + pad, aw = cellW - 2 * pad, ah = cellH - headH - 2 * pad;
-      const surf = 30, colsN = L.cols, rowsN = L.rows;
-      const sw = (aw - (L.surface === 'v' ? surf + 20 : 0) - (colsN - 1) * 16) / colsN, sh = (ah - (L.surface === 'h' ? surf + 20 : 0) - (rowsN - 1) * 14) / rowsN;
-      if (L.surface === 'v') { g.fillStyle = '#e8e8e8'; rrect(ax + sw + 10 + 8, ay, surf, ah, 12); g.fill(); }
-      if (L.surface === 'h') { g.fillStyle = '#e8e8e8'; rrect(ax, ay + sh + 10 + 7, aw, surf, 12); g.fill(); }
+      const L = S.seatLayout(t), pad = 28, ax = x + pad, ay = y + headH + pad, aw = cellW - 2 * pad, ah = cellH - headH - 2 * pad;
+      const surf = 32, colsN = L.cols, rowsN = L.rows;
+      const sw = (aw - (L.surface === 'v' ? surf + 22 : 0) - (colsN - 1) * 18) / colsN, sh = (ah - (L.surface === 'h' ? surf + 22 : 0) - (rowsN - 1) * 16) / rowsN;
+      if (L.surface === 'v') { g.fillStyle = '#e8e8e8'; rrect(ax + sw + 11 + 9, ay, surf, ah, 12); g.fill(); }
+      if (L.surface === 'h') { g.fillStyle = '#e8e8e8'; rrect(ax, ay + sh + 11 + 8, aw, surf, 12); g.fill(); }
       m.seats.forEach((st, i) => {
-        const q = L.pos(i); let sx = ax + q.c * (sw + 16), sy = ay + q.r * (sh + 14);
-        if (L.surface === 'v' && q.c >= 1) sx += surf + 20;
-        if (L.surface === 'h' && q.r >= 1) sy += surf + 20;
-        rrect(sx, sy, sw, sh, 14); g.lineWidth = 3; g.strokeStyle = st ? '#777' : '#bbb'; g.setLineDash(st ? [] : [10, 8]); g.stroke(); g.setLineDash([]);
+        const q = L.pos(i); let sx = ax + q.c * (sw + 18), sy = ay + q.r * (sh + 16);
+        if (L.surface === 'v' && q.c >= 1) sx += surf + 22;
+        if (L.surface === 'h' && q.r >= 1) sy += surf + 22;
+        rrect(sx, sy, sw, sh, 16); g.lineWidth = 3; g.strokeStyle = st ? '#777' : '#bbb'; g.setLineDash(st ? [] : [10, 8]); g.stroke(); g.setLineDash([]);
         const label = st ? st.name : 'Seat ' + (i + 1), bold = st && caps[t.id] === st.name;
-        g.fillStyle = st ? '#111' : '#999'; const px = fitText(label, sw - 20, sh, st ? 44 : 30, bold);
+        g.fillStyle = st ? '#111' : '#999'; const px = fit(label, sw - 24, sh, st ? 56 : 34, bold);
         g.textAlign = 'center'; g.fillText(label, sx + sw / 2, sy + sh / 2 + px * .35); g.textAlign = 'left';
       });
     });
-    if (PW) {   // the side panel
-      const px = W - M - PW; let y = top;
-      g.textAlign = 'left'; g.fillStyle = '#111';
-      const seated = c.students.filter(s => c.tables.some(t => t.id === s.tableId));
-      g.font = font(150, true); g.fillText(String(c.students.length), px, y + 130);
-      g.font = font(44); g.fillStyle = '#444'; g.fillText(c.students.length === 1 ? 'student' : 'students', px + g.measureText(String(c.students.length)).width * 0 + 10, y + 190);
-      y += 240;
-      g.font = font(36); g.fillStyle = '#555'; g.fillText('Seating as of ' + new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }), px, y); y += 70;
-      const loose = c.students.filter(s => !seated.includes(s));
-      if (loose.length) { g.font = font(40, true); g.fillStyle = '#111'; g.fillText('Not seated yet', px, y); y += 52; g.font = font(36); g.fillStyle = '#333';
-        loose.slice(0, 12).forEach(s => { g.fillText('• ' + s.name, px, y); y += 46; }); if (loose.length > 12) { g.fillText('and ' + (loose.length - 12) + ' more', px, y); y += 46; } y += 24; }
-      g.font = font(40, true); g.fillStyle = '#111'; g.fillText('Notes', px, y); y += 30;
-      g.strokeStyle = '#999'; g.lineWidth = 2; for (let ly = y + 60; ly < H - M; ly += 66) { g.beginPath(); g.moveTo(px, ly); g.lineTo(W - M, ly); g.stroke(); }
+    if (opts.info) {   // the class count, anyone not seated, and lined notes
+      const [x, y] = infoCell ? cellXY(infoCell.r, infoCell.k) : [M, H - M - stripH], w = infoCell ? cellW : W - 2 * M, h = infoCell ? cellH : stripH;
+      rrect(x, y, w, h, 28); g.lineWidth = 3; g.strokeStyle = '#999'; g.setLineDash([14, 10]); g.stroke(); g.setLineDash([]);
+      const n = String(c.students.length); g.fillStyle = '#111'; g.font = font(infoCell ? 130 : 90, true); g.fillText(n, x + 40, y + (infoCell ? 150 : 110));
+      const nw = g.measureText(n).width; g.font = font(infoCell ? 48 : 40); g.fillStyle = '#444'; g.fillText(c.students.length === 1 ? 'student' : 'students', x + 40 + nw + 22, y + (infoCell ? 145 : 105));
+      let ly = y + (infoCell ? 220 : 160);
+      const loose = c.students.filter(s => !c.tables.some(t => t.id === s.tableId));
+      if (loose.length) { g.font = font(36, true); g.fillStyle = '#111'; const lab = 'Not seated yet: '; g.fillText(lab, x + 40, ly); const w0 = g.measureText(lab).width; g.font = font(36); g.fillStyle = '#333';
+        let names = loose.map(s => s.name).join(', '); while (names.length > 3 && g.measureText(names).width > w - 80 - w0) names = names.slice(0, -4) + '…'; g.fillText(names, x + 40 + w0, ly); ly += 60; }
+      if (infoCell) {
+        g.font = font(40, true); g.fillStyle = '#111'; g.fillText('Notes', x + 40, ly + 10);
+        g.strokeStyle = '#aaa'; g.lineWidth = 2; for (let yy = ly + 80; yy < y + h - 30; yy += 64) { g.beginPath(); g.moveTo(x + 40, yy); g.lineTo(x + w - 40, yy); g.stroke(); }
+      } else {   // strip: notes lines to the right of the count
+        const nx = x + 40 + nw + 300; g.font = font(40, true); g.fillStyle = '#111'; g.fillText('Notes', nx, y + 70);
+        g.strokeStyle = '#aaa'; g.lineWidth = 2; for (let yy = y + 130; yy < y + h - 20; yy += 64) { g.beginPath(); g.moveTo(nx, yy); g.lineTo(x + w - 40, yy); g.stroke(); }
+      }
     }
     return cv;
   };
