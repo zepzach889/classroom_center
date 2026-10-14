@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-16e';   // bump with every build; pages check they match
+  const VERSION = '2026-10-16f';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1036,7 +1036,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
   const NEWS = { id: '2026-10-16b', items: [
-    'New: Weekly roster sheets (Tools → Grading and records), with book numbers from Settings → Classes.',
+    'New: Weekly roster sheets (Tools → Grading and records): your own columns for each class, block days for one class, and book numbers from Settings → Classes.',
     'Pin tools on your slides: in the lesson view, use Pin to slides to keep points, a name picker, a timer, or the noise meter on top.',
     'Pick a chime sound for each use (timer, warm-up timer, bell messages, stations) in Settings → Look and tools → Sounds. The warm-up timer chimes now, and the timer resets itself after it finishes.',
     'Planner: Copy from the day before now copies what students see, too. Seating printouts are trimmed, with a student count and notes.'] };

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-16e">
-<script src="shared/core.js?v=2026-10-16e"></script>
-<script>window.PAGE_VERSION = '2026-10-16e';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-16f">
+<script src="shared/core.js?v=2026-10-16f"></script>
+<script>window.PAGE_VERSION = '2026-10-16f';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .controls{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin-bottom:20px}
@@ -40,8 +40,17 @@ table.ros th .why{display:block;font-weight:600;font-size:10px;color:#555}
 table.ros th .sub2{font-weight:600;font-size:10px;color:#444}
 table.ros td.tot{border-left:2.5px solid #111;text-align:right;color:#666;font-size:10px}
 table.ros tr.blank td{color:#999}
-table.ros.tight td{height:.2in;font-size:11px}
+table.ros td{height:.205in;font-size:11px}
+table.ros thead th.day.blockable{cursor:pointer}
+table.ros thead th.day.blockable:hover{outline:2px dashed #2f6fd0;outline-offset:-3px}
+.sets{margin-top:8px}.sets summary{cursor:pointer;font-weight:700}
+.setbox{border:1.5px solid var(--rule);border-radius:12px;padding:10px 12px;margin-top:8px;background:var(--paper)}
+.colrow{display:grid;grid-template-columns:minmax(0,1fr) 120px 140px auto auto auto;gap:6px;align-items:center;margin:4px 0;font-size:14px}
+.colrow .field{padding:4px 8px}
+.colhead{font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
+@media print{.blockhint{display:none}}
 table.ros tbody tr:nth-child(5n) td{border-bottom:2px solid #111}
+table.ros thead th{font-size:11px}
 @media print{
   @page{size:letter landscape;margin:.4in}
   #suite-nav,.backup-banner,.controls,.noprint{display:none!important}
@@ -59,10 +68,12 @@ table.ros tbody tr:nth-child(5n) td{border-bottom:2px solid #111}
 <div class="wrap">
   <section class="controls">
     <h1>Weekly roster sheets</h1>
-    <p class="hint" style="margin-top:0">One page per class, for marking attendance and warm-ups. Dates fill in for the week you pick; days the class doesn't meet are shaded. Students come from your rosters, sorted by last name; book numbers are set in Settings → Classes.</p>
+    <p class="hint" style="margin-top:0">One page per class. Dates fill in for the week you pick, and days a class doesn't meet are shaded. Students come from your rosters, sorted by last name (book numbers are set in Settings → Classes). Each class can use its own set of columns.</p>
     <div class="crow"><span class="lb">Week of</span><div class="bar"><input type="date" class="field" id="wk"><button class="btn quiet small" data-a="prev">‹ Previous</button><button class="btn quiet small" data-a="next">Next ›</button></div></div>
     <div class="crow"><span class="lb">Classes</span><div class="pick" id="cls"></div></div>
-    <div class="crow"><span class="lb">Blank rows</span><div class="bar"><label>At least <input class="field num" type="number" min="0" max="15" id="blank"> for new students</label><label><input type="checkbox" id="fill"> Fill the rest of the page</label></div></div>
+    <div class="crow"><span class="lb">Blank rows</span><div class="bar"><label><input class="field num" type="number" min="0" max="10" id="blank"> for new students</label><span class="hint" style="margin:0">(up to 32 rows per page in all; every page uses the same size)</span></div></div>
+    <div class="crow"><span class="lb">Columns</span><div><div class="pick" id="setpick"></div><p class="hint">Click a day's heading on a sheet below to block that day for just that class (a field trip, say).</p>
+      <details class="sets"><summary>Edit column sets</summary><div id="setedit"></div></details></div></div>
     <div class="bar" style="margin-top:12px"><button class="btn primary" data-a="print">Print the sheets</button><span class="hint">Prints landscape, one class per page.</span></div>
   </section>
   <div id="sheets"></div>
@@ -70,67 +81,134 @@ table.ros tbody tr:nth-child(5n) td{border-bottom:2px solid #111}
 <script>
 (function(){
   const $ = q => document.querySelector(q), esc = Suite.esc;
-  const R = Object.assign({ skip: [], blank: 3, fill: true }, Suite.get('rosters', {}));
+  // column sets: daily columns (each may earn points) and end-of-week columns (a total of a points column, or blank)
+  const BUILTIN = [
+    { id: 'att-w', name: 'Attendance + warm-up', book: true, day: [{ label: 'W', size: 'narrow', pts: 1 }, { label: 'Attendance', size: 'wide', pts: 0 }], end: [{ label: 'Warm-up', type: 'total', of: 0 }] },
+    { id: 'att', name: 'Attendance only', book: true, day: [{ label: 'Attendance', size: 'wide', pts: 0 }], end: [] }
+  ];
+  const R = Object.assign({ skip: [], blank: 3, sets: null, classSet: {}, blocks: {} }, Suite.get('rosters', {}));
+  if (!R.sets) R.sets = JSON.parse(JSON.stringify(BUILTIN));
   const save = () => Suite.set('rosters', R);
+  const MAX_ROWS = 32;   // every page uses the same row size; this many rows fit on one landscape page
   const parse = k => new Date(k + 'T12:00');
   const mondayOf = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
-  // default: this week early on, next week from Thursday on (when you'd be printing ahead)
   let week = (() => { const t = new Date(), m = mondayOf(t); if (t.getDay() >= 4 || t.getDay() === 0) m.setDate(m.getDate() + 7); return m; })();
   const lastName = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
   const lastFirst = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] + ', ' + p.slice(0, -1).join(' ') : n; };
-  const ROWS_PER_PAGE = 24;   // letter landscape, at the row height above
+  const setFor = c => R.sets.find(x => x.id === R.classSet[c.id]) || R.sets[0];
+  const SIZE = { narrow: 1, medium: 1.7, wide: 2.4 };
 
-  // does this class meet on this day? (and if not, why)
+  // does this class meet on this day? (school-wide days off, the bell schedule, or a day you blocked for this class)
   function meets(c, d){
-    const day = Suite.scheduleFor(d);
-    if (!day.periods.length) return { meets: false, why: day.label && !/regular/i.test(day.label) ? day.label : 'No school' };
-    const list = Suite.classes(), hit = day.periods.some(p => !Suite.isPassing(p) && Suite.classForPeriod(p, list) && Suite.classForPeriod(p, list).id === c.id);
-    return hit ? { meets: true } : { meets: false, why: 'No class' };
+    const k = Suite.dateKey(d), day = Suite.scheduleFor(d);
+    if (!day.periods.length) return { meets: false, why: day.label && !/regular/i.test(day.label) ? day.label : 'No school', fixed: true };
+    const own = (R.blocks[k] || {})[c.id]; if (own) return { meets: false, why: own, own: true };
+    const list = Suite.classes(), inDay = dd => Suite.scheduleFor(dd).periods.some(p => !Suite.isPassing(p) && Suite.classForPeriod(p, list) && Suite.classForPeriod(p, list).id === c.id);
+    if (inDay(d)) return { meets: true };
+    // a class that isn't tied to any bell-schedule period this week is assumed to meet every school day
+    const wk = Array.from({ length: 5 }, (_, i) => { const x = new Date(week); x.setDate(x.getDate() + i); return x; });
+    return wk.some(inDay) ? { meets: false, why: 'No class', fixed: true } : { meets: true };
   }
 
   function sheet(c){
-    const days = Array.from({ length: 5 }, (_, i) => { const d = new Date(week); d.setDate(d.getDate() + i); return d; });
+    const set = setFor(c), days = Array.from({ length: 5 }, (_, i) => { const d = new Date(week); d.setDate(d.getDate() + i); return d; });
     const info = days.map(d => meets(c, d)), count = info.filter(x => x.meets).length;
     const kids = c.students.slice().sort((a, b) => lastName(a.name).localeCompare(lastName(b.name)) || a.name.localeCompare(b.name));
-    const withBooks = kids.some(s => s.book);
-    // bigger classes get shorter rows so the page still fits on one sheet
-    const tight = kids.length + R.blank > ROWS_PER_PAGE, cap = tight ? 32 : ROWS_PER_PAGE;
-    const blanks = Math.max(R.blank > 0 && tight ? Math.min(R.blank, Math.max(1, cap - kids.length)) : R.blank, R.fill ? cap - kids.length : 0);
+    const book = set.book && kids.some(s => s.book);
+    const blanks = Math.max(0, Math.min(R.blank, MAX_ROWS - kids.length));
     const co = Suite.courseOf(c.id), un = Suite.unitFor(c.id, Suite.dateKey(days[0]));
     const fmt = d => (d.getMonth() + 1) + '/' + d.getDate();
-    const cells = () => info.map(x => x.meets ? '<td class="wu"></td><td></td>' : '<td class="wu off"></td><td class="off"></td>').join('');
-    // column widths: name, book, then (warm-up narrow + attendance wide) for each day, then the total
-    const cols = `<col style="width:${withBooks ? 19 : 24}%">${withBooks ? '<col style="width:5%">' : ''}${days.map(() => '<col style="width:4.4%"><col style="width:9.6%">').join('')}<col style="width:6%">`;
+    const dayCols = set.day.length ? set.day : [{ label: '', size: 'wide', pts: 0 }];
+    // widths: the name column, then the days and end columns share the rest by size
+    const weights = days.map(() => dayCols.reduce((n, col) => n + SIZE[col.size || 'wide'], 0)).reduce((a, b) => a + b, 0) + set.end.reduce((n, e) => n + (e.type === 'blank' ? 2 : 1.4), 0);
+    const nameW = book ? 19 : 23, bookW = book ? 5 : 0, unit = (100 - nameW - bookW) / weights;
+    const cols = `<col style="width:${nameW}%">${book ? `<col style="width:${bookW}%">` : ''}${days.map(() => dayCols.map(col => `<col style="width:${(SIZE[col.size || 'wide'] * unit).toFixed(2)}%">`).join('')).join('')}${set.end.map(e => `<col style="width:${((e.type === 'blank' ? 2 : 1.4) * unit).toFixed(2)}%">`).join('')}`;
+    const possible = e => { const col = dayCols[e.of]; return col ? count * (col.pts || 1) : 0; };
+    const cells = () => info.map(x => dayCols.map((col, ci) => `<td class="${ci === 0 ? 'wu' : ''}${x.meets ? '' : ' off'}"></td>`).join('')).join('') + set.end.map(e => e.type === 'total' ? `<td class="tot">/${possible(e)}</td>` : '<td class="endb"></td>').join('');
     return `<section class="sheet">
-      <div class="sh-head"><div><h2>${esc(c.name)}${co ? ` <span class="sub">${esc(co.name)}</span>` : ''}</h2><div class="sub">${un ? 'Unit: ' + esc(un.name) + ' · ' : ''}${kids.length} student${kids.length === 1 ? '' : 's'}</div></div>
+      <div class="sh-head"><div><h2>${esc(c.name)}${co ? ` <span class="sub">${esc(co.name)}</span>` : ''}</h2><div class="sub">${un ? 'Unit: ' + esc(un.name) + ' · ' : ''}${kids.length} student${kids.length === 1 ? '' : 's'}${kids.length > MAX_ROWS ? ' · <b>more than 32: some rows continue on a second page</b>' : ''}</div></div>
         <div class="wk">Week of ${days[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' })} to ${days[4].toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</div></div>
-      <table class="ros${tight ? ' tight' : ''}"><colgroup>${cols}</colgroup>
-        <thead><tr><th class="name" rowspan="2">Students</th>${withBooks ? '<th rowspan="2">Book</th>' : ''}${days.map((d, i) => `<th class="day${info[i].meets ? '' : ' off'}" colspan="2">${d.toLocaleDateString(undefined, { weekday: 'short' })} ${fmt(d)}${info[i].meets ? '' : `<span class="why">${esc(info[i].why)}</span>`}</th>`).join('')}<th rowspan="2" class="day">Warm-up<br><span class="sub2">/${count}</span></th></tr>
-          <tr>${info.map(x => `<th class="sub2${x.meets ? '' : ' off'}" style="border-left:2.5px solid #111">WU</th><th class="sub2${x.meets ? '' : ' off'}">Attendance</th>`).join('')}</tr></thead>
-        <tbody>${kids.map(s => `<tr><td class="name">${esc(lastFirst(s.name))}</td>${withBooks ? `<td class="book">${esc(s.book || '')}</td>` : ''}${cells()}<td class="tot">/${count}</td></tr>`).join('')}
-          ${Array.from({ length: blanks }, () => `<tr class="blank"><td class="name"></td>${withBooks ? '<td></td>' : ''}${cells()}<td class="tot">/${count}</td></tr>`).join('')}</tbody>
+      <table class="ros"><colgroup>${cols}</colgroup>
+        <thead><tr><th class="name" rowspan="2">Students</th>${book ? '<th rowspan="2">Book</th>' : ''}${days.map((d, i) => `<th class="day${info[i].meets ? '' : ' off'}${info[i].fixed ? '' : ' blockable'}" colspan="${dayCols.length}"${info[i].fixed ? '' : ` data-block="${Suite.dateKey(d)}" data-cid="${esc(c.id)}" title="${info[i].own ? 'Click to unblock this day' : 'Click to block this day for ' + esc(c.name)}"`}>${d.toLocaleDateString(undefined, { weekday: 'short' })} ${fmt(d)}${info[i].meets ? '' : `<span class="why">${esc(info[i].why)}</span>`}</th>`).join('')}${set.end.map(e => `<th rowspan="2" class="day">${esc(e.label)}${e.type === 'total' ? `<br><span class="sub2">/${possible(e)}</span>` : ''}</th>`).join('')}</tr>
+          <tr>${info.map(x => dayCols.map((col, ci) => `<th class="sub2${x.meets ? '' : ' off'}"${ci === 0 ? ' style="border-left:2.5px solid #111"' : ''}>${esc(col.label)}</th>`).join('')).join('')}</tr></thead>
+        <tbody>${kids.map(s => `<tr><td class="name">${esc(lastFirst(s.name))}</td>${book ? `<td class="book">${esc(s.book || '')}</td>` : ''}${cells()}</tr>`).join('')}
+          ${Array.from({ length: blanks }, () => `<tr class="blank"><td class="name"></td>${book ? '<td></td>' : ''}${cells()}</tr>`).join('')}</tbody>
       </table></section>`;
+  }
+
+  // ---- editing column sets ----
+  let editing = null;
+  function renderSets(){
+    const list = Suite.classes();
+    $('#setpick').innerHTML = list.filter(c => !R.skip.includes(c.id)).map(c => `<label>${esc(c.name)} <select data-cs="${esc(c.id)}">${R.sets.map(x => `<option value="${esc(x.id)}"${setFor(c).id === x.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>`).join('') || '<span class="hint">Pick a class above.</span>';
+    if (!editing || !R.sets.some(x => x.id === editing)) editing = R.sets[0].id;
+    const st = R.sets.find(x => x.id === editing);
+    $('#setedit').innerHTML = `<div class="bar" style="margin-top:8px"><select id="seted">${R.sets.map(x => `<option value="${esc(x.id)}"${x.id === editing ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select><button class="btn small" data-s="new">New set</button><button class="btn small quiet" data-s="copy">Copy this set</button>${R.sets.length > 1 ? '<button class="btn small quiet danger" data-s="del">Delete this set</button>' : ''}</div>
+      <div class="setbox">
+        <div class="bar"><label>Name <input class="field" data-f="name" value="${esc(st.name)}"></label><label><input type="checkbox" data-f="book"${st.book ? ' checked' : ''}> Book column (when students have book numbers)</label></div>
+        <div class="colhead">Each day</div>
+        ${st.day.map((col, i) => `<div class="colrow"><input class="field" data-d="label" data-i="${i}" value="${esc(col.label)}" placeholder="Column name" aria-label="Column name">
+          <select data-d="size" data-i="${i}">${['narrow', 'medium', 'wide'].map(z => `<option value="${z}"${(col.size || 'wide') === z ? ' selected' : ''}>${z[0].toUpperCase() + z.slice(1)}</option>`).join('')}</select>
+          <label class="small">Points a day <input class="field num" type="number" min="0" max="20" step="0.5" data-d="pts" data-i="${i}" value="${col.pts || 0}" style="width:60px"></label>
+          <button class="btn quiet small" data-s="dup" data-i="${i}" aria-label="Move left"${i ? '' : ' disabled'}>←</button><button class="btn quiet small" data-s="ddown" data-i="${i}" aria-label="Move right"${i < st.day.length - 1 ? '' : ' disabled'}>→</button><button class="btn quiet danger small" data-s="drm" data-i="${i}" aria-label="Remove">×</button></div>`).join('') || '<p class="hint">No daily columns yet.</p>'}
+        <button class="btn small" data-s="dadd">Add a daily column</button>
+        <div class="colhead">End of the week</div>
+        ${st.end.map((e, i) => `<div class="colrow"><input class="field" data-e="label" data-i="${i}" value="${esc(e.label)}" placeholder="Column name" aria-label="Column name">
+          <select data-e="type" data-i="${i}"><option value="total"${e.type === 'total' ? ' selected' : ''}>Total of…</option><option value="blank"${e.type === 'blank' ? ' selected' : ''}>Blank column</option></select>
+          ${e.type === 'total' ? `<select data-e="of" data-i="${i}">${st.day.map((col, ci) => `<option value="${ci}"${+e.of === ci ? ' selected' : ''}>${esc(col.label || 'Column ' + (ci + 1))}</option>`).join('')}</select>` : '<span></span>'}
+          <span></span><span></span><button class="btn quiet danger small" data-s="erm" data-i="${i}" aria-label="Remove">×</button></div>`).join('') || '<p class="hint">No end-of-week columns.</p>'}
+        <button class="btn small" data-s="eadd">Add an end-of-week column</button>
+        <p class="hint">A "total" column shows the points possible for the week (days the class meets × points a day), so you just add them up.</p>
+      </div>`;
   }
 
   function render(){
     const list = Suite.classes();
     $('#wk').value = Suite.dateKey(week);
-    $('#blank').value = R.blank; $('#fill').checked = !!R.fill;
+    $('#blank').value = R.blank;
     $('#cls').innerHTML = list.map(c => `<label><input type="checkbox" data-c="${esc(c.id)}"${R.skip.includes(c.id) ? '' : ' checked'}> ${esc(c.name)}</label>`).join('') || '<span class="hint">Add your classes in Settings first.</span>';
+    renderSets();
     const chosen = list.filter(c => !R.skip.includes(c.id));
     $('#sheets').innerHTML = chosen.map(sheet).join('') || '<p class="hint">Pick at least one class.</p>';
   }
+  const cur = () => R.sets.find(x => x.id === editing);
   document.addEventListener('change', e => {
     const t = e.target;
-    if (t.id === 'wk' && t.value) { week = mondayOf(parse(t.value)); render(); }
-    else if (t.dataset.c) { R.skip = R.skip.filter(x => x !== t.dataset.c); if (!t.checked) R.skip.push(t.dataset.c); save(); render(); }
-    else if (t.id === 'blank') { R.blank = Math.max(0, Math.min(15, parseInt(t.value, 10) || 0)); save(); render(); }
-    else if (t.id === 'fill') { R.fill = t.checked; save(); render(); }
+    if (t.id === 'wk' && t.value) { week = mondayOf(parse(t.value)); render(); return; }
+    if (t.dataset.c) { R.skip = R.skip.filter(x => x !== t.dataset.c); if (!t.checked) R.skip.push(t.dataset.c); save(); render(); return; }
+    if (t.id === 'blank') { R.blank = Math.max(0, Math.min(10, parseInt(t.value, 10) || 0)); save(); render(); return; }
+    if (t.dataset.cs) { R.classSet[t.dataset.cs] = t.value; save(); render(); return; }
+    if (t.id === 'seted') { editing = t.value; renderSets(); return; }
+    const st = cur(); if (!st) return;
+    if (t.dataset.f === 'name') st.name = t.value.trim() || st.name;
+    else if (t.dataset.f === 'book') st.book = t.checked;
+    else if (t.dataset.d) { const col = st.day[+t.dataset.i]; col[t.dataset.d] = t.dataset.d === 'pts' ? Math.max(0, parseFloat(t.value) || 0) : t.value; }
+    else if (t.dataset.e) { const en = st.end[+t.dataset.i]; en[t.dataset.e] = t.dataset.e === 'of' ? +t.value : t.value; if (en.type === 'total' && en.of == null) en.of = 0; }
+    else return;
+    save(); render();
   });
-  document.addEventListener('click', e => {
-    const a = e.target.closest('[data-a]'); if (!a) return;
-    if (a.dataset.a === 'print') window.print();
-    else if (a.dataset.a === 'prev' || a.dataset.a === 'next') { week.setDate(week.getDate() + (a.dataset.a === 'next' ? 7 : -7)); render(); }
+  document.addEventListener('click', async e => {
+    const th = e.target.closest('th[data-block]');
+    if (th) {   // block (or unblock) a day for one class
+      const k = th.dataset.block, cid = th.dataset.cid; R.blocks[k] = R.blocks[k] || {};
+      if (R.blocks[k][cid]) delete R.blocks[k][cid];
+      else { const why = await Suite.dialog({ title: 'Block this day for this class?', body: 'It is shaded on this class\'s sheet and left out of its point totals.', input: 'Field trip', ok: 'Block the day' }); if (!why) return; R.blocks[k][cid] = why.trim() || 'No class'; }
+      save(); render(); return;
+    }
+    const b = e.target.closest('[data-s],[data-a]'); if (!b) return;
+    if (b.dataset.a === 'print') { window.print(); return; }
+    if (b.dataset.a === 'prev' || b.dataset.a === 'next') { week.setDate(week.getDate() + (b.dataset.a === 'next' ? 7 : -7)); render(); return; }
+    const st = cur(), v = b.dataset.s, i = +b.dataset.i;
+    if (v === 'new') { const x = { id: 'set-' + Suite.uid(), name: 'New column set', book: true, day: [{ label: 'Attendance', size: 'wide', pts: 0 }], end: [] }; R.sets.push(x); editing = x.id; }
+    else if (v === 'copy') { const x = JSON.parse(JSON.stringify(st)); x.id = 'set-' + Suite.uid(); x.name = st.name + ' (copy)'; R.sets.push(x); editing = x.id; }
+    else if (v === 'del') { if (!await Suite.dialog({ title: 'Delete "' + st.name + '"?', body: 'Classes using it switch to the first set.', ok: 'Delete', danger: true })) return; R.sets = R.sets.filter(x => x !== st); Object.keys(R.classSet).forEach(k => { if (R.classSet[k] === st.id) delete R.classSet[k]; }); editing = null; }
+    else if (v === 'dadd') st.day.push({ label: '', size: 'narrow', pts: 0 });
+    else if (v === 'drm') { st.day.splice(i, 1); st.end.forEach(en => { if (en.type === 'total') { if (en.of === i) en.of = 0; else if (en.of > i) en.of--; } }); }
+    else if (v === 'dup' || v === 'ddown') { const j = v === 'dup' ? i - 1 : i + 1; [st.day[i], st.day[j]] = [st.day[j], st.day[i]]; st.end.forEach(en => { if (en.of === i) en.of = j; else if (en.of === j) en.of = i; }); }
+    else if (v === 'eadd') st.end.push({ label: 'Total', type: 'total', of: Math.max(0, st.day.findIndex(c2 => c2.pts > 0)) });
+    else if (v === 'erm') st.end.splice(i, 1);
+    else return;
+    save(); render();
   });
   Suite.mountNav('rosters');
   render();
