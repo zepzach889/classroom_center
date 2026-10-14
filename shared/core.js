@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-16f';   // bump with every build; pages check they match
+  const VERSION = '2026-10-16g';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -362,7 +362,14 @@
     else if (h >= 1 && h <= 6) h += 12;
     return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
   };
-  S.isPassing = p => !!p && (p.passing || /^passing/i.test(String(p.name || '').trim()));
+  // Passing time: marked as passing, named for it, or any short gap (6 minutes or less) that isn't staff time
+  S.isPassing = p => {
+    if (!p) return false;
+    if (p.passing || /passing|transition|^pass\b/i.test(String(p.name || '').trim())) return true;
+    if (p.staff || !p.start || !p.end) return false;
+    const [h1, m1] = p.start.split(':').map(Number), [h2, m2] = p.end.split(':').map(Number);
+    return (h2 * 60 + m2) - (h1 * 60 + m1) <= 6;
+  };
   S.sortPeriods = list => list.sort((a, b) => toMin(a.start) - toMin(b.start) || toMin(a.end) - toMin(b.end));
   // Adds a passing period in every gap between periods, sized to the real gap.
   S.fillPassing = periods => {
