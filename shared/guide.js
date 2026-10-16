@@ -43,7 +43,7 @@
         <p class="g-lead">Classroom tools in one place: a bell-schedule dashboard, team points, seating charts, a name spinner, timers, review games, and more.</p>
         <p>A quick setup, about three minutes, gets your classes, room, and bell schedule ready in one go. You can change anything later.</p>
         <p class="g-note">Everything you enter stays in this browser on this computer. Nothing goes into the website itself.</p>
-        <div class="g-nav"><span class="bar"><button class="btn quiet" data-g="skip">Skip for now</button><button class="btn quiet" data-g="restore">Restore a backup instead</button></span><button class="btn primary" data-g="next">Start setup</button></div>`;
+        <div class="g-nav"><span class="bar"><button class="btn quiet" data-g="skip">Skip for now</button><button class="btn quiet" data-g="restore">Restore a backup instead</button></span><span class="bar"><button class="btn" data-g="office" title="Just the dashboard: bell schedule, countdowns, events, and a timer">I work in the office</button><button class="btn primary" data-g="next">I'm a teacher: start setup</button></span></div>`;
     }
     else if (step === 'classes') {
       h = `${dots()}<h2 id="g-title">Your classes</h2>
@@ -106,7 +106,11 @@
         ${nav('Finish setup')}`;
     }
     else if (step === 'done') {
-      h = `<h1 id="g-title">You're set up</h1>
+      if (G.office) h = `<h1 id="g-title">You're set up</h1>
+        <p class="g-lead">Your dashboard is ready: the clock, today's bell schedule, the period countdown, and what's coming up.</p>
+        <p>Add school events (picture day, assemblies, testing) and days off under <b>Events</b> in the menu, and they show on the dashboard. Check "Count down to it" on an event to count down to it. If you ever want the full teacher tools, switch in Settings → Look and tools.</p>
+        <div class="g-nav"><span></span><button class="btn primary" data-g="close">Go to my dashboard</button></div>`;
+      else h = `<h1 id="g-title">You're set up</h1>
         <p class="g-lead">Your classes, room, and bell schedule are ready.</p>
         <p><b>What to do next:</b> plan your first day in the <b>Planner</b> (click any day; "Students see" sets what the Today screen shows, and you can paste your lesson deck once). Then open <b>Today</b> on your projector: it follows your bell schedule on its own.</p>
         <p>Want a quick look at where everything is? The tour takes about a minute. You can replay it any time from the gear menu, under Help and tour.</p>
@@ -116,6 +120,15 @@
     const f = g.querySelector('[data-g="next"], [data-g="tour"]'); if (f && G.step === 0) f.focus();
   }
 
+  // office mode: only the bell schedule, and every classroom feature off
+  function applyOffice(){
+    const P = S.PRESETS.school2627;
+    if (G.sched === 'preset') { const sc = P.build(G.track, G.staff); sc.offset = G.offset ? P.suggestedOffset : 0; S.saveSchedule(sc); }
+    else S.saveSchedule({ schedules: [{ id: 'regular', name: 'Regular day', periods: [] }], weekdays: { 1: 'regular', 2: 'regular', 3: 'regular', 4: 'regular', 5: 'regular' }, special: [], passingMinutes: 4, offset: 0 });
+    const off = {}; ['points', 'captains', 'goals', 'seating', 'spinner', 'topics', 'game', 'stations', 'tally', 'groups', 'noise', 'grader', 'hallpass', 'rosters'].forEach(f => { off[f] = false; });
+    S.set('prefs', Object.assign({}, S.get('prefs', {}) || {}, { mode: 'office', features: off }));
+    S.set('welcomed', true);
+  }
   function apply(){
     const names = classNames().length ? classNames() : ['Period 1'];
     const P = S.PRESETS.school2627;
@@ -175,9 +188,11 @@
       if (g === 'next') {
         const f = box.querySelector('textarea[data-k="names"]'); if (f) G.names = f.value;
         if (STEPS[G.step] === 'rosters') { apply(); G.step++; draw(); return; }
+        if (G.office && STEPS[G.step] === 'schedule') { applyOffice(); G.step = STEPS.indexOf('done'); draw(); return; }
         G.step = Math.min(STEPS.length - 1, G.step + 1); draw();
       }
-      else if (g === 'back') { G.step = Math.max(0, G.step - 1); draw(); }
+      else if (g === 'office') { G.office = true; G.step = STEPS.indexOf('schedule'); draw(); }
+      else if (g === 'back') { G.step = G.office && STEPS[G.step] === 'schedule' ? 0 : Math.max(0, G.step - 1); if (G.step === 0) G.office = false; draw(); }
       else if (g === 'skip') { S.set('welcomed', true); close(); }
       else if (g === 'restore') { S.set('welcomed', true); close(); location.href = 'settings.html#backup'; }
       else if (g === 'close') { close(); location.href = 'index.html'; }

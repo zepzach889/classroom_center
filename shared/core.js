@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-17a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-19a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -348,6 +348,19 @@
       if (e.target.closest('[data-b="go"]') && pick) { const B2 = S.behavior(); B2.log.push({ id: S.uid(), cid, sid: st.id, name: st.name, type: pick, note: back.querySelector('#bl-note').value.trim(), at: Date.now() }); S.saveBehavior(B2); back.remove(); S.toast('Logged for ' + st.name); if (after) after(); }
     });
   };
+  // Copy a class's (or course's) whole day from the most recent earlier day that has anything: the plan AND what students see on Today.
+  S.copyPrevDay = (key, dateKey) => {
+    const A = S.agendaAll(), T = S.get('today', {}) || {}, days = T.days || {};
+    const from = [...new Set(Object.keys(A).filter(d => d < dateKey && A[d][key]).concat(Object.keys(days).filter(d => d < dateKey && days[d][key])))].sort().pop();
+    if (!from) return null;
+    const snap = S.snapshot(['agenda', 'today']);
+    const plan = (A[from] || {})[key]; if (plan) S.saveAgenda(dateKey, [key], JSON.parse(JSON.stringify(plan)));
+    const rec = (days[from] || {})[key];
+    if (rec) { const T2 = S.get('today', {}) || {}; T2.days = T2.days || {}; T2.days[dateKey] = T2.days[dateKey] || {}; T2.days[dateKey][key] = JSON.parse(JSON.stringify(rec)); S.set('today', T2); }
+    return { from, plan: !!plan, boards: !!rec, snap };
+  };
+  // Office mode: just the dashboard, bell schedule, events, countdowns, and timer (no classes)
+  S.isOffice = () => (S.get('prefs', {}) || {}).mode === 'office';
   S.schoolDays = (a, b) => { let n = 0; const d = new Date(a + 'T12:00'); const end = new Date(b + 'T12:00'); while (d <= end) { if (S.scheduleFor(d).periods.length) n++; d.setDate(d.getDate() + 1); } return n; };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
@@ -1065,11 +1078,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-17', items: [
-    'New (beta): Student log. The hall pass now has a Behavior tab for logging concerns and positives, parent contacts, and printable student reports.',
-    'Add your quarter end dates in Settings → Schedule to get a reminder to save and clear behavior records each quarter.',
-    'In Seating, select a student and press Log behavior. Print all classes prints every seating chart at once.',
-    'Roster sheets: names read First Last, each class can have its own columns, and you can block a day for one class.'] };
+  const NEWS = { id: '2026-10-19', items: [
+    'Today: use a custom board in other classes, linked (change it once, it updates everywhere) or as copies. Duplicate any board to keep the same look.',
+    'Edit on screen: add as many pictures as you like, place a tool once on every board, and line things up with snap guides and Align buttons (Shift+click to pick boxes).',
+    'New tool for boards: the Name spinner, with the real wheel and your class\'s spinner setup.',
+    'Also: Copy from the day before copies a class\'s whole day, the Planner keeps unsaved drafts, and there\'s a new Office mode.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
@@ -1078,6 +1091,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     document.body.appendChild(el);
     el.addEventListener('click', e => { if (e.target.closest('[data-news]')) { S.set('newsSeen', NEWS.id); el.remove(); } });
   }
+  (function guardBackdrops(){
+    let downOn = null;
+    document.addEventListener('mousedown', e => { downOn = e.target; }, true);
+    document.addEventListener('click', e => { const t = e.target; if (t && t.classList && (t.classList.contains('suite-dialog-back') || t.classList.contains('guide-back')) && downOn !== t) e.stopImmediatePropagation(); }, true);
+  })();
   S.mountNav = current => {
     setTimeout(() => { if (!/embed/.test(location.search) && current !== 'today') showNews(); }, 600);
     setTimeout(periodClock, 0);
@@ -1087,10 +1105,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
       const b = S.backupStatus();
       const actTool = current === 'activities' ? 'act-' + ((location.hash.match(/tool=(\w+)/) || [])[1] || 'game') : null;
       const isHere = id => id === current || id === actTool;
-      const on = n => !n.feature || S.feature(n.feature);
-      const label = n => n.id === 'tracker' ? S.word('team', { cap: true }) + ' points' : n.label;
+      const office = S.isOffice();
+      const on = n => (!office || !['today', 'tracker', 'seating'].includes(n.id)) && (!n.feature || S.feature(n.feature));
+      const label = n => n.id === 'tracker' ? S.word('team', { cap: true }) + ' points' : n.id === 'planner' && office ? 'Events' : n.label;
       const link = n => `<a href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(label(n))}${n.beta ? '<span class="beta" title="Still being refined">Beta</span>' : ''}</a>`;
-      const toolItems = NAV.find(n => n.menu).menu.filter(on);
+      const toolItems = office ? [] : NAV.find(n => n.menu).menu.filter(on);
       const menu = (key, items, title) => `<div class="ddmenu" data-ddm="${key}" hidden role="menu"${title ? ` aria-label="${S.esc(title)}"` : ''}>${items.filter((n, i, arr) => !n.group || (arr[i + 1] && !arr[i + 1].group)).map(n => n.group ? `<div class="ddgroup" role="presentation">${S.esc(n.group)}</div>` : n.pop
         ? `<button role="menuitem" data-pop="${n.pop}">${S.esc(n.label)}</button>`
         : `<a role="menuitem" href="${n.href}"${isHere(n.id) ? ' aria-current="page"' : ''}>${S.esc(n.label)}${n.beta ? ' <span class="beta">Beta</span>' : ''}</a>`).join('')}${key === 'pop' ? '<span class="ddnote">Floats on top of Google Slides in Chrome or Edge.</span>' : ''}</div>`;
@@ -1104,8 +1123,8 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
         <button class="gear" data-dd="pop" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false" aria-haspopup="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
         <button class="gear${current === 'settings' || current === 'sub' || current === 'help' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
         ${menu('tools', toolItems, 'Tools')}
-        ${menu('pop', [{ pop: 'timer', label: 'Timer' }].concat(S.feature('points') ? [{ pop: 'points', label: S.word('team', { cap: true }) + ' points' }] : [], [{ pop: 'name', label: 'Name picker' }]), 'Pop out a mini window')}
-        ${menu('gear', GEAR_MENU, 'Setup')}
+        ${menu('pop', [{ pop: 'timer', label: 'Timer' }].concat(S.feature('points') && !office ? [{ pop: 'points', label: S.word('team', { cap: true }) + ' points' }] : [], office ? [] : [{ pop: 'name', label: 'Name picker' }]), 'Pop out a mini window')}
+        ${menu('gear', office ? GEAR_MENU.filter(n => !['settings', 'sub'].includes(n.id)) : GEAR_MENU, 'Setup')}
       </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw(); timerDraw();

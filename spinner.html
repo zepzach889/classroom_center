@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-17a">
-<script src="shared/core.js?v=2026-10-17a"></script>
-<script>window.PAGE_VERSION = '2026-10-17a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-19a">
+<script src="shared/core.js?v=2026-10-19a"></script>
+<script>window.PAGE_VERSION = '2026-10-19a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
 .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -55,6 +55,12 @@ canvas{display:block;max-width:100%}
 .selall{margin:-2px 0 6px}
 #exit-proj{display:none}
 body.proj #suite-nav,body.proj .tabs,body.proj .topbar,body.proj .below{display:none!important}
+html.mini,html.mini body{background:transparent!important;overflow:hidden}
+html.mini #exit-proj,html.mini .panel,html.mini aside,html.mini .backup-banner,html.mini #suite-news{display:none!important}
+html.mini .wrap{padding:4px!important;max-width:none}
+html.mini .result{min-height:0;margin:2px 0}html.mini .result .who{font-size:clamp(18px,7vw,40px)!important}
+html.mini .spin{padding:6px 18px;font-size:16px;margin-top:2px}
+html.mini #wheel{cursor:pointer}
 body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
 body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
 body.proj .wrap{max-width:none;padding:16px 24px}
@@ -71,7 +77,10 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
   const esc = Suite.esc;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const NEUTRAL = '#8A9491';
-  let SP, rot = 0, spinning = false, result = null, spunList = null, proj = Suite.startInProjector;
+  const MINI = /[?&]mini\b/.test(location.search);
+  if (MINI) document.documentElement.classList.add('mini');
+  if (MINI) document.addEventListener('click', e => { if (e.target.id === 'wheel') { const b = document.getElementById('spinbtn'); if (b && !b.disabled) b.click(); } });
+  let SP, rot = 0, spinning = false, result = null, spunList = null, proj = Suite.startInProjector || MINI;
 
   function load(){ SP = Object.assign({ cur: null, mode: 'students', picked: {}, absent: {}, custom: '', removeAfter: true, hidePanel: false, last: null }, Suite.get('spinner', {})); }
   function save(){ Suite.set('spinner', SP); }
@@ -113,7 +122,7 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
   function draw(list){
     const cv = $('#wheel'); if (!cv) return;
     const box = cv.parentElement;
-    const css = proj ? Math.max(260, Math.min(box.clientWidth, window.innerHeight - 230, 900)) : Math.max(220, Math.min(box.clientWidth, window.innerHeight - 400, SP.hidePanel ? 760 : 600));
+    const css = MINI ? Math.max(120, Math.min(window.innerWidth - 12, window.innerHeight - 92)) : proj ? Math.max(260, Math.min(box.clientWidth, window.innerHeight - 230, 900)) : Math.max(220, Math.min(box.clientWidth, window.innerHeight - 400, SP.hidePanel ? 760 : 600));
     const dpr = window.devicePixelRatio || 1;
     cv.width = css * dpr; cv.height = css * dpr; cv.style.width = css + 'px'; cv.style.height = css + 'px';
     const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-17a">
-<script src="shared/core.js?v=2026-10-17a"></script>
-<script>window.PAGE_VERSION = '2026-10-17a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-19a">
+<script src="shared/core.js?v=2026-10-19a"></script>
+<script>window.PAGE_VERSION = '2026-10-19a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -146,11 +146,11 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
-        <div class="bar"><button class="btn" data-a="copyweek" title="Copy this week's plans to another week">Copy week…</button><button class="btn" data-a="units">Units</button><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
+        ${Suite.isOffice() ? '<div class="bar"><button class="btn" data-a="daysoff">Days off</button><button class="btn primary" data-a="print">Print this week</button></div>' : ''}<div class="bar"${Suite.isOffice() ? ' hidden' : ''}><button class="btn" data-a="copyweek" title="Copy this week's plans to another week">Copy week…</button><button class="btn" data-a="units">Units</button><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
       <div class="printonly">Plans for ${esc(label)}</div>
       ${mergeable() ? `<div class="banner noprint"><span><b>Some days still have a separate plan for each period</b>, saved before you set up courses. Combine the ones that match into the course plan? Periods with a different plan keep their own.</span><button class="btn primary" data-a="merge">Combine them</button></div>` : ''}
       ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
-      ${R.length ? `<div class="gridwrap"><table class="plan"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>`
+      ${R.length || Suite.isOffice() ? `<div class="gridwrap"><table class="plan"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>`
         : '<div class="banner"><span>Add your classes in Classes and rosters first.</span><a class="btn primary" href="settings.html#classes">Classes and rosters</a></div>'}
       <p class="hint noprint" style="margin-top:12px">Click any day to plan it. Plans show on the dashboard for the class in session and print on the substitute page. An <span class="own" style="display:inline-block">Own plan</span> tag means those periods have their own plan that day instead of the course plan; open the day to see it or switch them back.</p>`;
   }
@@ -245,7 +245,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         <span class="bar"><button class="btn quiet" data-e="repeat" title="Save, then copy this plan to the same weekday each week">Repeat weekly…</button><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
     document.body.appendChild(back);
     const close = () => { back.remove(); document.removeEventListener('keydown', onKey, true); };
-    const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); close(); } };
+    const onKey = ev => { if (ev.key === 'Escape') { ev.stopImmediatePropagation(); (back._soft || close)(); } };
     document.addEventListener('keydown', onKey, true);
     const q = id => back.querySelector('#' + id);
     // ---- For the sub: these live with the sub plans (and save right away) ----
@@ -300,14 +300,35 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       q('ed-file').value = ''; drawMats();
     });
     const dropUnused = ids => ids.forEach(id => { if (!Suite.fileInUse(id)) Suite.files.del(id).catch(() => {}); });
+    const DKEY = dateKey + '|' + target;
+    const fields = () => { const f = {}; back.querySelectorAll('input[id], textarea[id], select[id]').forEach(el => { if (el.type === 'file' || el.id === 'ed-one') return; f[el.id] = el.type === 'checkbox' ? el.checked : el.value; });
+      f.__custom = [...back.querySelectorAll('.stc')].map(d => ({ id: (d.querySelector('[data-hh]') || {}).dataset ? d.querySelector('[data-hh]').dataset.hh : '', h: (d.querySelector('[data-hh]') || {}).value || '', t: (d.querySelector('textarea') || {}).value || '' }));
+      f.__mats = JSON.stringify(mats); return f; };
+    const initial = JSON.stringify(fields());
+    const drafts = () => Suite.get('plandrafts', {}) || {};
+    const clearDraft = () => { const D = drafts(); if (D[DKEY]) { delete D[DKEY]; Suite.set('plandrafts', D); } };
+    back._soft = () => { const f = fields(); if (JSON.stringify(f) !== initial) { const D = drafts(); D[DKEY] = { at: Date.now(), f }; Suite.set('plandrafts', D); Suite.toast('Not saved yet: your changes are kept as a draft for this day'); } close(); backToToday(); };
+    { const dr = drafts()[DKEY];
+      if (dr) setTimeout(async () => {
+        const ok = await Suite.dialog({ title: 'Restore your unsaved changes?', body: `You started changing this day at ${new Date(dr.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}${new Date(dr.at).toDateString() !== new Date().toDateString() ? ' on ' + new Date(dr.at).toLocaleDateString(undefined, { weekday: 'long' }) : ''} and didn't save.`, ok: 'Restore them', cancel: 'Discard them' });
+        if (ok && document.body.contains(back)) {
+          const f = dr.f; Object.entries(f).forEach(([id, v]) => { if (id.startsWith('__')) return; const el = q(id); if (!el) return; if (el.type === 'checkbox') el.checked = v; else el.value = v; });
+          const box = q('st-custom'); if (box && f.__custom) { box.innerHTML = ''; f.__custom.forEach(c => { const d = document.createElement('div'); d.className = 'stc'; d.innerHTML = `<input class="field" data-hh="${esc(c.id)}" value="${esc(c.h)}" aria-label="Board heading"><textarea rows="3" data-sb="${esc(c.id)}">${esc(c.t)}</textarea>`; box.appendChild(d); }); }
+          try { mats = JSON.parse(f.__mats || '[]'); drawMats(); } catch (e) {}
+          back.querySelectorAll('[data-src]').forEach(sel => { const ta = q('st-' + sel.dataset.src); if (ta) ta.hidden = sel.value !== 'custom'; });
+          if (f.__custom && f.__custom.length || Object.keys(f).some(k => k.startsWith('st-') && f[k])) { const det = back.querySelector('details.students:not(.subsec)'); if (det) det.open = true; }
+        }
+        clearDraft();
+      }, 50);
+    }
     q('ed-target').focus();
     const one2 = back.querySelector('#ed-one'); if (one2) one2.addEventListener('change', () => { if (one2.value) { close(); openEditor(rowKey, dateKey, one2.value); } });
     back.addEventListener('click', ev => {
-      if (ev.target === back) return close();
+      if (ev.target === back) return back._soft();
       const b = ev.target.closest('[data-e]'); if (!b) return;
       const k = b.dataset.e;
       if (k === 'repeat') { back.querySelector('[data-e="save"]').click(); setTimeout(() => openRepeat(target, dateKey), 120); return; }
-      if (k === 'cancel') { close(); dropUnused(added); backToToday(); }
+      if (k === 'cancel') { clearDraft(); close(); dropUnused(added); backToToday(); }
       else if (k === 'subnote' || k === 'sublink') { const S = SUBS(); S.materials[dateKey] = (S.materials[dateKey] || []).concat({ id: Suite.uid(), kind: k === 'subnote' ? 'note' : 'link', title: '', text: '', url: '', classes: subIds.slice() }); subSave(S); const f = [...back.querySelectorAll('.sitem [data-sf]')].pop(); if (f) f.focus(); }
       else if (k === 'subrm') { const id = b.closest('[data-sid]').dataset.sid, S = SUBS(), M = S.materials[dateKey] || [], i = M.findIndex(x => x.id === id); if (i < 0) return; const m = M.splice(i, 1)[0]; subSave(S); if (m.kind === 'file' && m.file && !Suite.fileInUse(m.file.id)) Suite.files.del(m.file.id).catch(() => {}); }
       else if (k === 'subfrom') subCopy('from');
@@ -319,25 +340,11 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       else if (k === 'unown') { Suite.saveAgenda(dateKey, [one.id], null); close(); render(); Suite.toast(one.name + ' uses the course plan again'); }
       else if (k === 'clear') { const had = ((Suite.agendaAll()[dateKey] || {})[target] || {}).materials || []; Suite.saveAgenda(dateKey, [target], null); close(); dropUnused(had.filter(m => m.kind === 'file').map(m => m.file.id).concat(added)); render(); }
       else if (k === 'prev') {
-        const A2 = Suite.agendaAll(), before = Object.keys(A2).filter(d => d < dateKey && (A2[d][target] || (classOnly && A2[d][r.key]))).sort().pop();
-        // what students saw (Today screen) on the most recent earlier day that has it
-        const TD = (Suite.get('today', {}) || {}).days || {}, tBefore = Object.keys(TD).filter(d => d < dateKey && (TD[d][target] || (classOnly && TD[d][r.key]))).sort().pop();
-        if (!before && !tBefore) { Suite.toast('No earlier plan to copy'); return; }
-        if (before) { const p = A2[before][target] || A2[before][r.key];
-          q('ed-target').value = p.target || ''; q('ed-items').value = (p.items || []).join('\n'); q('ed-hw').value = p.homework || '';
-          mats = JSON.parse(JSON.stringify(p.materials || [])); drawMats(); }
-        if (tBefore) {
-          const tr = TD[tBefore][target] || TD[tBefore][r.key] || {}, bd = tr.boards || {};
-          TODAY_BOARDS.forEach(([id]) => { const ta = q('st-' + id); if (ta) ta.value = bd[id] ? linesToText(bd[id].lines) : ''; });
-          ['agenda', 'due'].forEach(id => { const sel = q('st-src-' + id), ta = q('st-' + id); if (!sel || !ta) return; const custom = (bd[id] || {}).source === 'custom'; sel.value = custom ? 'custom' : 'plan'; ta.hidden = !custom; ta.value = custom ? linesToText(bd[id].lines) : ''; });
-          q('st-have').value = (tr.haveOut || []).join(', ');
-          q('st-slide').value = tr.slideLink && !/\/d\/e\//.test(tr.slideLink) ? tr.slideLink : '';
-          const box = q('st-custom'); box.innerHTML = '';
-          Object.entries(bd).filter(([id]) => /^c-/.test(id) && !/^c-rep-/.test(id)).forEach(([id, b2]) => { const d = document.createElement('div'); d.className = 'stc';
-            const nid = 'c-' + Suite.uid(); d.innerHTML = `<input class="field" data-hh="${nid}" value="${esc(String(b2.heading || '').replace(/<[^>]+>/g, ''))}" aria-label="Board heading"><textarea rows="3" data-sb="${nid}">${esc(linesToText(b2.lines))}</textarea>`; box.appendChild(d); });
-          const det = back.querySelector('details.students:not(.subsec)'); if (det) det.open = true;
-        }
-        Suite.toast('Copied from ' + parse(before && (!tBefore || before >= tBefore) ? before : tBefore).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) + '. Save to keep it.');
+        const res = Suite.copyPrevDay(target, dateKey);
+        if (!res) { Suite.toast('No earlier day to copy from'); return; }
+        clearDraft(); close(); render(); openEditor(rowKey, dateKey, classOnly);
+        const what = [res.plan && 'the plan', res.boards && "what students see on Today"].filter(Boolean).join(' and ');
+        Suite.undoToast(`Copied ${what} from ${parse(res.from).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`, res.snap);
       }
       else if (k === 'save') {
         const links = mats.filter(m => m.kind === 'file' || (m.url || '').trim()).map(m => m.kind === 'link' ? Object.assign(m, { url: /^https?:\/\//i.test(m.url.trim()) ? m.url.trim() : 'https://' + m.url.trim() }) : m);
@@ -348,7 +355,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
           else if (deck !== (Suite.decks()[r.key] || '')) Suite.setDeck(r.key, deck); }
         saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].filter(t => !t.hidden).map(t => { const hh = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return [t.dataset.sb, hh ? (hh.value.trim() ? esc(hh.value.trim()) : 'MY BOARD') : (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || BOARD_HEADS[t.dataset.sb] || 'MY BOARD', t.value, !!hh]; }),
           { haveOut: back.querySelector('#st-have').value, slideLink: back.querySelector('#st-slide').value.trim(), sources: Object.fromEntries([...back.querySelectorAll('[data-src]')].map(x => [x.dataset.src, x.value])) });
-        close(); dropUnused(removed); render(); Suite.toast('Plan saved'); backToToday();
+        clearDraft(); close(); dropUnused(removed); render(); Suite.toast('Plan saved'); backToToday();
       }
     });
   }

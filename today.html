@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-17a">
-<script src="shared/core.js?v=2026-10-17a"></script>
-<script>window.PAGE_VERSION = '2026-10-17a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-19a">
+<script src="shared/core.js?v=2026-10-19a"></script>
+<script>window.PAGE_VERSION = '2026-10-19a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -134,6 +134,14 @@ body.full #suite-nav,body.full .rail{display:none}
 .ltool .lt-x{position:absolute;right:4px;top:2px;width:28px;height:28px;font:700 18px var(--sans);background:none;border:0;color:#888;cursor:pointer;opacity:0;transition:opacity .15s}
 .ltool:hover .lt-grip,.ltool:hover .lt-size,.ltool:hover .lt-x,.ltool:focus-within .lt-x{opacity:1}
 .lt-shield{position:absolute;inset:0;z-index:8;cursor:grabbing}
+.snapline{position:absolute;z-index:30;pointer-events:none;background:#e0457b}
+.snapline.v{top:0;bottom:0;width:2px;margin-left:-1px}.snapline.h{left:0;right:0;height:2px;margin-top:-1px}
+.region.alsel{outline:3px solid #e0457b;outline-offset:2px}
+.alignbar{min-height:34px}
+.region.pics img{width:100%;height:100%;object-fit:contain;display:block}
+.board-tools{z-index:6}
+.w-spinner{width:100%;height:100%;border:0;display:block;border-radius:1cqw;background:transparent}
+.stage.editing .w-spinner{pointer-events:none}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 body.editing-screen .stage-wrap{background:#1b2633;padding-top:64px}
@@ -323,8 +331,8 @@ details.sec>summary .muted{font-weight:400}
     due:      { label: 'Things that are due', heading: 'THINGS THAT ARE DUE' },
     agenda:   { label: "Today's agenda", heading: "TODAY'S AGENDA" }
   };
-  const isCustom = t => t === 'custom' || /^c-/.test(t);
-  const boardOf = (rec, t) => (rec.boards || {})[t] || { heading: BOARDS[t] ? BOARDS[t].heading : 'MY BOARD', lines: [] };
+  const isCustom = t => t === 'custom' || /^c-|^L-/.test(t);
+  const boardOf = (rec, t) => (rec.boards || {})[t] || (String(t).startsWith('L-') && ((T.library || []).find(x => 'L-' + x.id === t) || {}).board) || { heading: BOARDS[t] ? BOARDS[t].heading : 'MY BOARD', lines: [] };
   const plainOf = h => String(h || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').trim();
   const boardLabel = (rec, t) => BOARDS[t] ? BOARDS[t].label : (plainOf(boardOf(rec, t).heading) || 'Custom board');
   const STARTER_LINES = [
@@ -337,7 +345,13 @@ details.sec>summary .muted{font-weight:400}
   const BLANK = { mode: 'auto', rows: {}, days: {}, flags: {}, flagBg: null, custom: {}, bitmojis: {}, bmAdj: {}, layouts: {}, bell: null, library: [] };
   let T = Object.assign(clone(BLANK), Suite.get('today', {}));
   T.layouts = T.layouts || {};
-  const save = () => Suite.set('today', T);
+  // linked boards live in My boards (T.library); any edited copy in a day or usual setup is moved back there when saving
+  function moveLinked(){
+    const lib = T.library || []; lib.forEach(x => { if (!x.id) x.id = Suite.uid(); });
+    const take = recx => { if (!recx || !recx.boards) return; Object.keys(recx.boards).forEach(k => { if (!k.startsWith('L-')) return; const it = lib.find(x => 'L-' + x.id === k); if (it) { it.board = recx.boards[k]; const nm = String(it.board.heading || '').replace(/<[^>]+>/g, '').trim(); if (nm) it.name = nm; } delete recx.boards[k]; }); };
+    Object.values(T.days || {}).forEach(day => Object.values(day).forEach(take)); Object.values(T.rows || {}).forEach(take);
+  }
+  const save = () => { moveLinked(); Suite.set('today', T); };
   let viewDate = Suite.dateKey(new Date()), screen = 0, reveal = 0, lesson = false, full = false, editing = false;
   let editMode = false;   // editing right on the screen
   const urls = {};
@@ -372,7 +386,13 @@ details.sec>summary .muted{font-weight:400}
     const u = usual(cid), rec = own || co;
     const base = !rec ? { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' }
       : Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
-    return withRepeats(base, date, cid);
+    return withLinked(withRepeats(base, date, cid));
+  }
+  function withLinked(rec){
+    if (!(rec.lineup || []).some(t => t.startsWith('L-'))) return rec;
+    const out = Object.assign({}, rec, { boards: Object.assign({}, rec.boards) });
+    out.lineup = rec.lineup.filter(t => { if (!t.startsWith('L-')) return true; const it = (T.library || []).find(x => 'L-' + x.id === t); if (it) { out.boards[t] = it.board; return true; } return false; });
+    return out;
   }
   // saved boards set to repeat (My boards → Repeat) join the lineup on matching days
   function withRepeats(rec, date, cid){
@@ -572,6 +592,7 @@ details.sec>summary .muted{font-weight:400}
     const handles = k => E ? `<span class="grip" data-g="move" data-k="${k}" title="Drag to move" aria-hidden="true">⠿</span><span class="rz" data-g="size" data-k="${k}" title="Drag to resize" aria-hidden="true"></span>` : '';
     const ce = (f, extra) => E ? ` contenteditable="true" spellcheck="true" data-f="${f}"${extra || ''}` : '';
     let html = '';
+    setTimeout(markAlign, 0);
     if (lesson) { html = lessonHtml(cid, rec); setTimeout(() => drawLessonTools(cid), 0); }
     else {
       const planBoard = (type === 'due' || type === 'agenda') && b.source !== 'custom';
@@ -581,7 +602,9 @@ details.sec>summary .muted{font-weight:400}
       const items = lines.map(l => { const hid = !E && l.reveal ? (shown++ >= reveal) : false; return lineHtml(l, hid); }).join('');
       const autoDate = fmtDate(viewDate, ((L.styles || {}).date || {}).format);
       const picUrl = isCustom(type) && b.pic ? await fileUrl(b.pic) : null;
+      const pics = await Promise.all((b.pics || []).map(async p2 => ({ p: p2, url: await fileUrl(p2.file) })));
       html = `${bmUrl && L.bm && !hide.bm ? `<div class="region bm${E ? ' ed' : ''}" data-k="bm" style="${place([L.bm[0] + adj.dx, L.bm[1] + L.bm[3] * (1 - adj.scale / 100), L.bm[2], L.bm[3] * adj.scale / 100])}"${E ? ' data-g="move"' : ''}><img src="${bmUrl}" alt="">${handles('bm')}</div>` : ''}
+        ${pics.filter(x => x.url).map(({ p: p2, url }) => `<div class="region pic pics ${pn('p:' + p2.id)}${E ? ' ed' : ''}" data-k="p:${esc(p2.id)}" style="${place(p2.box)}"${E ? ' data-g="move"' : ''}><img src="${url}" alt="">${handles('p:' + p2.id)}${E ? `<button class="xdel" data-g="pdel" data-p="${esc(p2.id)}" aria-label="Remove this picture">×</button>` : ''}</div>`).join('')}
         ${picUrl && !hide.pic ? `<div class="region pic${E ? ' ed' : ''}" data-k="pic" style="${place(L.pic)}"${E ? ' data-g="move"' : ''}><img src="${picUrl}" alt="">${handles('pic')}</div>` : ''}
         ${hide.date ? '' : `<div class="region date ${pn('date')}${E ? ' ed' : ''}" data-k="date" style="${place(L.date)};${boxStyle(L, 'date')}"><span id="dateText"${ce('date')}>${rec.dateText ? clean(rec.dateText) : esc(autoDate)}</span>${handles('date')}</div>`}
         ${hide.board ? '' : `<div class="region board ${pn('board')}${E ? ' ed' : ''}" data-k="board" style="${place(L.board)};${boxStyle(L, 'board')}"><div class="board-fit" id="boardFit"><h1 class="heading"${ce('heading', ` data-t="${type}"`)}>${clean(b.heading != null ? b.heading : (BOARDS[type] || {}).heading || '')}</h1><ul class="lines"${planBoard ? '' : ce('lines', ` data-t="${type}"`)}>${items}</ul>${E && planBoard ? `<p class="planned">This board comes from your Planner. To type your own version, choose "Write for students" in Day settings.</p>` : ''}</div>${handles('board')}</div>`}
@@ -599,6 +622,7 @@ details.sec>summary .muted{font-weight:400}
       ? (E ? `<div class="region bellbox ed" data-k="bell" style="${place(L.bell || NEUTRAL.bell)}" data-g="move"><span class="b-ph">Bell reminder<br><small>shows in the last ${B.minutes} minutes</small></span>${handles('bell')}</div>` : `<div class="region bellslot" style="${place(L.bell || NEUTRAL.bell)}">${bellHtml(B)}</div>`)
       : (E ? '' : bellHtml(B));
     const st = $('#stage');
+    if (!lesson) { html += '<div class="lesson-tools board-tools" id="btools"></div>'; setTimeout(() => drawPinned(cid, 'btools', 'boardTools'), 0); }
     st.innerHTML = html;
     updateBell();
     const roomImg = !lesson && L.custom ? await fileUrl(L.custom.fileId) : null;
@@ -713,7 +737,8 @@ details.sec>summary .muted{font-weight:400}
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="lesson${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       ${editMode && cid && isCustom(S[screen] || '') ? (() => { const bd = boardOf(dayFor(viewDate, cid), S[screen]), h = bd.hide || {};
           return `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">On this board:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>`; })() : ''}
-      ${editMode ? `<div class="bar"><span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}<button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="bar">
+      ${editMode ? `<div class="bar alignbar">${alignSel.size ? `<span class="small"><b>${alignSel.size}</b> picked. Align ${alignSel.size === 1 ? 'to the screen' : 'together'}:</span>${[['left', 'Left'], ['hcenter', 'Center'], ['right', 'Right'], ['top', 'Top'], ['vmiddle', 'Middle'], ['bottom', 'Bottom']].map(([k, n]) => `<button class="btn small" data-a="align" data-v="${k}">${n}</button>`).join('')}<button class="btn quiet small" data-a="alignclear">Clear</button>` : '<span class="muted small">Tip: Shift+click boxes to line them up. Boxes snap to each other as you drag (hold Alt to place freely).</span>'}</div>
+      <div class="bar"><span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}${everyMenu(cid)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="bar">
         <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
         ${!lesson && S[screen] === 'welcome' && L && L.timer && u.timer.on ? `<button class="btn" data-a="timer" title="T to start or pause, R to reset">${timer.running ? 'Pause timer' : timer.left <= 0 ? 'Restart timer' : 'Start timer'}</button>` : ''}
         ${lesson ? '<button class="btn" data-a="boards">Back to boards</button><button class="btn" data-a="openslides" title="If the deck won\'t show here, open it in Google Slides">Open in Slides</button>' : '<button class="btn" data-a="lesson" title="L">Lesson</button>'}
@@ -746,13 +771,14 @@ details.sec>summary .muted{font-weight:400}
         <div class="bar" style="margin-bottom:10px"><button class="btn small" data-d="movetext">Edit on screen</button><span class="muted small">Arrange and format the boards right on the screen.</span></div>
         <details class="sec" open><summary>Boards and order <span class="muted small">${lineup.length} boards</span></summary>
           <ul class="lineup">${all.map(t => { const on = lineup.includes(t); return `<li>
-            <input type="checkbox" data-d="lineup" data-t="${esc(t)}"${on ? ' checked' : ''} aria-label="Show ${esc(boardLabel(rec, t))}"><span>${esc(boardLabel(rec, t))}${isCustom(t) ? ' <span class="muted small">(custom)</span>' : ''}</span>
-            ${on ? `<button class="btn quiet" data-d="up" data-t="${esc(t)}" aria-label="Move up">↑</button><button class="btn quiet" data-d="down" data-t="${esc(t)}" aria-label="Move down">↓</button>` : ''}${isCustom(t) ? `<button class="btn quiet danger" data-d="crm" data-t="${esc(t)}" aria-label="Delete this board">×</button>` : ''}</li>`; }).join('')}</ul>
-          <div class="bar" style="margin-top:6px"><button class="btn small" data-d="cadd">Add a custom board</button>${(T.library || []).length ? `<select data-d="libadd" aria-label="Add a saved board"><option value="">Add a saved board…</option>${T.library.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join('')}</select>` : ''}</div>
+            <input type="checkbox" data-d="lineup" data-t="${esc(t)}"${on ? ' checked' : ''} aria-label="Show ${esc(boardLabel(rec, t))}"><span>${esc(boardLabel(rec, t))}${t.startsWith('L-') ? ' <span class="muted small">(linked)</span>' : isCustom(t) ? ' <span class="muted small">(custom)</span>' : ''}</span>
+            ${on ? `<button class="btn quiet" data-d="up" data-t="${esc(t)}" aria-label="Move up">↑</button><button class="btn quiet" data-d="down" data-t="${esc(t)}" aria-label="Move down">↓</button>` : ''}<button class="btn quiet small" data-d="cdup" data-t="${esc(t)}" title="Make a copy of this board (same look and layout)">Duplicate</button>${isCustom(t) ? `<button class="btn quiet danger" data-d="crm" data-t="${esc(t)}" aria-label="Delete this board">×</button>` : ''}</li>`; }).join('')}</ul>
+          <div class="bar" style="margin-top:6px"><button class="btn small" data-d="cadd">Add a custom board</button>${(T.library || []).length ? `<select data-d="libadd" aria-label="Add a saved board"><option value="">Add a copy of a saved board…</option>${T.library.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join('')}</select><select data-d="liblink" aria-label="Add a linked board"><option value="">Add a linked board…</option>${T.library.map(x => `<option value="${esc(x.id || '')}">${esc(x.name)}</option>`).join('')}</select>` : ''}</div>
           <p class="hintline">Empty boards are skipped in class. Custom boards can have a picture and their own background, and any line can stay hidden until you click (in Edit on screen, use "Hide until click").</p></details>
         ${customs.length ? `<details class="sec"><summary>Custom boards</summary>${customs.map(t => { const bd = boardOf(rec, t); return `<div class="cboard"><b>${esc(boardLabel(rec, t))}</b>
             <div class="bar" style="margin-top:4px"><label class="btn small">${bd.pic ? 'Change picture' : 'Add a picture'}<input type="file" accept="image/*" data-d="cpic" data-t="${esc(t)}" hidden></label>${bd.pic ? `<button class="btn quiet small" data-d="cpicrm" data-t="${esc(t)}">Remove picture</button>` : ''}</div>
-            <div class="bar" style="margin-top:4px"><button class="btn small" data-d="libsave" data-t="${esc(t)}">${(T.library || []).some(x => x.from === t) ? 'Update in My boards' : 'Save to My boards'}</button></div>
+            <div class="bar" style="margin-top:4px"><button class="btn small" data-d="cshare" data-t="${esc(t)}" title="Add this board to other classes, linked or as a copy">Use in other classes…</button>${t.startsWith('L-') ? '<span class="muted small">Linked: changes show in every class that uses it.</span>' : ''}</div>
+            <div class="bar" style="margin-top:4px"${t.startsWith('L-') ? ' hidden' : ''}><button class="btn small" data-d="libsave" data-t="${esc(t)}">${(T.library || []).some(x => x.from === t) ? 'Update in My boards' : 'Save to My boards'}</button></div>
             <label class="lb">Background for this board<select data-d="clook" data-t="${esc(t)}"><option value="">Same as the other boards</option>${Object.entries(LOOKS).concat(Object.entries(T.custom)).map(([k, x]) => `<option value="${k}"${bd.look === k ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label></div>`; }).join('')}
           <p class="hintline"><b>Save to My boards</b> keeps a board, with its layout, text, and picture, so you can add it to any day later. To show it every day, use "Save as the usual setup."</p>
           ${(T.library || []).length ? `<span class="lb">My boards</span><ul class="lineup">${T.library.map((x, i) => `<li><span>${esc(x.name)}</span><button class="btn quiet danger" data-d="librm" data-i="${i}" aria-label="Delete ${esc(x.name)} from My boards">×</button></li>`).join('')}</ul>` : ''}</details>` : ''}
@@ -794,6 +820,17 @@ details.sec>summary .muted{font-weight:400}
     if (row && d === 'rm') { boardRec(row.dataset.type).lines.splice(+row.dataset.i, 1); commit(true); return; }
     if (d === 'have') { const r = editable(viewDate, cid), v = el.dataset.v, i = r.haveOut.indexOf(v); if (i > -1) r.haveOut.splice(i, 1); else r.haveOut.push(v); commit(true); return; }
     if (d === 'haveadd') { const v = $('#haveNew').value.trim(); if (!v) return; const r = editable(viewDate, cid); if (!r.haveOut.includes(v)) r.haveOut.push(v); commit(true); return; }
+
+    if (d === 'cdup') {   // an exact copy: same text, pictures, tools, and layout
+      const r = editable(viewDate, cid), src = clone(boardOf(dayFor(viewDate, cid), el.dataset.t)), id = 'c-' + Suite.uid();
+      if (!isCustom(el.dataset.t)) { src.layout = src.layout || clone(getLayout(roomFor(viewDate, cid).look)); }
+      if (src.layout && !src.layout.extras) src.layout.extras = [];
+      src.heading = (src.heading || boardLabel(dayFor(viewDate, cid), el.dataset.t)) + ' (copy)';
+      (src.pics || []).forEach(p2 => { p2.id = Suite.uid(); }); (src.tools || []).forEach(w => { w.id = Suite.uid(); });
+      r.boards = r.boards || {}; r.boards[id] = src; const i = r.lineup.indexOf(el.dataset.t); r.lineup.splice(i < 0 ? r.lineup.length : i + 1, 0, id);
+      commit(true); Suite.toast('Copy made. Change its words in Edit on screen.'); return;
+    }
+    if (d === 'cshare') { shareBoard(cid, el.dataset.t); return; }
     if (d === 'movetext') { startEdit(); return; }
     if (d === 'libsave') { const r = dayFor(viewDate, cid), bd = clone(boardOf(r, el.dataset.t)), name = plainOf(bd.heading) || 'My board'; T.library = T.library || [];
       const i = T.library.findIndex(x => x.from === el.dataset.t); const item = { name, from: el.dataset.t, board: bd }; if (i > -1) T.library[i] = item; else T.library.push(item); commit(true); Suite.toast(name + ' saved to My boards'); return; }
@@ -806,9 +843,12 @@ details.sec>summary .muted{font-weight:400}
     if (d === 'cpicrm') { const r = editable(viewDate, cid); const bd = r.boards[el.dataset.t]; if (bd) delete bd.pic; commit(true); return; }
     if (d === 'xadd') { const look = roomFor(viewDate, cid).look, lay = clone(getLayout(look)); lay.extras.push({ id: Suite.uid(), box: [760, 420, 420, 220], panel: 'card', html: '' }); T.layouts[look] = lay; commit(true); return; }
     if (d === 'xrm') { const look = roomFor(viewDate, cid).look, lay = clone(getLayout(look)); lay.extras = lay.extras.filter(x => x.id !== el.dataset.x); T.layouts[look] = lay; commit(true); return; }
-    if (d === 'copyprev') {
-      const prevDay = shiftDay(viewDate, -1), p = dayFor(prevDay, cid), r = editable(viewDate, cid);
-      Object.assign(r, clone({ lineup: p.lineup, haveOut: p.haveOut, boards: p.boards })); commit(true); Suite.toast('Copied from ' + longDate(prevDay)); return;
+    if (d === 'copyprev') {   // the same copy as the Planner's: the plan and the boards, together
+      const res = Suite.copyPrevDay(scope === 'period' ? cid : rowKeyOf(cid), viewDate);
+      if (!res) { Suite.toast('No earlier day to copy from'); return; }
+      T = Object.assign(clone(BLANK), Suite.get('today', {})); T.layouts = T.layouts || {};
+      render(); if (editing) renderDrawer();
+      Suite.undoToast(`Copied ${[res.plan && 'the plan', res.boards && 'the boards'].filter(Boolean).join(' and ')} from ${longDate(res.from)}`, res.snap); return;
     }
     if (d === 'saveusual') { const cur = dayFor(viewDate, cid), u = usual(cid); Object.assign(u, clone({ lineup: cur.lineup, haveOut: cur.haveOut, boards: cur.boards })); commit(true); Suite.toast('Saved as the usual setup for ' + rowName(cid)); return; }
     if (d === 'reset') { const day = T.days[viewDate] || {}; delete day[scope === 'period' ? cid : rowKeyOf(cid)]; commit(true); Suite.toast('This day is back to the usual setup'); return; }
@@ -832,6 +872,7 @@ details.sec>summary .muted{font-weight:400}
       if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
       commit(true); return; }
     if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (d === 'liblink' && el.value) { const r = editable(viewDate, cid), id = 'L-' + el.value; if (!r.lineup.includes(id)) r.lineup.push(id); commit(true); Suite.toast('Linked board added. Changing it updates every class that uses it.'); return; }
     if (d === 'libadd' && el.value !== '') { const src = T.library[+el.value]; if (!src) return; const r = editable(viewDate, cid), id = 'c-' + Suite.uid(); r.boards = r.boards || {}; r.boards[id] = clone(src.board); r.lineup = (r.lineup || []).concat(id); commit(true); Suite.toast(src.name + ' added to this day'); return; }
     if (d === 'evon') { usual(cid).showEvents = el.checked; commit(true); return; }
     if (d === 'clook') { const r = editable(viewDate, cid), bd = r.boards[el.dataset.t] = r.boards[el.dataset.t] || clone(boardOf(r, el.dataset.t)); if (el.value) bd.look = el.value; else delete bd.look; commit(true); return; }
@@ -963,22 +1004,35 @@ details.sec>summary .muted{font-weight:400}
   let drag = null;
   stageEl.addEventListener('pointerdown', e => {
     if (!editMode) return;
-    const h = e.target.closest('[data-g]'); if (!h || h.dataset.g === 'xdel' || h.dataset.g === 'tdel') return;
+    const h = e.target.closest('[data-g]'); if (!h || h.dataset.g === 'xdel' || h.dataset.g === 'tdel' || h.dataset.g === 'pdel') return;
     if (e.target.closest('[data-f]')) return;
     const region = h.closest('.region'), k = h.dataset.k || region.dataset.k, r = stageEl.getBoundingClientRect(), look = stageEl.dataset.look, lay = ownLayout(look);
-    const toolBox = k.startsWith('t:') ? ((boardOf(dayFor(viewDate, activeId()), stageEl.dataset.type).tools || []).find(w => 't:' + w.id === k) || {}).box : null;
-    const box = toolBox || (k.startsWith('x:') ? lay.extras.find(x => 'x:' + x.id === k).box : (lay.boxes[k] || getLayout(look).boxes[k]));
-    drag = { k, region, look, resize: h.dataset.g === 'size', x: e.clientX, y: e.clientY, sx: 1920 / r.width, sy: 1080 / r.height, start: box.slice() };
+    if (e.shiftKey) { toggleAlign(k); e.preventDefault(); return; }   // Shift+click picks items to line up
+    const box = getBoxK(k, look);
+    // lines to snap to: the edges and centers of everything else, and the middle and edges of the screen
+    const xs = [0, 960, 1920], ys = [0, 540, 1080];
+    stageEl.querySelectorAll('.region').forEach(o => { if (o === region || o.closest('.lesson-tools')) return; const q2 = o.getBoundingClientRect(); const x1 = (q2.left - r.left) * 1920 / r.width, y1 = (q2.top - r.top) * 1080 / r.height, w2 = q2.width * 1920 / r.width, h2 = q2.height * 1080 / r.height; xs.push(x1, x1 + w2 / 2, x1 + w2); ys.push(y1, y1 + h2 / 2, y1 + h2); });
+    drag = { k, region, look, resize: h.dataset.g === 'size', x: e.clientX, y: e.clientY, sx: 1920 / r.width, sy: 1080 / r.height, start: box.slice(), xs, ys };
     hideBar(); try { region.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault();
   });
   stageEl.addEventListener('pointermove', e => {
     if (!drag) return;
     const dx = (e.clientX - drag.x) * drag.sx, dy = (e.clientY - drag.y) * drag.sy, b = drag.start.slice();
     if (drag.resize) { b[2] = Math.max(80, b[2] + dx); b[3] = Math.max(50, b[3] + dy); } else { b[0] = Math.min(1880, Math.max(-b[2] + 40, b[0] + dx)); b[1] = Math.min(1050, Math.max(-b[3] + 30, b[1] + dy)); }
+    // snap to nearby edges and centers (hold Alt to place freely)
+    let gx = null, gy = null; const T2 = 12;
+    if (!e.altKey) {
+      const near = (vals, lines) => { let best = null; vals.forEach((v, i) => lines.forEach(l => { const dd = l - v; if (Math.abs(dd) <= T2 && (!best || Math.abs(dd) < Math.abs(best.d))) best = { d: dd, l, i }; })); return best; };
+      if (drag.resize) { const sx2 = near([b[0] + b[2]], drag.xs), sy2 = near([b[1] + b[3]], drag.ys); if (sx2) { b[2] += sx2.d; gx = sx2.l; } if (sy2) { b[3] += sy2.d; gy = sy2.l; } }
+      else { const sx2 = near([b[0], b[0] + b[2] / 2, b[0] + b[2]], drag.xs), sy2 = near([b[1], b[1] + b[3] / 2, b[1] + b[3]], drag.ys); if (sx2) { b[0] += sx2.d; gx = sx2.l; } if (sy2) { b[1] += sy2.d; gy = sy2.l; } }
+    }
+    showGuides(gx, gy);
     drag.box = b.map(Math.round); if (drag.resize) requestAnimationFrame(fitAll); const keep = drag.region.getAttribute('style').replace(/left:[^;]*;top:[^;]*;width:[^;]*;height:[^;]*/, ''); drag.region.setAttribute('style', place(drag.box) + ';' + keep.replace(/^;/, ''));
   });
   stageEl.addEventListener('pointerup', () => {
+    showGuides(null, null);
     if (!drag) return; const d = drag; drag = null; if (!d.box) return;
+    if (d.k.startsWith('p:')) { setBoxK(d.k, d.box, d.look); save(); render(); return; }
     const lay = ownLayout(d.look);
     if (d.k.startsWith('t:')) { const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); const w = (bd.tools || []).find(x => 't:' + x.id === d.k); if (w) w.box = d.box; }
     else if (d.k.startsWith('x:')) lay.extras.find(x => 'x:' + x.id === d.k).box = d.box;
@@ -987,7 +1041,87 @@ details.sec>summary .muted{font-weight:400}
     save(); render();
   });
   stageEl.addEventListener('click', e => { const td = e.target.closest('[data-g="tdel"]'); if (td && editMode) { const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.tools = (bd.tools || []).filter(w => w.id !== td.dataset.x); save(); render(); return; } });
+  stageEl.addEventListener('click', e => { const pd = e.target.closest('[data-g="pdel"]'); if (!pd || !editMode) return; const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.pics = (bd.pics || []).filter(p2 => p2.id !== pd.dataset.p); save(); render(); });
   stageEl.addEventListener('click', e => { const x = e.target.closest('[data-g="xdel"]'); if (!x || !editMode) return; const lay = ownLayout(stageEl.dataset.look); lay.extras = lay.extras.filter(y => y.id !== x.dataset.x); save(); render(); });
+
+
+  // add a board to other classes: linked (one board) or separate copies; every day or just this day
+  function keyClass(key){ if (!key.startsWith('course:')) return key; const co = Suite.courses().find(x => 'course:' + x.id === key); return co && co.classIds[0]; }
+  function shareBoard(cid, t){
+    const rows = Suite.courses().map(co => ['course:' + co.id, co.name]).concat(classes().filter(c => !Suite.courseOf(c.id)).map(c => [c.id, c.name])).filter(([k]) => k !== (scope === 'period' ? cid : rowKeyOf(cid)));
+    if (!rows.length) { Suite.toast('There are no other classes to add it to'); return; }
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" style="max-width:520px"><h2>Use "${esc(boardLabel(dayFor(viewDate, cid), t))}" in other classes</h2>
+      <p style="font-weight:700;margin:8px 0 4px">Add it to</p>${rows.map(([k, n]) => `<label class="rv" style="display:flex;gap:6px"><input type="checkbox" class="sh-k" value="${esc(k)}"> ${esc(n)}</label>`).join('')}
+      <p style="font-weight:700;margin:12px 0 4px">How</p>
+      <label class="rv" style="display:flex;gap:6px"><input type="radio" name="shm" value="link" checked> Linked: one board for all of them (change it once, it updates everywhere)</label>
+      <label class="rv" style="display:flex;gap:6px"><input type="radio" name="shm" value="copy"> Separate copies (each class can change its own)</label>
+      <p style="font-weight:700;margin:12px 0 4px">When</p>
+      <label class="rv" style="display:flex;gap:6px"><input type="radio" name="shw" value="usual" checked> Every day (their usual setup)</label>
+      <label class="rv" style="display:flex;gap:6px"><input type="radio" name="shw" value="day"> Just ${esc(longDate(viewDate))}</label>
+      <div class="suite-dialog-actions"><button class="btn" data-s="x">Cancel</button><button class="btn primary" data-s="go">Add it</button></div></div>`;
+    document.body.appendChild(back);
+    back.addEventListener('click', e => {
+      if (e.target === back || e.target.closest('[data-s="x"]')) return back.remove();
+      if (!e.target.closest('[data-s="go"]')) return;
+      const keys = [...back.querySelectorAll('.sh-k:checked')].map(x => x.value); if (!keys.length) { Suite.toast('Pick at least one class'); return; }
+      const how = back.querySelector('input[name="shm"]:checked').value, when = back.querySelector('input[name="shw"]:checked').value;
+      const board = clone(boardOf(dayFor(viewDate, cid), t));
+      let id = t;
+      if (how === 'link' && !t.startsWith('L-')) {   // move this board into My boards and link it here too
+        T.library = T.library || []; const it = { id: Suite.uid(), name: String(board.heading || 'My board').replace(/<[^>]+>/g, '').trim() || 'My board', from: t, board };
+        T.library.push(it); id = 'L-' + it.id;
+        const r = editable(viewDate, cid); r.lineup = r.lineup.map(x => x === t ? id : x); if (r.boards) delete r.boards[t];
+        const u = usual(cid); if ((u.lineup || []).includes(t)) { u.lineup = u.lineup.map(x => x === t ? id : x); if (u.boards) delete u.boards[t]; }
+      }
+      const oldScope = scope;
+      keys.forEach(k => {
+        const kc = keyClass(k); if (!kc) return;
+        const newId = how === 'link' ? id : 'c-' + Suite.uid();
+        if (when === 'usual') { const u = usual(kc); u.lineup = u.lineup || []; if (!u.lineup.includes(newId)) u.lineup.push(newId); if (how === 'copy') { u.boards = u.boards || {}; u.boards[newId] = clone(board); } }
+        else { scope = k.startsWith('course:') ? 'course' : 'period'; const r = editable(viewDate, kc); if (!r.lineup.includes(newId)) r.lineup.push(newId); if (how === 'copy') { r.boards = r.boards || {}; r.boards[newId] = clone(board); } }
+      });
+      scope = oldScope;
+      back.remove(); commit(true); Suite.toast(`Added to ${keys.length} class${keys.length === 1 ? '' : 'es'}${how === 'link' ? ' (linked)' : ''}`);
+    });
+  }
+
+
+  // ---- one place to read or write any item's position (layout boxes, text boxes, tools, pictures) ----
+  function getBoxK(k, look){
+    const bd = boardOf(dayFor(viewDate, activeId()), stageEl.dataset.type), lay = getLayout(look);
+    if (k.startsWith('t:')) return ((bd.tools || []).find(w => 't:' + w.id === k) || {}).box;
+    if (k.startsWith('p:')) return ((bd.pics || []).find(p2 => 'p:' + p2.id === k) || {}).box;
+    if (k.startsWith('x:')) return (lay.extras.find(x => 'x:' + x.id === k) || {}).box;
+    return lay.boxes[k] || (ownLayout(look).boxes || {})[k];
+  }
+  function setBoxK(k, box, look){
+    if (k.startsWith('t:') || k.startsWith('p:')) { const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); const arr = k.startsWith('t:') ? (bd.tools || []) : (bd.pics || []); const it = arr.find(x => (k.startsWith('t:') ? 't:' : 'p:') + x.id === k); if (it) it.box = box; return; }
+    const lay = ownLayout(look);
+    if (k.startsWith('x:')) { const x = lay.extras.find(y => 'x:' + y.id === k); if (x) x.box = box; } else lay.boxes[k] = box;
+  }
+  // ---- snap guide lines ----
+  function showGuides(gx, gy){
+    ['v', 'h'].forEach(dir => { let el = stageEl.querySelector('.snapline.' + dir); const val = dir === 'v' ? gx : gy;
+      if (val == null) { if (el) el.remove(); return; }
+      if (!el) { el = document.createElement('div'); el.className = 'snapline ' + dir; stageEl.appendChild(el); }
+      if (dir === 'v') el.style.left = (val / 19.2) + '%'; else el.style.top = (val / 10.8) + '%'; });
+  }
+  // ---- align: Shift+click items, then line them up (one item lines up with the screen) ----
+  const alignSel = new Set();
+  function toggleAlign(k){ if (k === 'bm') return; if (alignSel.has(k)) alignSel.delete(k); else alignSel.add(k); markAlign(); renderRail(activeId()); }
+  function markAlign(){ stageEl.querySelectorAll('.region[data-k]').forEach(r2 => r2.classList.toggle('alsel', alignSel.has(r2.dataset.k))); }
+  function doAlign(how){
+    const look = stageEl.dataset.look, items = [...alignSel].map(k => [k, getBoxK(k, look)]).filter(x => x[1]); if (!items.length) return;
+    const one = items.length === 1;
+    const x0 = one ? 0 : Math.min(...items.map(([, b]) => b[0])), x1 = one ? 1920 : Math.max(...items.map(([, b]) => b[0] + b[2]));
+    const y0 = one ? 0 : Math.min(...items.map(([, b]) => b[1])), y1 = one ? 1080 : Math.max(...items.map(([, b]) => b[1] + b[3]));
+    items.forEach(([k, b0]) => { const b = b0.slice();
+      if (how === 'left') b[0] = x0; else if (how === 'right') b[0] = x1 - b[2]; else if (how === 'hcenter') b[0] = Math.round((x0 + x1) / 2 - b[2] / 2);
+      else if (how === 'top') b[1] = y0; else if (how === 'bottom') b[1] = y1 - b[3]; else if (how === 'vmiddle') b[1] = Math.round((y0 + y1) / 2 - b[3] / 2);
+      setBoxK(k, b, look); });
+    save(); render();
+  }
 
   /* ---------- bell reminder: the last few minutes of class, passing time, and timed messages ---------- */
   const BELL_DEFAULT = { on: true, style: 'badge', corner: 'tr', strip: 'bottom', minutes: 5, overLesson: true, messages: [{ min: 3, text: 'Clean up your area and push in your chair.', chime: true }] };
@@ -1031,7 +1165,7 @@ details.sec>summary .muted{font-weight:400}
 
   /* ---------- suite tools: open one on top, or place one on a board ---------- */
   const TOOL_PAGES = { spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
-  const WIDGETS = { picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
+  const WIDGETS = { spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
   function openTool(kind){
     if (kind === 'timer') { Suite.openTimer(); return; }
     const t = TOOL_PAGES[kind], cid = activeId();
@@ -1045,15 +1179,18 @@ details.sec>summary .muted{font-weight:400}
   }
   const toolMenu = (act, title, list) => `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="${title}">${act === 'addtool' ? 'Add a tool' : 'Tools'} ▾</button><span class="tmenu-list" hidden>${Object.entries(list).map(([k, v]) => `<button data-a="${act}" data-id="${k}">${esc(v[0])}</button>`).join('')}</span></span>`;
 
+  const everyMenu = cid => { const on = new Set((usual(cid).boardTools || []).map(w => w.kind));
+    return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Place a tool once and show it on all of this class's boards">On every board ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="everytool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   /* ---------- widgets pinned on top of the lesson slides (per class, kept until removed) ---------- */
-  const LT_SIZE = { picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180] };
+  const LT_SIZE = { picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
   const pinMenu = cid => { const on = new Set((usual(cid).lessonTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Keep a tool on top of your slides">Pin to slides ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="pintool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
-  function drawLessonTools(cid){
-    const el = document.getElementById('ltools'); if (!el) return;
-    const list = usual(cid).lessonTools || [];
-    el.innerHTML = list.map(w => `<div class="region tool tool-${w.kind} ltool" data-lt="${esc(w.id)}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>
-      <span class="lt-grip" data-lt-move title="Drag to move">⠿</span><span class="lt-size" data-lt-size title="Drag to resize"></span><button class="lt-x" data-a="ltdel" data-id="${esc(w.id)}" aria-label="Remove ${esc(WIDGETS[w.kind][0])}">×</button></div>`).join('');
+  function drawLessonTools(cid){ drawPinned(cid, 'ltools', 'lessonTools'); drawPinned(cid, 'btools', 'boardTools'); }
+  function drawPinned(cid, elId, listName){
+    const el = document.getElementById(elId); if (!el) return;
+    const list = usual(cid)[listName] || [];
+    el.innerHTML = list.map(w => `<div class="region tool tool-${w.kind} ltool" data-lt="${esc(w.id)}" data-list="${listName}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>
+      <span class="lt-grip" data-lt-move title="Drag to move">⠿</span><span class="lt-size" data-lt-size title="Drag to resize"></span><button class="lt-x" data-a="ltdel" data-list="${listName}" data-id="${esc(w.id)}" aria-label="Remove ${esc(WIDGETS[w.kind][0])}">×</button></div>`).join('');
     fitAll && requestAnimationFrame(() => fitAll());
   }
   function togglePin(kind){
@@ -1065,7 +1202,7 @@ details.sec>summary .muted{font-weight:400}
   // drag to move or resize (a cover over the slides keeps the drag smooth)
   document.addEventListener('pointerdown', e => {
     const h = e.target.closest('[data-lt-move],[data-lt-size]'); if (!h) return;
-    const box = h.closest('.ltool'), st = document.getElementById('stage'), cid = activeId(), w = (usual(cid).lessonTools || []).find(x => x.id === box.dataset.lt); if (!w) return;
+    const box = h.closest('.ltool'), st = document.getElementById('stage'), cid = activeId(), w = (usual(cid)[box.dataset.list || 'lessonTools'] || []).find(x => x.id === box.dataset.lt); if (!w) return;
     e.preventDefault(); const r = st.getBoundingClientRect(), sx = 1920 / r.width, sy = 1080 / r.height, x0 = e.clientX, y0 = e.clientY, b0 = w.box.slice(), resize = h.hasAttribute('data-lt-size');
     const shield = document.createElement('div'); shield.className = 'lt-shield'; st.appendChild(shield);
     const move = ev => { const dx = (ev.clientX - x0) * sx, dy = (ev.clientY - y0) * sy;
@@ -1078,6 +1215,7 @@ details.sec>summary .muted{font-weight:400}
   // the widgets themselves
   const picked = {};   // names already picked this session, per class
   function widgetHtml(kind, w){
+    if (kind === 'spinner') return `<iframe class="w-spinner" title="Name spinner" src="spinner.html?embed&proj&mini#class=${encodeURIComponent(activeId() || '')}"></iframe>`;
     if (kind === 'picker') return `<div class="w-pick"><div class="w-name" data-w="name">${esc(w.last || '')}</div><button class="w-btn" data-w="pick">Pick a name</button></div>`;
     if (kind === 'noise') return `<div class="w-noise"><div class="w-nlab" data-w="nlab">${mic ? '' : 'Noise meter'}</div><div class="w-meter"><span data-w="nbar"></span><i style="left:${(Suite.get('noise', {}) || {}).line || 60}%"></i></div>${mic ? '' : '<button class="w-btn" data-w="mic">Start listening</button>'}</div>`;
     if (kind === 'timer') { const t = Suite.timerState(); return `<div class="w-timer"><div class="w-time" data-w="time">${Suite.fmtDuration(t.left || 0)}</div><div class="w-row">${[1, 3, 5].map(m => `<button class="w-btn sm" data-w="tstart" data-m="${m}">${m} min</button>`).join('')}<button class="w-btn sm" data-w="ttog">${t.state === 'running' ? 'Pause' : 'Go'}</button></div></div>`; }
@@ -1146,8 +1284,13 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'edit') { editing = !editing; $('#drawer').hidden = !editing; if (editing) renderDrawer(); }
     else if (a === 'full') { full = !full; if (full && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); else if (!full && document.fullscreenElement) document.exitFullscreen().catch(() => {}); render(); }
     else if (a === 'startedit') startEdit();
+    else if (a === 'addpic') { let inp = document.getElementById('picadd'); if (!inp) { inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'picadd'; inp.hidden = true; document.body.appendChild(inp); } inp.click(); return; }
+    else if (a === 'align') { doAlign(el.dataset.v); return; }
+    else if (a === 'alignclear') { alignSel.clear(); markAlign(); renderRail(activeId()); return; }
+    else if (a === 'everytool') { const cid = activeId(), u = usual(cid), list = u.boardTools = u.boardTools || [], i = list.findIndex(w => w.kind === el.dataset.id);
+      if (i > -1) list.splice(i, 1); else list.push({ id: Suite.uid(), kind: el.dataset.id, box: (LT_SIZE[el.dataset.id] || [1400, 300, 440, 380]).slice() }); save(); render(); return; }
     else if (a === 'pintool') { togglePin(el.dataset.id); const l = el.closest('.tmenu-list'); if (l) l.hidden = true; }
-    else if (a === 'ltdel') { const cid = activeId(), u = usual(cid); u.lessonTools = (u.lessonTools || []).filter(w => w.id !== el.dataset.id); save(); drawLessonTools(cid); const menu = document.querySelector('.lessontools .tmenu'); if (menu) { const t = document.createElement('span'); t.innerHTML = pinMenu(cid); menu.replaceWith(t.firstElementChild); } }
+    else if (a === 'ltdel') { const cid = activeId(), u = usual(cid), ln = el.dataset.list || 'lessonTools'; u[ln] = (u[ln] || []).filter(w => w.id !== el.dataset.id); save(); drawLessonTools(cid); const menu = document.querySelector('.lessontools .tmenu'); if (menu) { const t = document.createElement('span'); t.innerHTML = pinMenu(cid); menu.replaceWith(t.firstElementChild); } }
     else if (a === 'dprev' || a === 'dnext' || a === 'dtoday') { viewDate = a === 'dtoday' ? Suite.dateKey(new Date()) : shiftDay(viewDate, a === 'dnext' ? 1 : -1); screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); }
     else if (a === 'dayprev' || a === 'daynext' || a === 'daytoday') { viewDate = a === 'daytoday' ? Suite.dateKey(new Date()) : shiftDay(viewDate, a === 'dayprev' ? -1 : 1); screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); }
     else if (a === 'piece') { const t = screens(viewDate, cid)[screen], r = editable(viewDate, cid), bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.hide = bd.hide || {}; if (el.checked) delete bd.hide[el.dataset.k]; else bd.hide[el.dataset.k] = true; save(); render(); return; }
@@ -1168,6 +1311,10 @@ details.sec>summary .muted{font-weight:400}
     editing = false; $('#drawer').hidden = true;
   });
   document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.a === 'daypick' && e.target.value) { viewDate = e.target.value; screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); } });
+  document.addEventListener('change', async e => { if (e.target.id !== 'picadd' || !e.target.files[0]) return;
+    try { const meta = await Suite.files.put(e.target.files[0]); const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t));
+      bd.pics = bd.pics || []; const n = bd.pics.length; bd.pics.push({ id: Suite.uid(), file: meta.id, box: [1060 + n * 40, 260 + n * 40, 520, 380] }); save(); render(); Suite.toast('Picture added. Drag it into place.'); }
+    catch (err) { Suite.toast(err.message || "Couldn't add that picture"); } e.target.value = ''; });
   document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.a2 === 'dpick' && e.target.value) { viewDate = e.target.value; screen = 0; reveal = 0; lesson = false; render(); if (editing) renderDrawer(); } });
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && full) { full = false; render(); } });
   document.addEventListener('keydown', e => {
