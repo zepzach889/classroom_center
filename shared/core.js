@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-19b';   // bump with every build; pages check they match
+  const VERSION = '2026-10-19c';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -908,7 +908,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
 .pop .tbl:first-of-type{border-top:0}
 .pop .tn{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
 .pop .dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--ink);flex:none}
-.pop .pts{font-family:var(--serif);font-size:24px;min-width:40px;text-align:right}
+.pop .pts small{font-size:.5em;font-weight:700;opacity:.65;margin-right:.35em;vertical-align:middle}.pts{font-family:var(--serif);font-size:24px;min-width:40px;text-align:right}
 .pop .who{font-family:var(--serif);font-size:44px;text-align:center;min-height:56px;margin:10px 0}
 .pop .note{font-size:12px;color:var(--ink-2);text-align:center;margin-top:8px}`;
   const tracker = () => Object.assign({ quarter: 1, week: 1, log: [], double: false }, S.get('tracker', {}));
@@ -929,12 +929,13 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
       if (!c) { d.body.innerHTML = '<p>Add a class in settings first.</p>'; return; }
       const lay = S.roomLayout(c.tables), act = S.activeTables(c).slice().sort((a, b) => lay.at[a.id].row - lay.at[b.id].row || lay.at[a.id].col - lay.at[b.id].col);
       const pts = id => T.log.reduce((n, e) => n + (e.c === c.id && e.t === id && e.q === T.quarter && e.w === T.week ? e.d : 0), 0);
+      const qpts = id => T.log.reduce((n, e) => n + (e.c === c.id && e.t === id && e.q === T.quarter ? e.d : 0), 0);
       const key = c.id + '|' + T.log.length + '|' + T.week + '|' + T.double + '|' + S.classes().length;
       if (d.body.dataset.k === key) return; d.body.dataset.k = key;
       d.body.innerHTML = `<div class="ph"><b>Table points</b>${classSelect(st, c)}</div>
-        ${act.map(t => `<div class="tbl"><span class="tn"><span class="dot" style="background:${S.esc(t.color)}"></span>${S.esc(t.name)}</span><span class="pts">${pts(t.id)}</span>
+        ${act.map(t => `<div class="tbl"><span class="tn"><span class="dot" style="background:${S.esc(t.color)}"></span>${S.esc(t.name)}</span><span class="pts"><small title="This week">+${pts(t.id)}</small>${qpts(t.id)}</span>
           <button class="pri" data-p="aw" data-t="${S.esc(t.id)}" data-d="1">+1</button><button class="neg" data-p="aw" data-t="${S.esc(t.id)}" data-d="-1">−1</button></div>`).join('')}
-        <div class="note">Week ${T.week}${T.double ? ' · Double points on' : ''}. Points save to the Table points page.</div>`;
+        <div class="note">Big numbers: the quarter so far. Small: week ${T.week}${T.double ? ' · Double points on' : ''}.</div>`;
     },
     name(d, st){
       const c = popClass(st);

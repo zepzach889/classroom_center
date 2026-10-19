@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-19b">
-<script src="shared/core.js?v=2026-10-19b"></script>
-<script>window.PAGE_VERSION = '2026-10-19b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-19c">
+<script src="shared/core.js?v=2026-10-19c"></script>
+<script>window.PAGE_VERSION = '2026-10-19c';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -219,7 +219,7 @@ body.editing-screen .stage{width:min(100%,calc((100vh - var(--navh,70px) - var(-
 .w-time{font:700 min(40cqh,22cqw)/1 var(--sans);font-variant-numeric:tabular-nums}
 .w-row{display:flex;gap:2cqw}
 .w-pts{width:88%;font:600 min(9cqh,6cqw) var(--sans)}
-.w-ph{font-weight:800;margin-bottom:2cqh}
+.w-ph{font-weight:800;margin-bottom:2cqh}.w-pq{font-weight:600;font-size:.6em;opacity:.65;margin-left:.3em}.w-pw{font-style:normal;font-size:.75em;font-weight:700;opacity:.6}
 .w-pr{display:flex;align-items:center;gap:3cqw;padding:1.2cqh 0;border-top:1px solid #dfe3e6}
 .w-pr span:nth-child(2){flex:1}.w-pr .dot{width:1.1em;height:1.1em;border-radius:50%;border:1.5px solid #1f2a33}
 .w-win .w-wq{font-weight:600;font-size:.7em;opacity:.7;margin-left:.4em}
@@ -1240,8 +1240,8 @@ details.sec>summary .muted{font-weight:400}
     if (kind === 'points') {
       const c = classes().find(x => x.id === activeId()), T0 = Object.assign({ quarter: 1, week: 1, log: [] }, Suite.get('tracker', {}));
       if (!c || !Suite.feature('points')) return '<div class="w-pts muted">Points are turned off.</div>';
-      const rows = Suite.activeTables(c).map(t => ({ t, n: T0.log.reduce((a, e) => a + (e.c === c.id && e.t === t.id && e.q === T0.quarter && e.w === T0.week ? e.d : 0), 0) })).sort((a, b) => b.n - a.n);
-      return `<div class="w-pts"><div class="w-ph">${esc(Suite.word('team', { cap: true }))} points</div>${rows.map(r => `<div class="w-pr"><span class="dot" style="background:${esc(r.t.color)}"></span><span>${esc(r.t.name)}</span><b>${r.n}</b></div>`).join('')}</div>`;
+      const rows = Suite.activeTables(c).map(t => ({ t, w: T0.log.reduce((a, e) => a + (e.c === c.id && e.t === t.id && e.q === T0.quarter && e.w === T0.week ? e.d : 0), 0), n: T0.log.reduce((a, e) => a + (e.c === c.id && e.t === t.id && e.q === T0.quarter ? e.d : 0), 0) })).sort((a, b) => b.n - a.n);
+      return `<div class="w-pts"><div class="w-ph">${esc(Suite.word('team', { cap: true }))} points <span class="w-pq">quarter (+week)</span></div>${rows.map(r => `<div class="w-pr"><span class="dot" style="background:${esc(r.t.color)}"></span><span>${esc(r.t.name)}</span><i class="w-pw">+${r.w}</i><b>${r.n}</b></div>`).join('')}</div>`;
     }
     return '';
   }

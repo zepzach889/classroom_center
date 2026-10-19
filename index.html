@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-19b">
-<script src="shared/core.js?v=2026-10-19b"></script>
-<script>window.PAGE_VERSION = '2026-10-19b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-19c">
+<script src="shared/core.js?v=2026-10-19c"></script>
+<script>window.PAGE_VERSION = '2026-10-19c';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
 @media (min-width:861px) and (min-height:700px){
@@ -112,6 +112,7 @@
 .sign.ok{color:var(--ink);border-color:var(--sea)}.sign.sub{background:var(--plum);border-color:var(--plum);color:#fff}
 .swap{display:inline-flex;align-items:center;gap:6px;margin-bottom:4px}.swap select{font:inherit;font-size:13px}
 .unitpace{font-size:14px;font-weight:600;color:var(--ink-2);margin:-4px 0 6px}.udot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.stand .wk{font-size:12px;font-weight:700;color:var(--ink-2);margin-left:auto;margin-right:8px}
 </style>
 </head>
 <body>
@@ -149,9 +150,10 @@
     const T = Suite.get('tracker', null);
     const act = Suite.activeTables(cls);
     if (!T || !act.length) return '';
-    const pts = tid => (T.log || []).reduce((a, e) => a + (e.c === cls.id && e.t === tid && e.q === T.quarter && e.w === T.week ? e.d : 0), 0);
-    const rows = act.map(t => [t, pts(t.id)]).sort((a, b) => b[1] - a[1]);
-    return `<ul class="stand">${rows.map(([t, p]) => `<li><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}<b>${p}</b></li>`).join('')}</ul>`;
+    const wk = tid => (T.log || []).reduce((a, e) => a + (e.c === cls.id && e.t === tid && e.q === T.quarter && e.w === T.week ? e.d : 0), 0);
+    const qt = tid => (T.log || []).reduce((a, e) => a + (e.c === cls.id && e.t === tid && e.q === T.quarter ? e.d : 0), 0);
+    const rows = act.map(t => [t, qt(t.id), wk(t.id)]).sort((a, b) => b[1] - a[1]);
+    return `<ul class="stand">${rows.map(([t, q, w]) => `<li><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}<span class="wk" title="This week">+${w}</span><b>${q}</b></li>`).join('')}</ul>`;
   }
 
   const nextReal = (P, i) => P.slice(i + 1).find(p => !Suite.isPassing(p)) || null;
@@ -308,8 +310,8 @@
   function renderPoints(){
     const cls = pointsCls;
     $('#classbox').innerHTML = cls ? `<div class="classbox">
-        <div class="boxhead"><h2>${esc(cls.name)} this week</h2><a class="small" href="tracker.html#class=${esc(cls.id)}">Open</a></div>
-        ${standings(cls) || '<p class="muted">No points yet this week.</p>'}</div>` : '';
+        <div class="boxhead"><h2>${esc(cls.name)} points <span class="muted small" style="font-family:var(--sans);font-size:13px">quarter (+this week)</span></h2><a class="small" href="tracker.html#class=${esc(cls.id)}">Open</a></div>
+        ${standings(cls) || '<p class="muted">No points yet this quarter.</p>'}</div>` : '';
     $('#classbox').hidden = !cls;
   }
 
