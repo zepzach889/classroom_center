@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-20a">
-<script src="shared/core.js?v=2026-10-20a"></script>
-<script>window.PAGE_VERSION = '2026-10-20a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-21b">
+<script src="shared/core.js?v=2026-10-21b"></script>
+<script>window.PAGE_VERSION = '2026-10-21b';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -897,6 +897,8 @@ main{min-width:0;max-width:820px}
         ${B.style === 'badge' ? `<label>Corner<select data-ts="bcorner">${[['tr', 'Top right'], ['tl', 'Top left'], ['br', 'Bottom right'], ['bl', 'Bottom left']].map(([v, n]) => `<option value="${v}"${B.corner === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>` : B.style === 'strip' ? `<label>Where<select data-ts="bstrip"><option value="top"${B.strip === 'top' ? ' selected' : ''}>Top</option><option value="bottom"${B.strip === 'bottom' ? ' selected' : ''}>Bottom</option></select></label>` : '<span></span>'}
         <label>Show it in the last<span><input class="field num" type="number" min="1" max="20" data-ts="bmin" value="${B.minutes}" style="width:70px"> minutes</span></label></div>
       <label class="rv"><input type="checkbox" data-ts="bover"${B.overLesson ? ' checked' : ''}> Also show it on top of the lesson slides</label>
+      <label class="rv"><input type="checkbox" data-ts="bcs"${B.chimeStart ? ' checked' : ''}> Chime when the countdown appears</label>
+      <label class="rv"><input type="checkbox" data-ts="bce"${B.chimeEnd ? ' checked' : ''}> Chime at the bell</label>
       <p class="lbl">Messages before the bell</p>
       ${(B.messages || []).map((x, k) => `<div class="tsmsg"><input class="field num" type="number" min="1" max="30" data-ts="mmin" data-k="${k}" value="${x.min}" aria-label="Minutes before the bell"><span>min:</span><input class="field" data-ts="mtext" data-k="${k}" value="${esc(x.text)}" placeholder="Start cleaning up" aria-label="Message"><label class="rv"><input type="checkbox" data-ts="mchime" data-k="${k}"${x.chime ? ' checked' : ''}> chime</label><button class="btn quiet danger small" data-ts="mrm" data-k="${k}" aria-label="Remove message">×</button></div>`).join('') || '<p class="muted small">None yet.</p>'}
       <button class="btn small" data-ts="madd">Add a message</button>
@@ -938,7 +940,7 @@ main{min-width:0;max-width:820px}
     const I = T.idle = Object.assign({ style: 'dashboard', color: '', messages: {}, goHome: { on: false, time: '15:45', text: 'Time to head home!' } }, T.idle || {}); I.messages = I.messages || {}; I.goHome = Object.assign({ on: false, time: '15:45', text: 'Time to head home!' }, I.goHome || {});
     if (k === 'istyle') I.style = t.value; else if (k === 'icolor') I.color = t.value; else if (k === 'gon') I.goHome.on = t.checked; else if (k === 'gtime') I.goHome.time = t.value || '15:45';
     else if (k === 'bon') B.on = t.checked; else if (k === 'bstyle') B.style = t.value; else if (k === 'bcorner') B.corner = t.value; else if (k === 'bstrip') B.strip = t.value;
-    else if (k === 'bmin') B.minutes = Math.max(1, Math.min(20, parseInt(t.value, 10) || 5)); else if (k === 'bover') B.overLesson = t.checked;
+    else if (k === 'bmin') B.minutes = Math.max(1, Math.min(20, parseInt(t.value, 10) || 5)); else if (k === 'bover') B.overLesson = t.checked; else if (k === 'bcs') B.chimeStart = t.checked; else if (k === 'bce') B.chimeEnd = t.checked;
     else if (k === 'mmin') B.messages[+t.dataset.k].min = Math.max(1, Math.min(30, parseInt(t.value, 10) || 1)); else if (k === 'mchime') B.messages[+t.dataset.k].chime = t.checked;
     else if (k === 'rname' || k === 'bname') { const o = (k === 'rname' ? T.custom : T.bitmojis)[t.dataset.id]; if (o && t.value.trim()) o.name = t.value.trim(); }
     else if ((k === 'radd' || k === 'badd') && t.files[0]) {

@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-20a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-21b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -686,7 +686,7 @@
     } catch (e) {}
   }
   S.chime = chime;
-  S.CHIME_USES = [['timer', 'Timer'], ['warmup', 'Warm-up timer (Today screen)'], ['bell', 'Bell reminder messages'], ['stations', 'Stations (time to rotate)']];
+  S.CHIME_USES = [['timeleft', 'Time left (5 minutes left and the bell)'], ['timer', 'Timer'], ['warmup', 'Warm-up timer (Today screen)'], ['bell', 'Bell reminder messages'], ['stations', 'Stations (time to rotate)']];
   S.chimeRepeat = (use, sound) => { const P = S.get('prefs', {}) || {}, r = (P.chimeRepeat || {})[use]; return r || (sound === 'gong' ? 3 : 1); };
   S.chimeFor = use => { const P = S.get('prefs', {}) || {}, sound = ((P.chimes || {})[use]) || P.chime || 'chime'; chime(sound, S.chimeRepeat(use, sound)); };
   const PRESETS = [1, 2, 3, 5, 10, 15];
