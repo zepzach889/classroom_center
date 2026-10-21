@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-19c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-20a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -669,22 +669,26 @@
     gong: { name: 'Gong (low and long)', notes: [[0, 130.8, 'sine', 3.2, .5], [0, 196, 'sine', 2.6, .25], [0, 311, 'sine', 1.8, .12]] },
     arcade: { name: 'Arcade (level up)', notes: [[0, 523.3, 'square', .1, .1], [.1, 659.3, 'square', .1, .1], [.2, 784, 'square', .1, .1], [.3, 1046.5, 'square', .35, .1]] }
   };
-  function chime(kind){
+  function chime(kind, times){
     try {
       wakeAudio(); if (!audio) return;
       const pick = S.CHIMES[kind] || S.CHIMES[(S.get('prefs', {}) || {}).chime] || S.CHIMES.chime;
-      const t0 = audio.currentTime + .05;
-      pick.notes.forEach(([d, f, wave, len, vol]) => {
-        const o = audio.createOscillator(), g = audio.createGain();
-        o.type = wave; o.frequency.value = f;
-        g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(vol, t0 + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + len);
-        o.connect(g); g.connect(audio.destination); o.start(t0 + d); o.stop(t0 + d + len + .1);
-      });
+      const span = Math.min(2.6, Math.max(...pick.notes.map(n => n[0] + n[3]))) + .25;   // the gap between repeats
+      for (let r = 0; r < Math.max(1, Math.min(5, times || 1)); r++) {
+        const t0 = audio.currentTime + .05 + r * span;
+        pick.notes.forEach(([d, f, wave, len, vol]) => {
+          const o = audio.createOscillator(), g = audio.createGain();
+          o.type = wave; o.frequency.value = f;
+          g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(vol, t0 + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + len);
+          o.connect(g); g.connect(audio.destination); o.start(t0 + d); o.stop(t0 + d + len + .1);
+        });
+      }
     } catch (e) {}
   }
   S.chime = chime;
   S.CHIME_USES = [['timer', 'Timer'], ['warmup', 'Warm-up timer (Today screen)'], ['bell', 'Bell reminder messages'], ['stations', 'Stations (time to rotate)']];
-  S.chimeFor = use => { const P = S.get('prefs', {}) || {}; chime(((P.chimes || {})[use]) || P.chime || 'chime'); };
+  S.chimeRepeat = (use, sound) => { const P = S.get('prefs', {}) || {}, r = (P.chimeRepeat || {})[use]; return r || (sound === 'gong' ? 3 : 1); };
+  S.chimeFor = use => { const P = S.get('prefs', {}) || {}, sound = ((P.chimes || {})[use]) || P.chime || 'chime'; chime(sound, S.chimeRepeat(use, sound)); };
   const PRESETS = [1, 2, 3, 5, 10, 15];
   let tEl = null, tOpen = false;
   function timerMarkup(){
@@ -1079,11 +1083,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-19', items: [
-    'Today: use a custom board in other classes, linked (change it once, it updates everywhere) or as copies. Duplicate any board to keep the same look.',
-    'Edit on screen: add as many pictures as you like, place a tool once on every board, and line things up with snap guides and Align buttons (Shift+click to pick boxes).',
-    'New tool for boards: the Name spinner, with the real wheel and your class\'s spinner setup.',
-    'Also: Copy from the day before copies a class\'s whole day, the Planner keeps unsaved drafts, and there\'s a new Office mode.'] };
+  const NEWS = { id: '2026-10-20', items: [
+    'Table points: the big number is now the quarter total, with this week in the box beside it. Same on the dashboard, widgets, and pop-out.',
+    'Today: a full-screen Time left view (Tools ▾) with the clock and a big countdown, plus a Time left widget. New Last week\'s winners widget too.',
+    'Each class can have its own bell reminder and messages, like a clean-up message at 7 minutes shown big on screen (Day settings → Bell reminder).',
+    'Sounds can repeat (Settings → Look and tools → Sounds); the gong rings three times. Settings tabs now open at the top.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }

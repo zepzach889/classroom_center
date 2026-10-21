@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-19c">
-<script src="shared/core.js?v=2026-10-19c"></script>
-<script>window.PAGE_VERSION = '2026-10-19c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-20a">
+<script src="shared/core.js?v=2026-10-20a"></script>
+<script>window.PAGE_VERSION = '2026-10-20a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -142,6 +142,22 @@ body.full #suite-nav,body.full .rail{display:none}
 .board-tools{z-index:6}
 .w-spinner{width:100%;height:100%;border:0;display:block;border-radius:1cqw;background:transparent}
 .stage.editing .w-spinner{pointer-events:none}
+/* the full-screen Time left view, styled like the full-screen timer */
+#time-left{position:fixed;inset:0;z-index:95;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#time-left[hidden]{display:none}
+#time-left .tl-clock{font-family:var(--serif);font-size:clamp(48px,8vw,110px);line-height:1;color:var(--ink-2)}
+#time-left.is-low .st-time{color:var(--land)}#time-left.is-low .st-bar span{background:var(--land)}
+/* the Time left widget */
+.w-clock{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:#1f2a33}
+.w-clock .wc-now{font:600 min(14cqh,9cqw) var(--sans);opacity:.75}
+.w-clock .wc-left{font-family:var(--serif);font-size:min(46cqh,24cqw);line-height:1;font-variant-numeric:tabular-nums}
+.w-clock .wc-lab{font:700 min(9cqh,5.5cqw) var(--sans);opacity:.7}
+/* a bell message shown big on screen */
+.bell.big{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5cqw;background:rgba(250,247,240,.97);color:#1f2a33;border-radius:0;padding:4cqw;text-align:center}
+.bell.big .b-bigmsg{font:400 6.4cqw/1.1 var(--serif)}
+.bell.big .b-bigtime{font:400 16cqw/1 var(--serif);font-variant-numeric:tabular-nums;color:var(--land)}
+.bell.big .b-bignext{font:600 2.2cqw var(--sans);opacity:.75}
+.bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
 body.editing-screen .stage-wrap{background:#1b2633;padding-top:64px}
@@ -801,6 +817,17 @@ details.sec>summary .muted{font-weight:400}
         <details class="sec"><summary>School events <span class="muted small">${u.showEvents ? 'shown' : 'off'}</span></summary>
           <label class="rv" style="display:flex;gap:6px"><input type="checkbox" data-d="evon"${u.showEvents ? ' checked' : ''}> Show today's school events from the Planner (like picture day) on the boards</label>
           <p class="hintline">Optional. Place the events strip with Edit on screen.</p></details>
+        ${(() => { const own = usual(cid).bellOwn || {}, on = !!own.on, msgs = own.messages || [];
+          return `<details class="sec"${on ? ' open' : ''}><summary>Bell reminder <span class="muted small">${on ? 'custom for this class' : 'your usual settings'}</span></summary>
+          <label class="rv" style="display:flex;gap:6px"><input type="radio" name="bown" data-d="bown" value="usual"${on ? '' : ' checked'}> Use my usual settings (<a href="settings.html#today">edit them</a>)</label>
+          <label class="rv" style="display:flex;gap:6px"><input type="radio" name="bown" data-d="bown" value="own"${on ? ' checked' : ''}> Custom for this class</label>
+          ${on ? `<label class="lb">Show the countdown in the last <input class="field num" type="number" min="1" max="20" data-d="bomin" value="${own.minutes || 5}" style="width:64px"> minutes of class</label>
+            <span class="lb">Messages before the bell</span>
+            ${msgs.map((x, k) => `<div class="bomrow"><input class="field num" type="number" min="1" max="30" data-d="bomm" data-k="${k}" value="${x.min}" aria-label="Minutes before the bell" style="width:58px"><span class="small">min:</span><input class="field" data-d="bomt" data-k="${k}" value="${esc(x.text || '')}" placeholder="Clean-up time!" style="flex:1;min-width:0">
+              <label class="small"><input type="checkbox" data-d="bomc" data-k="${k}"${x.chime ? ' checked' : ''}> chime</label><label class="small" title="Fill the screen with this message and a big countdown"><input type="checkbox" data-d="bomb" data-k="${k}"${x.big ? ' checked' : ''}> big on screen</label><button class="btn quiet danger small" data-d="bomrm" data-k="${k}" aria-label="Remove message">×</button></div>`).join('') || '<p class="hintline">No messages yet.</p>'}
+            <button class="btn small" data-d="bomadd">Add a message</button>
+            <p class="hintline">Each message shows from its minute mark until the bell. The chime uses your Sounds settings.</p>` : ''}
+          </details>`; })()}
         <details class="sec"><summary>Warm-up timer</summary>
           <div class="bar"><label class="rv"><input type="checkbox" data-d="ton"${u.timer.on ? ' checked' : ''}> Warm-up timer</label><input class="field num" type="number" min="1" max="30" data-d="tmin" value="${u.timer.min}" style="width:70px"> minutes</div>
           <div class="bmrow" style="margin-top:8px"><label class="small">Style <select data-d="tstyle">${Object.entries(TIMER_STYLES).map(([k, n]) => `<option value="${k}"${(u.timer.style || 'digital') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label><label class="small">Color <input type="color" data-d="tcolor" value="${esc(u.timer.color || '#2f6fd0')}"></label></div>
@@ -837,6 +864,8 @@ details.sec>summary .muted{font-weight:400}
       commit(true); Suite.toast('Copy made. Change its words in Edit on screen.'); return;
     }
     if (d === 'cshare') { shareBoard(cid, el.dataset.t); return; }
+    if (d === 'bomadd') { const u = usual(cid), o = u.bellOwn = u.bellOwn || { on: true, minutes: 7, messages: [] }; o.messages = (o.messages || []).concat({ min: 7, text: 'Clean-up time!', chime: true, big: true }); commit(true); return; }
+    if (d === 'bomrm') { const o = usual(cid).bellOwn; if (o) o.messages.splice(+el.dataset.k, 1); commit(true); return; }
     if (d === 'movetext') { startEdit(); return; }
     if (d === 'libsave') { const r = dayFor(viewDate, cid), bd = clone(boardOf(r, el.dataset.t)), name = plainOf(bd.heading) || 'My board'; T.library = T.library || [];
       const i = T.library.findIndex(x => x.from === el.dataset.t); const item = { name, from: el.dataset.t, board: bd }; if (i > -1) T.library[i] = item; else T.library.push(item); commit(true); Suite.toast(name + ' saved to My boards'); return; }
@@ -878,6 +907,11 @@ details.sec>summary .muted{font-weight:400}
       if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
       commit(true); return; }
     if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (d === 'bown') { const u = usual(cid); u.bellOwn = Object.assign({ minutes: Object.assign({}, BELL_DEFAULT, T.bell || {}).minutes, messages: [] }, u.bellOwn || {}, { on: el.value === 'own' }); commit(true); return; }
+    if (['bomin', 'bomm', 'bomt', 'bomc', 'bomb'].includes(d)) { const o = usual(cid).bellOwn; if (!o) return;
+      if (d === 'bomin') o.minutes = Math.max(1, Math.min(20, parseInt(el.value, 10) || 5));
+      else { const m = o.messages[+el.dataset.k]; if (!m) return; if (d === 'bomm') m.min = Math.max(1, Math.min(30, parseInt(el.value, 10) || 1)); else if (d === 'bomt') m.text = el.value; else if (d === 'bomc') m.chime = el.checked; else m.big = el.checked; }
+      save(); return; }
     if (d === 'liblink' && el.value) { const r = editable(viewDate, cid), id = 'L-' + el.value; if (!r.lineup.includes(id)) r.lineup.push(id); commit(true); Suite.toast('Linked board added. Changing it updates every class that uses it.'); return; }
     if (d === 'libadd' && el.value !== '') { const src = T.library[+el.value]; if (!src) return; const r = editable(viewDate, cid), id = 'c-' + Suite.uid(); r.boards = r.boards || {}; r.boards[id] = clone(src.board); r.lineup = (r.lineup || []).concat(id); commit(true); Suite.toast(src.name + ' added to this day'); return; }
     if (d === 'evon') { usual(cid).showEvents = el.checked; commit(true); return; }
@@ -1131,7 +1165,8 @@ details.sec>summary .muted{font-weight:400}
 
   /* ---------- bell reminder: the last few minutes of class, passing time, and timed messages ---------- */
   const BELL_DEFAULT = { on: true, style: 'badge', corner: 'tr', strip: 'bottom', minutes: 5, overLesson: true, messages: [{ min: 3, text: 'Clean up your area and push in your chair.', chime: true }] };
-  const bellCfg = () => Object.assign({}, BELL_DEFAULT, T.bell || {});
+  const bellCfg = () => { const base = Object.assign({}, BELL_DEFAULT, T.bell || {}), cid = activeId(), own = cid ? (usual(cid).bellOwn || null) : null;
+    return own && own.on ? Object.assign({}, base, { minutes: own.minutes || base.minutes, messages: own.messages || [] }) : base; };
   const fired = new Set();
   let bellPreview = 0;
   function bellInfo(){
@@ -1151,7 +1186,8 @@ details.sec>summary .muted{font-weight:400}
     let info = B.on && today && !editMode ? bellInfo() : null;
     if (bellPreview > Date.now()) info = { p: { name: 'Period 2' }, left: 2 * 60000 + 30000, passing: false, brk: false, nx: { name: 'Period 3', start: '10:09' }, key: 'preview', preview: true };
     if (!info || info.staff || (lesson && !B.overLesson)) { el.hidden = true; return; }
-    const limit = info.passing ? Infinity : B.minutes * 60000;
+    // show from the countdown setting, or earlier if a message starts earlier (a 7-minute clean-up message shows at 7 minutes)
+    const limit = info.passing ? Infinity : Math.max(B.minutes, ...(B.messages || []).filter(x => x.text && x.min > 0).map(x => x.min)) * 60000;
     if (info.left > limit || info.left <= 0) { el.hidden = true; return; }
     const secs = Math.ceil(info.left / 1000), mmss = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
     // a message is due once the time left drops under its mark; the chime plays once
@@ -1165,14 +1201,58 @@ details.sec>summary .muted{font-weight:400}
     el.classList.toggle('warn', info.left <= B.minutes * 60000 && info.left > 60000);
     el.classList.toggle('urgent', info.left <= 60000);
     el.classList.toggle('hasmsg', !!msg);
+    el.classList.toggle('big', !!(msg && msg.big));   // "show it big on screen": the message and a large countdown
+    if (msg && msg.big) el.innerHTML = `<div class="b-bigmsg">${esc(msg.text)}</div><div class="b-bigtime">${mmss}</div><div class="b-bignext">${lead === 'Class ends in' ? 'until the bell' : esc(lead)}</div>`;
     el.hidden = false;
   }
   setInterval(() => { updateBell(); updateIdle(); }, 500);
 
   /* ---------- suite tools: open one on top, or place one on a board ---------- */
-  const TOOL_PAGES = { spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
-  const WIDGETS = { winners: ["Last week's winners", [1360, 260, 500, 440]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
+  const TOOL_PAGES = { timeleft: ['Time left (full screen)', ''], spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
+  const WIDGETS = { clock: ['Time left', [1440, 40, 440, 250]], winners: ["Last week's winners", [1360, 260, 500, 440]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
+  // what's happening now: in class (time left until the bell), or passing or a break (time until the next class)
+  function timeLeftInfo(){
+    const i = bellInfo(), now = new Date();
+    if (!i) return { now, label: 'No class right now', left: null, pct: 0, sub: '' };
+    const [h, m] = i.p.end.split(':').map(Number), end = new Date(now); end.setHours(h, m, 0, 0);
+    const [h0, m0] = i.p.start.split(':').map(Number), start = new Date(now); start.setHours(h0, m0, 0, 0);
+    if (i.passing || i.brk) { const nx = i.nx; if (!nx) return { now, label: i.p.name, left: i.left, pct: 0, sub: '' };
+      const [h2, m2] = nx.start.split(':').map(Number), ns = new Date(now); ns.setHours(h2, m2, 0, 0);
+      return { now, label: i.passing ? 'Passing period' : i.p.name, left: ns - now, pct: 0, sub: `${nx.name} starts at ${Suite.fmt12(nx.start)}` }; }
+    return { now, label: i.p.name, left: i.left, pct: Math.max(0, Math.min(100, (now - start) / (end - start) * 100)), sub: `${i.p.name} ends at ${Suite.fmt12(i.p.end)}` };
+  }
+  const mmssOf = ms => { const t = Math.max(0, Math.ceil(ms / 1000)), hh = Math.floor(t / 3600), mm = Math.floor(t % 3600 / 60); return (hh ? hh + ':' + String(mm).padStart(2, '0') : mm) + ':' + String(t % 60).padStart(2, '0'); };
+  const clockOf = d => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  function openTimeLeft(){
+    let el = document.getElementById('time-left');
+    if (!el) { el = document.createElement('div'); el.id = 'time-left';
+      el.innerHTML = `<div class="st-panel" role="dialog" aria-modal="true" aria-label="Time left in class">
+        <div class="st-top"><span class="st-title" id="tl-title">Time left</span><button class="btn" data-tl="close">Close</button></div>
+        <div class="tl-clock" id="tl-clock"></div>
+        <div class="st-time" id="tl-left"></div>
+        <div class="st-status" id="tl-sub" aria-live="polite"></div>
+        <div class="st-bar" aria-hidden="true"><span id="tl-bar"></span></div></div>`;
+      document.body.appendChild(el);
+      el.addEventListener('click', e => { if (e.target.closest('[data-tl="close"]')) closeTimeLeft(); });
+    }
+    el.hidden = false; tickTimeLeft();
+  }
+  function closeTimeLeft(){ const el = document.getElementById('time-left'); if (el) el.hidden = true; }
+  function tickTimeLeft(){
+    const el = document.getElementById('time-left'); if (!el || el.hidden) return; const I = timeLeftInfo();
+    el.querySelector('#tl-title').textContent = I.label;
+    el.querySelector('#tl-clock').textContent = clockOf(I.now);
+    el.querySelector('#tl-left').textContent = I.left != null ? mmssOf(I.left) : '';
+    el.querySelector('#tl-sub').textContent = I.left != null ? (I.sub || '') : 'No class right now';
+    el.querySelector('#tl-bar').style.width = I.pct + '%';
+    el.classList.toggle('is-low', I.left != null && I.left <= 5 * 60000 && I.pct > 0);
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('time-left') && !document.getElementById('time-left').hidden) { e.stopPropagation(); closeTimeLeft(); } }, true);
+  // the Time left widget (on a board, every board, or pinned to the slides)
+  setInterval(() => { tickTimeLeft(); if (!document.querySelector('.w-clock')) return; const I = timeLeftInfo();
+    document.querySelectorAll('.w-clock').forEach(w => { w.querySelector('.wc-now').textContent = clockOf(I.now); w.querySelector('.wc-left').textContent = I.left != null ? mmssOf(I.left) : ''; w.querySelector('.wc-lab').textContent = I.left != null ? (I.pct > 0 ? 'left in ' + I.label : I.sub) : 'No class right now'; }); }, 500);
   function openTool(kind){
+    if (kind === 'timeleft') { openTimeLeft(); return; }
     if (kind === 'timer') { Suite.openTimer(); return; }
     const t = TOOL_PAGES[kind], cid = activeId();
     const ov = document.createElement('div'); ov.className = 'overlay';
@@ -1188,7 +1268,7 @@ details.sec>summary .muted{font-weight:400}
   const everyMenu = cid => { const on = new Set((usual(cid).boardTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Place a tool once and show it on all of this class's boards">On every board ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="everytool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   /* ---------- widgets pinned on top of the lesson slides (per class, kept until removed) ---------- */
-  const LT_SIZE = { winners: [1360, 260, 500, 440], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
+  const LT_SIZE = { clock: [1440, 40, 440, 250], winners: [1360, 260, 500, 440], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
   const pinMenu = cid => { const on = new Set((usual(cid).lessonTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Keep a tool on top of your slides">Pin to slides ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="pintool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   function drawLessonTools(cid){ drawPinned(cid, 'ltools', 'lessonTools'); drawPinned(cid, 'btools', 'boardTools'); }
@@ -1221,6 +1301,7 @@ details.sec>summary .muted{font-weight:400}
   // the widgets themselves
   const picked = {};   // names already picked this session, per class
   function widgetHtml(kind, w){
+    if (kind === 'clock') { const I = timeLeftInfo(); return `<div class="w-clock"><div class="wc-now">${clockOf(I.now)}</div><div class="wc-left">${I.left != null ? mmssOf(I.left) : ''}</div><div class="wc-lab"></div></div>`; }
     if (kind === 'spinner') return `<iframe class="w-spinner" title="Name spinner" src="spinner.html?embed&proj&mini#class=${encodeURIComponent(activeId() || '')}"></iframe>`;
     if (kind === 'picker') return `<div class="w-pick"><div class="w-name" data-w="name">${esc(w.last || '')}</div><button class="w-btn" data-w="pick">Pick a name</button></div>`;
     if (kind === 'noise') return `<div class="w-noise"><div class="w-nlab" data-w="nlab">${mic ? '' : 'Noise meter'}</div><div class="w-meter"><span data-w="nbar"></span><i style="left:${(Suite.get('noise', {}) || {}).line || 60}%"></i></div>${mic ? '' : '<button class="w-btn" data-w="mic">Start listening</button>'}</div>`;
