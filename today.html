@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-22b">
-<script src="shared/core.js?v=2026-10-22b"></script>
-<script>window.PAGE_VERSION = '2026-10-22b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-22c">
+<script src="shared/core.js?v=2026-10-22c"></script>
+<script>window.PAGE_VERSION = '2026-10-22c';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -19,7 +19,10 @@ body{overflow:hidden;display:flex;flex-direction:column}
 .rail{position:relative;display:flex;flex-direction:column;gap:8px;padding:8px 16px;background:var(--paper);border-bottom:2px solid var(--rule)}
 .rail .rrow{display:flex;flex-wrap:nowrap;align-items:center;gap:8px 12px;min-height:40px;overflow-x:auto;scrollbar-width:none}
 .rail .rrow::-webkit-scrollbar{display:none}
-.rail .r1 .pills{flex:0 1 auto;flex-wrap:nowrap;min-width:0;overflow-x:auto;scrollbar-width:none}
+.rail .r1 .pills{flex:0 0 auto;flex-wrap:nowrap}
+.rail .clspick{flex:0 0 190px;width:190px;font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:var(--paper);border:2px solid var(--edge);border-radius:999px;padding:5px 12px;cursor:pointer;text-overflow:ellipsis}
+.rail .clspick.on{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.rail .clspick option{background:var(--paper);color:var(--ink)}
 .rail .r1 .daybar{flex:0 0 auto}
 .rail .r1 .status{flex:1 1 0;min-width:190px}
 .rail .r1 .steps{flex:0 0 150px;display:flex;justify-content:flex-end}
@@ -779,6 +782,8 @@ details.sec>summary .muted{font-weight:400}
   }
 
   /* ---------- control rail ---------- */
+  function pickMode(id){ setMode(id); screen = 0; reveal = 0; lesson = false; if (!timer.running) resetTimer(activeId()); render(); if (editing) renderDrawer(); }
+  document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.a2 === 'clspick') pickMode(e.target.value || 'auto'); });
   function renderRail(cid, S){
     S = S || (cid ? screens(viewDate, cid) : []);
     const list = classes(), today = Suite.dateKey(new Date()), auto = MODE === 'auto' ? autoPick() : null;
@@ -786,7 +791,8 @@ details.sec>summary .muted{font-weight:400}
     const u = cid ? usual(cid) : null, L = cid ? lookOf(cid, viewDate) : null;
     $('#rail').innerHTML = `<div class="rrow r1"><div class="pills" role="radiogroup" aria-label="Which class to show">
         <button role="radio" data-a="mode" data-id="auto" aria-checked="${MODE === 'auto'}" title="Follow the bell schedule">Auto</button>
-        ${picks.map(c => `<button role="radio" data-a="mode" data-id="${esc(c.id)}" aria-checked="${MODE === c.id}">${esc(c.name)}</button>`).join('')}</div>
+</div>
+      <select class="clspick${MODE !== 'auto' ? ' on' : ''}" data-a2="clspick" aria-label="Pick a class"><option value=""${MODE === 'auto' ? ' selected' : ''}>Pick a class</option>${picks.map(c => `<option value="${esc(c.id)}"${MODE === c.id ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>
       <div class="daybar" role="group" aria-label="Which day"><button class="btn quiet small" data-a="dayprev" title="Previous school day" aria-label="Previous school day">‹</button><label class="dpick" title="Pick a date"><span>${esc(fmtDate(viewDate, 'medium'))}</span><input type="date" data-a="daypick" value="${viewDate}" aria-label="Pick a date"></label><button class="btn quiet small" data-a="daynext" title="Next school day" aria-label="Next school day">›</button><button class="btn small" data-a="daytoday"${viewDate !== today ? '' : ' style="visibility:hidden" tabindex="-1" aria-hidden="true"'} title="Back to today">Today</button></div>
       <div class="status">${isIdle() ? (() => { const I = idleInfo(); return `<b>${esc(I.label)}</b>${I.endHM ? ' until ' + Suite.fmt12(I.endHM) : ''} · between classes. Pick a class to plan for it`; })() : cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="ldot${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
@@ -1462,7 +1468,7 @@ details.sec>summary .muted{font-weight:400}
     const el = e.target.closest('[data-a]');
     if (!el) { if (!editMode && e.target.closest('#rTimer')) toggleTimer(); return; }
     const a = el.dataset.a, cid = activeId();
-    if (a === 'mode') { setMode(el.dataset.id); screen = 0; reveal = 0; lesson = false; if (!timer.running) resetTimer(activeId()); render(); if (editing) renderDrawer(); }
+    if (a === 'mode') { pickMode(el.dataset.id); }
     else if (a === 'next') next();
     else if (a === 'prev') prev();
     else if (a === 'go') { if (el.dataset.i === 'lesson') lesson = true; else { lesson = false; screen = +el.dataset.i; reveal = 0; } render(); }
