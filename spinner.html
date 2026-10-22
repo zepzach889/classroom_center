@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-21b">
-<script src="shared/core.js?v=2026-10-21b"></script>
-<script>window.PAGE_VERSION = '2026-10-21b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-22b">
+<script src="shared/core.js?v=2026-10-22b"></script>
+<script>window.PAGE_VERSION = '2026-10-22b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
 .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding:2px}
@@ -23,7 +23,11 @@
 .seg button[aria-pressed="true"]{background:var(--sea);color:var(--on-sea);font-weight:700}
 .stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
 .wheelcol{padding-top:10px}
-body.nopanel .stage{grid-template-columns:1fr}
+body.proj .stage{grid-template-columns:1fr}
+body.nopanel:not(.proj) .panel > *{visibility:hidden}
+body.nopanel:not(.proj) .panel{position:relative;min-height:200px}
+body.nopanel:not(.proj) .panel::after{content:"List hidden";visibility:visible;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink-2);border:2px dashed var(--rule);border-radius:16px}
+[data-a="panel"]{min-width:100px}
 body.nopanel .panel{display:none}
 .wheelcol{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
 .wheelbox{position:relative;width:100%;display:flex;justify-content:center}
@@ -291,12 +295,12 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
     if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog') && !document.body.classList.contains('timer-open')) { proj = false; render(); return; }
     if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName) && !document.querySelector('.suite-dialog')) { e.preventDefault(); spin(); }
   });
-  window.addEventListener('resize', () => { if (!spinning) draw(spunList || available(curClass())); });
+  window.addEventListener('resize', () => { if (!spinning && curClass()) draw(spunList || available(curClass())); });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*') && !spinning) { load(); render(); } });
 
   Suite.mountNav('spinner');
   render();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!spinning) draw(spunList || available(curClass())); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!spinning && curClass()) draw(spunList || available(curClass())); });
 })();
 </script>
 </body>

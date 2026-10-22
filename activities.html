@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-21b">
-<script src="shared/core.js?v=2026-10-21b"></script>
-<script>window.PAGE_VERSION = '2026-10-21b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-22b">
+<script src="shared/core.js?v=2026-10-22b"></script>
+<script>window.PAGE_VERSION = '2026-10-22b';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -113,6 +113,8 @@ body.proj .tbar{height:60px}
 .outlist label{font-size:15px;display:flex;gap:5px;align-items:center}
 body.proj .group h3{font-size:28px}
 body.proj .group li{font-size:24px}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+body.proj .toprow .btn{display:none}
 </style>
 </head>
 <body>
@@ -180,7 +182,7 @@ body.proj .group li{font-size:24px}
     const g = curGame();
     const pickGame = A.games.length > 1 ? `<label class="visually-hidden" for="gsel">Game</label><select id="gsel" data-c="game">${A.games.map(x => `<option value="${esc(x.id)}"${g && x.id === g.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : '';
     const bar = `<div class="toolbar ctl"><div class="tooltitle">${g ? esc(g.name) : 'Review game'}</div>
-      <div class="bar">${pickGame}<button class="btn" data-a="gnew">New game</button>${g ? '<button class="btn" data-a="greset">Reset this class\'s board</button><button class="btn" data-a="proj">Projector view</button>' : ''}</div></div>`;
+      <div class="bar">${pickGame}<button class="btn" data-a="gnew">New game</button>${g ? '<button class="btn" data-a="greset">Reset this class\'s board</button>' : ''}</div></div>`;
     if (!g) return bar + `<div class="empty"><h2>Make a review game</h2><p>A board of questions by category, worth 100 to 500 points. Your tables are the teams. One game works for every class, and each class keeps its own scores.</p><button class="btn primary" data-a="gnew">New game</button></div>`;
     if (!c) return bar + `<div class="empty"><h2>Add a class first</h2><p>The tables in Classes & settings are the teams.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
     const teams = roomOrder(c), sc = scoreFor(g, c), used = usedFor(g, c);
@@ -239,7 +241,7 @@ body.proj .group li{font-size:24px}
   const stLeft = r => r.state === 'running' ? Math.max(0, r.end - Date.now()) : r.state === 'paused' ? r.left : 0;
   function stationsView(c){
     const names = stationNames();
-    const head = `<div class="toolbar ctl"><div class="tooltitle">Station rotations</div><div class="bar"><button class="btn" data-a="proj">Projector view</button></div></div>`;
+    const head = `<div class="toolbar ctl"><div class="tooltitle">Station rotations</div><div class="bar"></div></div>`;
     if (!c) return head + `<div class="empty"><h2>Add a class first</h2><p>Stations rotate your tables from Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
     const teams = roomOrder(c), r = runFor(c);
     const place = round => { const at = names.map(() => []); if (names.length) teams.forEach((t, k) => at[(k + round - 1) % names.length].push(t)); return at; };
@@ -296,7 +298,7 @@ body.proj .group li{font-size:24px}
   function tallyView(){
     const T = A.tally, total = T.options.reduce((a, o) => a + o.n, 0), max = Math.max(1, ...T.options.map(o => o.n));
     return `<div class="toolbar ctl"><div class="tooltitle">Tally</div><div class="bar">
-        <button class="btn" data-a="treset">Reset counts</button><button class="btn" data-a="proj">Projector view</button></div></div>
+        <button class="btn" data-a="treset">Reset counts</button></div></div>
       ${proj ? (T.question ? `<div class="tq-show">${esc(T.question)}</div>` : '')
         : `<label class="visually-hidden" for="tq">Question</label><input id="tq" class="field tq" data-c="tq" value="${esc(T.question)}" placeholder="What are we voting on? (optional)">`}
       ${T.options.map((o, i) => `<div class="trow">
@@ -344,7 +346,7 @@ body.proj .group li{font-size:24px}
   }
   function groupsView(c){
     const G = A.groups;
-    const head = `<div class="toolbar ctl"><div class="tooltitle">Partners and groups</div><div class="bar"><button class="btn" data-a="proj">Projector view</button></div></div>`;
+    const head = `<div class="toolbar ctl"><div class="tooltitle">Partners and groups</div><div class="bar"></div></div>`;
     if (!c) return head + `<div class="empty"><h2>Add a class first</h2><p>Groups are made from the rosters in Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
     if (!c.students.length) return head + `<div class="empty"><h2>No students in ${esc(c.name)} yet</h2><a class="btn primary" href="settings.html#class=${esc(c.id)}">Add a roster</a></div>`;
     const skip = out[c.id] || new Set();
@@ -379,7 +381,7 @@ body.proj .group li{font-size:24px}
     const cl = classes(), c = curClass();
     if (c) A.cur = c.id;
     const needsClass = A.tool !== 'tally';
-    const top = `<nav class="pills ctl" aria-label="Activity">${TOOLS.map(([k, l]) => `<button data-a="tool" data-id="${k}"${A.tool === k ? ' aria-current="true"' : ''}>${l}</button>`).join('')}</nav>
+    const top = `<div class="toprow ctl"><nav class="pills" aria-label="Activity">${TOOLS.map(([k, l]) => `<button data-a="tool" data-id="${k}"${A.tool === k ? ' aria-current="true"' : ''}>${l}</button>`).join('')}</nav><button class="btn" data-a="proj">Projector view</button></div>
       ${needsClass && cl.length > 1 ? `<nav class="pills ctl" aria-label="Class periods">${cl.map(k => `<button data-a="pickc" data-id="${esc(k.id)}"${c && k.id === c.id ? ' aria-current="true"' : ''} style="font-size:14px;padding:4px 14px">${esc(k.name)}</button>`).join('')}</nav>` : ''}`;
     const body = A.tool === 'game' ? gameView(c) : A.tool === 'stations' ? stationsView(c) : A.tool === 'tally' ? tallyView() : groupsView(c);
     $('#app').innerHTML = top + body;

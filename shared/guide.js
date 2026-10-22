@@ -4,7 +4,7 @@
   'use strict';
   const S = window.Suite, esc = S.esc;
   const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink', 'Gray', 'Brown', 'Navy', 'Gold'];
-  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['hallpass', 'Hall pass'], ['rosters', 'Weekly roster sheets'], ['present', 'Present (Google Slides)']];
+  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['hallpass', 'Student log (hall pass and behavior)'], ['rosters', 'Weekly roster sheets'], ['present', 'Present (Google Slides)']];
 
   const G = {
     step: 0,

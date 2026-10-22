@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-21b">
-<script src="shared/core.js?v=2026-10-21b"></script>
-<script>window.PAGE_VERSION = '2026-10-21b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-22b">
+<script src="shared/core.js?v=2026-10-22b"></script>
+<script>window.PAGE_VERSION = '2026-10-22b';</script>
 <style>
 .wrap{max-width:900px;margin:0 auto;padding:22px 20px 60px}
 .wrap h1{font-size:36px;margin-bottom:6px}
@@ -24,14 +24,27 @@ details.h[open] summary{margin-bottom:8px}
 details.h ul{margin:4px 0 6px;padding-left:22px}
 details.h li{margin-bottom:5px}
 kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;padding:0 6px;background:var(--paper)}
+.start{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 20px;margin:12px 0 24px}
+.start h2{margin:0 0 6px}
+.start ol{margin:0;padding-left:1.3em;display:grid;gap:8px;line-height:1.45}
 </style>
 </head>
 <body>
 <header id="suite-nav"></header>
 <div class="wrap">
   <h1>Help and tour</h1>
-  <p class="hint">How each part of the suite works. Everything you enter is saved in this browser on this computer, so download a backup now and then (gear menu, General settings, Backup and data).</p>
-  <div class="top"><p><b>New here, or showing a colleague?</b> The tour points out each part of the menu.</p><button class="btn primary" id="tour">Take the tour</button></div>
+  <p class="hint">How each part of the suite works.</p>
+  <section class="start" aria-labelledby="h-start">
+    <h2 id="h-start">Getting started</h2>
+    <ol>
+      <li><b>Set up once.</b> The first time you open the suite, a short guide walks you through your classes, room, bell schedule, and (optionally) student names. Office staff can choose "I work in the office" for just the dashboard and events.</li>
+      <li><b>Use the same browser each day.</b> Everything you enter is saved in this browser, on this computer or Chromebook account. Nothing is sent anywhere, and colleagues using the same link each have their own separate copy.</li>
+      <li><b>Download a backup now and then</b> (gear menu → Settings → Backup). Clearing your browser's data, or switching computers, would otherwise lose your classes and points. A backup file brings everything back on any computer.</li>
+      <li><b>Borrow a colleague's setup.</b> In Settings → Backup, "Download my setup" saves a schedule, settings, and boards with no student information, and "Use a shared setup" loads one. That's the quickest way to get a new colleague going.</li>
+      <li><b>Start with Today.</b> It runs your class from the projector: boards for each part of class, your lesson slides, tools, and the bell countdown. The Planner fills it in day by day.</li>
+    </ol>
+    <div class="top" style="margin:10px 0 0"><p><b>Want a quick look around?</b> The tour points out each part of the menu.</p><button class="btn primary" id="tour">Take the tour</button></div>
+  </section>
   <div id="topics"></div>
 </div>
 <script>
@@ -43,7 +56,7 @@ kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;p
       'The schedule card says which schedule is running and why, for example "Set for Wednesdays" or "Special day."',
       'Add a daily plan (learning target, agenda, homework) with "+ Add today\'s plan," or "Plan a day" under the schedule.',
       'Countdowns to tests and events appear under "Coming up." Add them in General settings.']],
-    ['Today (beta)', 'The live screen for your projector', [
+    ['Today', 'The live screen for your projector', [
       '<b>Today is in beta:</b> it works, but it is still being refined, so expect a few rough edges.',
       'Shows the date, a Have Out list, and the boards students see (Welcome, Warm-up, Returned work, Things that are due, Today\'s agenda, and your own custom boards). Press Next, the right arrow, or a clicker to step through them; your lesson slides come last.',
       'Auto follows the bell schedule. When no class is in session (lunch, staff time, before or after school), a between-classes screen shows what is happening and counts down to what is next. Each window keeps its own choice, so a display can stay on Auto while you plan in another window.',
@@ -85,7 +98,7 @@ kbd{font:600 13px var(--sans);border:1.5px solid var(--edge);border-radius:6px;p
       'Review game: a quiz board of categories. Paste "Category | Question | Answer" lines to build one.',
       'Stations, Tally, Partners and groups, and the Noise meter (press Calibrate while the room is quiet).',
       'Student log, Behavior tab (beta): tap a student, then a behavior type (concerns and positives, which you can edit), with an optional note. Log parent contacts, see a student\'s history, and print a student report for a parent call or team meeting (counts, parent contacts, a timeline, and hall pass trips). You can also log from Seating: select a student, then Log behavior. Add your quarter end dates in Settings → Schedule, and you\'ll be reminded to save each quarter\'s records (a spreadsheet and a printable report you can save as a PDF) and then clear them. These are your own working notes, kept only in this browser and your backups; they never appear on Today, in sub plans, or in a shared setup.',
-      'Hall pass: tap a student and where they\'re going; their timer runs under Out of the room and turns amber, then red, if they\'re gone long. Tap Back when they return. The log shows each day and a weekly summary, downloads as a spreadsheet, and clears itself after 30 days (you can change that).',
+      'Student log, Hall pass tab: tap a student and where they\'re going; their timer runs under Out of the room and turns amber, then red, if they\'re gone long. Tap Back when they return. The log shows each day and a weekly summary, downloads as a spreadsheet, and clears itself after 30 days (you can change that).',
       'Weekly roster sheets: pick a week and your classes, then print one landscape page per class (every page the same size, up to 32 students, with blank rows for new students). Days off are shaded on their own; click a day\'s heading on a sheet to block it for just that class (a field trip, say). Each class uses a column set: Attendance + warm-up (W) and Attendance only are built in, and you can make your own with any daily columns (narrow, medium, or wide, each worth points if you like) and end-of-week totals or blank columns. Book numbers come from Settings → Classes.',
       'Easy grader: enter the number of questions and what the assignment is worth (100, 50, 10, or any total), then type how many a student missed to see the score. The full chart shows every score and prints on one page. Save setups you use often.']],
     ['Timer', 'A countdown for the class', [

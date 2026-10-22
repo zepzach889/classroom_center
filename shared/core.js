@@ -11,7 +11,7 @@
   // Menu: a few everyday links, a Tools menu, and setup under the gear.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
-    { id: 'today', label: 'Today', href: 'today.html', beta: true },
+    { id: 'today', label: 'Today', href: 'today.html' },
     { id: 'tracker', label: 'Table points', href: 'tracker.html', feature: 'points' },
     { id: 'seating', label: 'Seating', href: 'seating.html' },
     { id: 'planner', label: 'Planner', href: 'planner.html' },
@@ -43,7 +43,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-21b';   // bump with every build; pages check they match
+  const VERSION = '2026-10-22b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1083,11 +1083,10 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-20', items: [
-    'Table points: the big number is now the quarter total, with this week in the box beside it. Same on the dashboard, widgets, and pop-out.',
-    'Today: a full-screen Time left view (Tools ▾) with the clock and a big countdown, plus a Time left widget. New Last week\'s winners widget too.',
-    'Each class can have its own bell reminder and messages, like a clean-up message at 7 minutes shown big on screen (Day settings → Bell reminder).',
-    'Sounds can repeat (Settings → Look and tools → Sounds); the gong rings three times. Settings tabs now open at the top.'] };
+  const NEWS = { id: '2026-10-22', items: [
+    'Today is out of beta. Its toolbar now stays put: switching classes, days, boards, the lesson, or Edit on screen no longer moves anything.',
+    'Day settings is organized into tabs: Boards, Look, Routines (clean-up duties, bell reminder, warm-up timer), and Events.',
+    'Help has a new Getting started section, handy for colleagues. Seating, Activities, and the Spinner also keep their buttons in place.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
