@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-23a">
-<script src="shared/core.js?v=2026-10-23a"></script>
-<script>window.PAGE_VERSION = '2026-10-23a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-23b">
+<script src="shared/core.js?v=2026-10-23b"></script>
+<script>window.PAGE_VERSION = '2026-10-23b';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -197,6 +197,15 @@ body.full #suite-nav,body.full .rail{display:none}
 #drawer .dfoot{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;align-items:center}#drawer .dfoot .btn{flex:0 0 auto;width:auto}
 .shnote{background:#fff4d6;border:2px solid #e0a800;border-radius:10px;padding:8px 10px;color:#3b2f00;font-size:14px;line-height:1.4}
 .shnote .btn{margin-left:6px}
+.studiobar{gap:12px}
+.studiobar .st-name{font-size:16px;white-space:nowrap}
+.studiobar .st-where{flex:1;min-width:0;font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.studiobar select{font:inherit;font-size:14px}
+body.peek #suite-nav,body.peek .rail,body.peek #suite-news,body.peek .backup-banner,body.peek .toast{display:none!important}
+body.peek .stage-wrap{padding:0;background:transparent}
+body.peek .stage{width:100vw!important;border-radius:0;pointer-events:none}
+.edtips{display:flex;align-items:center;gap:10px}.edtips p{margin:0;flex:1}
+.edopt .pieces{margin-top:6px}
 .bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
@@ -413,7 +422,7 @@ details.sec>summary .muted{font-weight:400}
     const take = recx => { if (!recx || !recx.boards) return; Object.keys(recx.boards).forEach(k => { if (!k.startsWith('L-')) return; const it = lib.find(x => 'L-' + x.id === k); if (it) { it.board = recx.boards[k]; const nm = it.board.name || String(it.board.heading || '').replace(/<[^>]+>/g, '').trim(); if (nm) it.name = nm; } delete recx.boards[k]; }); };
     Object.values(T.days || {}).forEach(day => Object.values(day).forEach(take)); Object.values(T.rows || {}).forEach(take);
   }
-  const save = () => { moveLinked(); Suite.set('today', T); };
+  const save = () => { if (STUDIO && STUDIO.peek) return; if (STUDIO) studioSync(); moveLinked(); const sb = T.days[SBOX]; delete T.days[SBOX]; Suite.set('today', T); if (sb) T.days[SBOX] = sb; };
   let viewDate = Suite.dateKey(new Date()), screen = 0, reveal = 0, lesson = false, full = false, editing = false;
   let editMode = false;   // editing right on the screen
   const urls = {};
@@ -448,7 +457,7 @@ details.sec>summary .muted{font-weight:400}
     const u = usual(cid), rec = own || co;
     const base = !rec ? { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' }
       : Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
-    return withLinked(withRepeats(base, date, cid));
+    return date === SBOX ? base : withLinked(withRepeats(base, date, cid));
   }
   function withLinked(rec){
     if (!(rec.lineup || []).some(t => t.startsWith('L-'))) return rec;
@@ -503,7 +512,7 @@ details.sec>summary .muted{font-weight:400}
   }
   const IDLE0 = { style: 'dashboard', color: '', messages: {}, goHome: { on: false, time: '15:45', text: 'Time to head home!' } };
   function idleCfg(){ const c = Object.assign({}, IDLE0, T.idle || {}); c.messages = Object.assign({}, c.messages || {}); c.goHome = Object.assign({}, IDLE0.goHome, c.goHome || {}); return c; }
-  const isIdle = () => MODE === 'auto' && !editMode && viewDate === Suite.dateKey(new Date()) && autoPick().idle;
+  const isIdle = () => !STUDIO && MODE === 'auto' && !editMode && viewDate === Suite.dateKey(new Date()) && autoPick().idle;
   function idleHtml(){
     const I = idleInfo(), C = idleCfg(), msg = (C.messages[I.kind] || '').trim();
     const style = `st-${C.style || 'dashboard'}`, accent = C.color ? `--ia:${esc(C.color)};` : '';
@@ -527,7 +536,7 @@ details.sec>summary .muted{font-weight:400}
   // Which class this window shows belongs to this window only, so a planning window can't change a live display.
   let MODE = (() => { try { return sessionStorage.getItem('suite:today-mode') || 'auto'; } catch (e) { return 'auto'; } })();
   const setMode = m => { MODE = m; try { sessionStorage.setItem('suite:today-mode', m); } catch (e) {} };
-  const activeId = () => MODE === 'auto' ? autoPick().cid : (classes().some(c => c.id === MODE) ? MODE : autoPick().cid);
+  const activeId = () => STUDIO ? STUDIO.cid : MODE === 'auto' ? autoPick().cid : (classes().some(c => c.id === MODE) ? MODE : autoPick().cid);
 
   /* ---------- which boards show, and their content ---------- */
   function boardLines(date, cid, type, rec){
@@ -662,7 +671,7 @@ details.sec>summary .muted{font-weight:400}
       if (E && !planBoard && !lines.length) lines = [{ text: '', html: '', color: 'blue', level: 0 }];
       let shown = 0;
       const items = lines.map(l => { const hid = !E && l.reveal ? (shown++ >= reveal) : false; return lineHtml(l, hid); }).join('');
-      const autoDate = fmtDate(viewDate, ((L.styles || {}).date || {}).format);
+      const autoDate = fmtDate(STUDIO ? (STUDIO.kind === 'day' ? STUDIO.d : Suite.dateKey(new Date())) : viewDate, ((L.styles || {}).date || {}).format);
       const picUrl = isCustom(type) && b.pic ? await fileUrl(b.pic) : null;
       const pics = await Promise.all((b.pics || []).map(async p2 => ({ p: p2, url: await fileUrl(p2.file) })));
       html = `${bmUrl && L.bm && !hide.bm ? `<div class="region bm${E ? ' ed' : ''}" data-k="bm" style="${place([L.bm[0] + adj.dx, L.bm[1] + L.bm[3] * (1 - adj.scale / 100), L.bm[2], L.bm[3] * adj.scale / 100])}"${E ? ' data-g="move"' : ''}><img src="${bmUrl}" alt="">${handles('bm')}</div>` : ''}
@@ -787,11 +796,14 @@ details.sec>summary .muted{font-weight:400}
   /* ---------- control rail ---------- */
   function pickMode(id){ setMode(id); screen = 0; reveal = 0; lesson = false; if (!timer.running) resetTimer(activeId()); render(); if (editing) renderDrawer(); }
   document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.a2 === 'clspick') pickMode(e.target.value || 'auto'); });
+  document.addEventListener('change', e => { if (!STUDIO || !e.target.dataset || e.target.dataset.a2 !== 'stprev') return; save(); STUDIO.cid = e.target.value; studioLoad(); render(); });
   function renderRail(cid, S){
     S = S || (cid ? screens(viewDate, cid) : []);
     const list = classes(), today = Suite.dateKey(new Date()), auto = MODE === 'auto' ? autoPick() : null;
     const seen = new Set(), picks = list.filter(c => { const k = rowKeyOf(c.id); if (seen.has(k + c.id)) return false; seen.add(k + c.id); return true; });
     const u = cid ? usual(cid) : null, L = cid ? lookOf(cid, viewDate) : null;
+    if (STUDIO) { $('#rail').innerHTML = studioRail() + `<div class="rrow r2 bar"><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn quiet" data-a="edtips" title="Editing tips">?</button></div>` + edFloat(cid, S);
+      document.documentElement.style.setProperty('--railh', $('#rail').offsetHeight + 'px'); return; }
     $('#rail').innerHTML = `<div class="rrow r1"><div class="pills" role="radiogroup" aria-label="Which class to show">
         <button role="radio" data-a="mode" data-id="auto" aria-checked="${MODE === 'auto'}" title="Follow the bell schedule">Auto</button>
 </div>
@@ -800,11 +812,8 @@ details.sec>summary .muted{font-weight:400}
       <div class="status">${isIdle() ? (() => { const I = idleInfo(); return `<b>${esc(I.label)}</b>${I.endHM ? ' until ' + Suite.fmt12(I.endHM) : ''} · between classes. Pick a class to plan for it`; })() : cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="ldot${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       </div>
-      ${editMode ? '<div class="edfloat">' + sharedNotice(cid, S[screen]) : ''}${editMode && cid && isCustom(S[screen] || '') ? (() => { const bd = boardOf(dayFor(viewDate, cid), S[screen]), h = bd.hide || {};
-          return `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">On this board:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>`; })() : ''}
-      ${editMode ? `<div class="bar alignbar">${alignSel.size ? `<span class="small"><b>${alignSel.size}</b> picked. Align ${alignSel.size === 1 ? 'to the screen' : 'together'}:</span>${[['left', 'Left'], ['hcenter', 'Center'], ['right', 'Right'], ['top', 'Top'], ['vmiddle', 'Middle'], ['bottom', 'Bottom']].map(([k, n]) => `<button class="btn small" data-a="align" data-v="${k}">${n}</button>`).join('')}<button class="btn quiet small" data-a="alignclear">Clear</button>` : '<span class="muted small">Tip: Shift+click boxes to line them up. Boxes snap to each other as you drag (hold Alt to place freely).</span>'}</div>
-      <span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span></div>
-      <div class="rrow r2 bar"><button class="btn" data-a="prev" title="Previous board">‹ Back</button><button class="btn primary" data-a="next" title="Next board">Next ›</button><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}${everyMenu(cid)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="rrow r2 bar">
+      ${edFloat(cid, S)}
+      ${editMode ? `<div class="rrow r2 bar"><button class="btn" data-a="prev" title="Previous board">‹ Back</button><button class="btn primary" data-a="next" title="Next board">Next ›</button><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}${everyMenu(cid)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn quiet" data-a="edtips" title="Editing tips">?</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="rrow r2 bar">
         <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
         ${lesson ? '<button class="btn slot-lesson" data-a="boards">Back to boards</button>' : '<button class="btn slot-lesson" data-a="lesson" title="L">Lesson</button>'}
         ${toolMenu('opentool', 'Open a tool on top of the board', TOOL_PAGES)}
@@ -1202,6 +1211,53 @@ details.sec>summary .muted{font-weight:400}
   }
 
 
+
+  /* ---------- the board editor ("studio"): one board, on a scratch copy that's copied back to where it lives ---------- */
+  const SBOX = '2099-12-31', SID = 'c-studio';
+  let STUDIO = null;   // { kind: 'lib'|'row'|'day', id, k, d, cid, peek }
+  function studioTarget(){
+    if (!STUDIO) return null;
+    if (STUDIO.kind === 'lib') { const it = (T.library || []).find(x => x.id === STUDIO.id); return it ? { get: () => it.board, set: b => { it.board = b; it.name = b.name || it.name; } } : null; }
+    if (STUDIO.kind === 'row') { const r = (T.rows || {})[STUDIO.k]; return r && r.boards && r.boards[STUDIO.id] ? { get: () => r.boards[STUDIO.id], set: b => { r.boards[STUDIO.id] = b; } } : null; }
+    const r = ((T.days || {})[STUDIO.d] || {})[STUDIO.k]; return r && r.boards && r.boards[STUDIO.id] ? { get: () => r.boards[STUDIO.id], set: b => { r.boards[STUDIO.id] = b; } } : null;
+  }
+  function studioLoad(){   // put the board on the scratch day for the preview class
+    const tg = studioTarget(); if (!tg) return false;
+    const b = clone(tg.get() || {}); if (!b.name && STUDIO.kind === 'lib') { const it = T.library.find(x => x.id === STUDIO.id); b.name = it && it.name; }
+    const dayRec = STUDIO.kind === 'day' ? ((T.days[STUDIO.d] || {})[STUDIO.k] || {}) : null;
+    T.days[SBOX] = { [STUDIO.cid]: { lineup: [SID], haveOut: ((dayRec && dayRec.haveOut) || usual(STUDIO.cid).haveOut || []).slice(), boards: { [SID]: b }, slideLink: '' } };
+    return true;
+  }
+  function studioSync(){   // copy the scratch board back to its real home
+    const tg = studioTarget(), sb = ((T.days[SBOX] || {})[STUDIO.cid] || {}).boards; if (!tg || !sb || !sb[SID]) return;
+    tg.set(clone(sb[SID]));
+  }
+  function studioWhere(){
+    const nm = k => { if (String(k).startsWith('course:')) { const co = Suite.courses().find(x => 'course:' + x.id === k); return co ? co.name : k; } const c = classes().find(x => x.id === k); return c ? c.name : k; };
+    if (STUDIO.kind === 'row') return nm(STUDIO.k) + ': every day';
+    if (STUDIO.kind === 'day') return nm(STUDIO.k) + ': ' + longDate(STUDIO.d).replace(/,? \d{4}$/, '') + ' only';
+    const id = 'L-' + STUDIO.id, w = [];
+    Object.entries(T.rows || {}).forEach(([k, r]) => { if ((r.lineup || []).includes(id)) w.push(nm(k)); });
+    return w.length ? 'Linked: ' + w.join(', ') + ' (changes show in all of them)' : 'Saved in My boards';
+  }
+  function studioRail(){
+    const b = (((T.days[SBOX] || {})[STUDIO.cid] || {}).boards || {})[SID] || {};
+    return `<div class="rrow r1 studiobar"><span class="st-name">Editing: <b>${esc(b.name || plainOf(b.heading) || 'Board')}</b></span><button class="btn small quiet" data-a="strename">Rename</button>
+      <span class="st-where">${esc(studioWhere())}</span>
+      <label class="small st-prev">Preview with <select data-a2="stprev">${classes().map(c => `<option value="${esc(c.id)}"${c.id === STUDIO.cid ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>
+      <a class="btn primary" href="boards.html">Done</a></div>`;
+  }
+  // the editing helpers: a linked-board notice, Board options (collapsed), Align (only while boxes are picked), tips (once)
+  let edOpts = false, edTips = !Suite.get('edtipsSeen', false);
+  function edFloat(cid, S){
+    if (!editMode) return '';
+    const t = S[screen] || '', notice = STUDIO ? '' : sharedNotice(cid, t);
+    const opts = cid && isCustom(t) ? (() => { const bd = boardOf(dayFor(viewDate, cid), t), h = bd.hide || {};
+      return `<div class="edopt"><button class="btn small quiet" data-a="edopts" aria-expanded="${edOpts}">Board options ${edOpts ? '▾' : '▴'}</button>${edOpts ? `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">Show:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>` : ''}</div>`; })() : '';
+    const align = alignSel.size ? `<div class="bar alignbar"><span class="small"><b>${alignSel.size}</b> picked. Align ${alignSel.size === 1 ? 'to the screen' : 'together'}:</span>${[['left', 'Left'], ['hcenter', 'Center'], ['right', 'Right'], ['top', 'Top'], ['vmiddle', 'Middle'], ['bottom', 'Bottom']].map(([k, n]) => `<button class="btn small" data-a="align" data-v="${k}">${n}</button>`).join('')}<button class="btn quiet small" data-a="alignclear">Clear</button></div>` : '';
+    const tips = edTips ? `<div class="edtips"><p>Click any text to type. Drag <b>⠿</b> to move a box, and its corner to resize. Boxes snap to each other as you drag (hold Alt to place freely). Shift+click boxes to line them up. Changes save as you go.</p><button class="btn small primary" data-a="edtipsok">Got it</button></div>` : '';
+    return notice || align || tips || opts ? `<div class="edfloat">${notice}${tips}${align}${opts}</div>` : '';
+  }
   const S0cur = () => screens(viewDate, activeId())[screen];
   // ---- while editing a board that also shows on other days or in other classes, say so ----
   function sharedNotice(cid, t){
@@ -1506,6 +1562,10 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'unlinkday') { const cid = activeId(), t = S0cur(), r = editable(viewDate, cid), id = 'c-' + Suite.uid(), src = clone(boardOf(dayFor(viewDate, cid), t));
       src.name = (src.name || plainOf(src.heading) || 'Board') + ' (this day)'; r.boards = r.boards || {}; r.boards[id] = src; r.lineup = r.lineup.map(x => x === t ? id : x); delete r.boards[t];
       save(); render(); Suite.toast('Now a separate copy, just for this day. The linked board is unchanged.'); return; }
+    else if (a === 'edopts') { edOpts = !edOpts; renderRail(activeId()); return; }
+    else if (a === 'edtips') { edTips = !edTips; renderRail(activeId()); return; }
+    else if (a === 'edtipsok') { edTips = false; Suite.set('edtipsSeen', true); renderRail(activeId()); return; }
+    else if (a === 'strename') { const sb = T.days[SBOX][STUDIO.cid].boards[SID]; Suite.dialog({ title: 'Rename this board', body: 'The name used in lists. What students see on the board doesn\'t change.', input: sb.name || plainOf(sb.heading), ok: 'Rename' }).then(nm => { if (!nm || !nm.trim()) return; sb.name = nm.trim(); save(); renderRail(activeId()); }); return; }
     else if (a === 'align') { doAlign(el.dataset.v); return; }
     else if (a === 'alignclear') { alignSel.clear(); markAlign(); renderRail(activeId()); return; }
     else if (a === 'everytool') { const cid = activeId(), u = usual(cid), list = u.boardTools = u.boardTools || [], i = list.findIndex(w => w.kind === el.dataset.id);
@@ -1522,6 +1582,7 @@ details.sec>summary .muted{font-weight:400}
       const over = (a, b2) => a[0] < b2[0] + b2[2] && b2[0] < a[0] + a[2] && a[1] < b2[1] + b2[3] && b2[1] < a[1] + a[3];
       const box = WIDGETS[el.dataset.id][1].slice(); for (let n = 0; n < 12 && bd.tools.some(w => over(box, w.box)); n++) { box[0] -= box[2] + 20; if (box[0] < 0) { box[0] = 1920 - box[2] - 40; box[1] = Math.max(20, box[1] - box[3] - 20); } }
       bd.tools.push({ id: Suite.uid(), kind: el.dataset.id, box }); save(); render(); Suite.toast(WIDGETS[el.dataset.id][0] + ' added to this board. Drag it into place.'); }
+    else if (a === 'editdone' && STUDIO) { endEdit(); save(); location.href = 'boards.html'; }
     else if (a === 'editdone') endEdit();
     else if (a === 'settings') { editing = true; $('#drawer').hidden = false; renderDrawer(); }
     else if (a === 'xaddbox') { const lay = ownLayout($('#stage').dataset.look); lay.extras.push({ id: Suite.uid(), box: [760, 420, 460, 200], panel: 'none', html: '' }); save(); render().then(() => { const x = [...document.querySelectorAll('.x-fit[contenteditable]')].pop(); if (x) { x.focus(); document.execCommand('selectAll'); } }); }
@@ -1570,9 +1631,21 @@ details.sec>summary .muted{font-weight:400}
     if (md) viewDate = md[1];
     if (mc && classes().some(c => c.id === decodeURIComponent(mc[1]))) setMode(decodeURIComponent(mc[1]));
   }
+  { const ms = location.hash.match(/studio=([^&]+)/);
+    if (ms) { const parts = decodeURIComponent(ms[1]).split('|'), kind = parts[0];
+      STUDIO = kind === 'lib' ? { kind, id: parts[1] } : kind === 'row' ? { kind, k: parts[1], id: parts[2] } : { kind: 'day', d: parts[1], k: parts[2], id: parts[3] };
+      STUDIO.peek = /peek=1/.test(location.hash);
+      // preview with a class that uses it (or the first class)
+      const keyCls = k => { if (!k) return null; if (String(k).startsWith('course:')) { const co = Suite.courses().find(x => 'course:' + x.id === k); return co && co.classIds[0]; } return k; };
+      let pc = keyCls(STUDIO.k); if (!pc && kind === 'lib') { const id = 'L-' + STUDIO.id, hit = Object.entries(T.rows || {}).find(([k, r]) => (r.lineup || []).includes(id)); pc = hit && keyCls(hit[0]); }
+      STUDIO.cid = classes().some(c => c.id === pc) ? pc : (classes()[0] || {}).id;
+      if (!STUDIO.cid || !studioLoad()) { STUDIO = null; Suite.toast("That board couldn't be found"); }
+      else { viewDate = SBOX; screen = 0; scope = 'period'; document.body.classList.add('studio'); if (STUDIO.peek) document.body.classList.add('peek'); }
+    } }
   Suite.mountNav('today');
   resetTimer(activeId()); lastCid = activeId();
   render();
+  if (STUDIO && !STUDIO.peek) setTimeout(() => { if (!editMode) startEdit(); }, 30);
   // opened from the Boards page: go straight to that board (and start editing)
   { const mb = location.hash.match(/board=([\w-]+)/);
     if (mb) setTimeout(() => { const S0 = screens(viewDate, activeId()), k = S0.indexOf(decodeURIComponent(mb[1])); if (k > -1) { screen = k; reveal = 0; render(); } if (/edit=1/.test(location.hash) && !editMode) startEdit(); }, 60); }

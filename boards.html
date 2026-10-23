@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-23a">
-<script src="shared/core.js?v=2026-10-23a"></script>
-<script>window.PAGE_VERSION = '2026-10-23a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-23b">
+<script src="shared/core.js?v=2026-10-23b"></script>
+<script>window.PAGE_VERSION = '2026-10-23b';</script>
 <style>
 .wrap{max-width:1100px;margin:0 auto;padding:18px 20px 60px}
 .wrap h1{font-size:34px;margin-bottom:4px}
@@ -31,6 +31,10 @@
 .words .hint{font-size:13px;color:var(--ink-2)}
 .repeat{background:var(--wash);border-radius:10px;padding:8px 10px;margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .repeat .bar{gap:10px;flex-wrap:wrap}
+.bc-row{display:flex;gap:14px;align-items:flex-start}
+.bc-main{flex:1;min-width:0}
+.thumb{flex:0 0 auto;width:224px;height:126px;overflow:hidden;border-radius:10px;border:1.5px solid var(--rule);background:#0f1720;position:relative}
+.thumb iframe{position:absolute;left:0;top:0;width:1280px;height:720px;border:0;transform:scale(.175);transform-origin:0 0;pointer-events:none}
 .empty{color:var(--ink-2);font-style:italic}
 </style>
 </head>
@@ -96,12 +100,13 @@
   const repSummary = r => `${(r.days || []).length === 5 || !(r.days || []).length ? 'every school day' : r.days.map(d => DAYN[d]).join(', ')}${r.keys && r.keys.length ? ' in ' + r.keys.map(keyName).join(', ') : ' in every class'}${r.to ? ' until ' + fmtDay(r.to) : ''}`;
   function card(x, T){
     const b = x.board, op = open[x.uid];
-    const arrange = (() => { const w = x.where.find(w => w.k) || null; if (!w) return ''; const cid = keyClass(w.k); if (!cid) return ''; const id = x.kind === 'lib' ? 'L-' + T.library[x.ref.i].id : x.ref.id;
-      return `<a class="btn small" href="today.html#date=${w.d || today}&class=${encodeURIComponent(cid)}&board=${encodeURIComponent(id)}&edit=1">Arrange in Today</a>`; })();
-    let html = `<div class="bcard" data-uid="${esc(x.uid)}">
+    const ref = x.kind === 'lib' ? 'lib|' + T.library[x.ref.i].id : x.kind === 'row' ? 'row|' + x.ref.k + '|' + x.ref.id : 'day|' + x.ref.d + '|' + x.ref.k + '|' + x.ref.id;
+    const arrange = `<a class="btn small primary" href="today.html#studio=${encodeURIComponent(ref)}">Edit board</a>`;
+    const thumb = Suite.classes().length ? `<div class="thumb" aria-hidden="true"><iframe src="today.html#studio=${encodeURIComponent(ref)}&peek=1" loading="lazy" tabindex="-1" title="Preview"></iframe></div>` : '';
+    let html = `<div class="bcard" data-uid="${esc(x.uid)}"><div class="bc-row">${thumb}<div class="bc-main">
       <div class="top"><span class="nm">${esc(x.name)}${plainOf(b.heading) && plainOf(b.heading) !== x.name ? `<span class="hd">shows as "${esc(plainOf(b.heading))}"</span>` : ''}</span>
-        <span class="acts"><button class="btn small" data-a="rename">Rename</button><button class="btn small" data-a="words">${op === 'words' ? 'Close words' : 'Edit words'}</button>${arrange}<button class="btn small" data-a="dup">Duplicate</button>${x.kind === 'lib' ? `<button class="btn small" data-a="add">Add to classes…</button><button class="btn small" data-a="rep">${op === 'rep' ? 'Close repeat' : 'Repeat…'}</button>` : '<button class="btn small" data-a="save">Save to My boards</button>'}<button class="btn small quiet danger" data-a="del">Delete</button></span></div>
-      <p class="where">${whereHtml(x)}</p>`;
+        <span class="acts"><button class="btn small" data-a="rename">Rename</button>${arrange}<button class="btn small" data-a="words">${op === 'words' ? 'Close words' : 'Edit words'}</button><button class="btn small" data-a="dup">Duplicate</button>${x.kind === 'lib' ? `<button class="btn small" data-a="add">Add to classes…</button><button class="btn small" data-a="rep">${op === 'rep' ? 'Close repeat' : 'Repeat…'}</button>` : '<button class="btn small" data-a="save">Save to My boards</button>'}<button class="btn small quiet danger" data-a="del">Delete</button></span></div>
+      <p class="where">${whereHtml(x)}</p></div></div>`;
     if (op === 'words') html += `<div class="words"><label>Heading <input class="field" data-w="heading" value="${esc(plainOf(b.heading))}" style="width:100%"></label>
       <textarea data-w="lines" aria-label="Board lines">${esc(linesToText(b.lines))}</textarea>
       <span class="hint">One line per bullet. Start a line with "-" to indent it, or "? " to keep it hidden until you reveal it.${x.kind === 'lib' && x.where.length ? ' This board is linked, so the change shows everywhere it\'s used.' : x.kind === 'row' ? ' Changes the everyday version, plus any upcoming days that still match it.' : ''}</span>
@@ -118,7 +123,7 @@
     const T = TS(), all = collect(T);
     const lib = all.filter(x => x.kind === 'lib'), rows = all.filter(x => x.kind === 'row'), days = all.filter(x => x.kind === 'day');
     $('#app').innerHTML = `<h1>Boards</h1>
-      <p class="intro">Every custom board you've made, and where each one shows. Rename boards, change their words, or copy them here. To move boxes, pictures, and tools around, use <b>Arrange in Today</b>.</p>
+      <p class="intro">Every custom board you've made, and where each one shows. <b>Edit board</b> opens just that board, so you can type, move boxes, and add pictures or tools. Changes go to that board only.</p>
       <section class="group"><h2>My boards</h2><p class="gh">Saved boards you can reuse. A linked board is one board shared by several classes or days: change it once and it changes everywhere.</p>${lib.map(x => card(x, T)).join('') || '<p class="empty">None yet. In Today, use Day settings → "Use in other classes…" or "Save to My boards".</p>'}</section>
       <section class="group"><h2>Class boards</h2><p class="gh">Custom boards in a class's or course's usual setup, shown every day.</p>${rows.map(x => card(x, T)).join('') || '<p class="empty">None yet.</p>'}</section>
       <section class="group"><h2>Boards for one day</h2><p class="gh">Custom boards made for a single upcoming day.</p>${days.map(x => card(x, T)).join('') || '<p class="empty">None coming up.</p>'}</section>`;

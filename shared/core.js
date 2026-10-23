@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-23a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-23b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1084,11 +1084,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-23', items: [
-    'New: the Boards page (gear menu → Boards). Every custom board in one place: where it shows, rename it, edit its words, copy it, repeat it, or open it in Today to arrange.',
-    'Boards now have names separate from what students see, so copies are easy to tell apart. Rename them in Day settings or on the Boards page.',
-    'Editing a linked board in Today now tells you where else it shows, with a "Just change it for this day" button.',
-    'Today: a class dropdown next to Auto, working Tools menus, Back and Next while editing, and Day settings in tabs.'] };
+  const NEWS = { id: '2026-10-23b', items: [
+    'New: the Boards page (gear menu → Boards). Every custom board in one place, with a picture of each, where it shows, and buttons to rename, copy, repeat, or delete it.',
+    'Edit board opens just that one board to type, move boxes, and add pictures or tools. Changes go to that board only, never to whatever class is showing in Today.',
+    'Boards have names separate from what students see. Editing a linked board in Today tells you where else it shows, with a "Just change it for this day" button.',
+    'Edit on screen is tidier: tips show once (? brings them back), Board options tuck away, and Align appears only while boxes are picked.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
