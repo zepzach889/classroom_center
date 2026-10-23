@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boards · Classroom Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-23a">
+<script src="shared/core.js?v=2026-10-23a"></script>
+<script>window.PAGE_VERSION = '2026-10-23a';</script>
+<style>
+.wrap{max-width:1100px;margin:0 auto;padding:18px 20px 60px}
+.wrap h1{font-size:34px;margin-bottom:4px}
+.intro{color:var(--ink-2);margin:0 0 16px;max-width:780px}
+.group{margin:22px 0 8px}
+.group h2{font-size:22px;margin:0 0 4px}
+.group .gh{color:var(--ink-2);font-size:14px;margin:0 0 10px}
+.bcard{background:var(--sheet);border:2px solid var(--edge);border-radius:16px;padding:12px 14px;margin:8px 0}
+.bcard .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bcard .nm{font-weight:800;font-size:17px;flex:1;min-width:200px}
+.bcard .hd{color:var(--ink-2);font-size:13px;font-weight:500;margin-left:6px}
+.bcard .where{margin:6px 0 0;font-size:14px;color:var(--ink-2)}
+.bcard .where b{color:var(--ink)}
+.tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:2px 9px;margin-right:6px;vertical-align:2px}
+.tag.link{background:#e3ecf8;color:#24477a}.tag.every{background:#e6f2e6;color:#255c2c}.tag.day{background:#fff1d6;color:#6b4b00}.tag.rep{background:#efe6f6;color:#4f2b6e}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.words{margin-top:10px;display:grid;gap:6px}
+.words textarea{width:100%;min-height:130px;font:inherit;font-size:15px}
+.words .hint{font-size:13px;color:var(--ink-2)}
+.repeat{background:var(--wash);border-radius:10px;padding:8px 10px;margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.repeat .bar{gap:10px;flex-wrap:wrap}
+.empty{color:var(--ink-2);font-style:italic}
+</style>
+</head>
+<body>
+<header id="suite-nav"></header>
+<main class="wrap" id="app"></main>
+<script>
+(function(){
+  const $ = q => document.querySelector(q), esc = Suite.esc;
+  const today = Suite.dateKey(new Date());
+  const TS = () => Object.assign({ rows: {}, days: {}, library: [] }, Suite.get('today', {}) || {});
+  const plainOf = h => String(h || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').trim();
+  const BUILT = ['welcome', 'warmup', 'agenda', 'due', 'returned', 'custom'];
+  const isCustomId = t => /^c-/.test(t);
+  const nameOf = b => b.name || plainOf(b.heading) || 'Custom board';
+  const keyName = k => { if (String(k).startsWith('course:')) { const co = Suite.courses().find(x => 'course:' + x.id === k); return co ? co.name : 'A course'; } const c = Suite.classes().find(x => x.id === k); return c ? c.name : 'A class'; };
+  const keyClass = k => { if (!String(k).startsWith('course:')) return k; const co = Suite.courses().find(x => 'course:' + x.id === k); return co && co.classIds[0]; };
+  const fmtDay = d => new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const rowsAll = () => Suite.courses().map(co => ['course:' + co.id, co.name]).concat(Suite.classes().filter(c => !Suite.courseOf(c.id)).map(c => [c.id, c.name]));
+  // the Planner's format for words: one line per bullet, "-" to indent, "? " for a hidden answer
+  const linesToText = lines => (lines || []).map(l => '-'.repeat(Math.min(2, l.level || 0)) + (l.level ? ' ' : '') + (l.reveal ? '? ' : '') + (l.text || '').trim()).join('\n');
+  const textToLines = (txt, old) => txt.split('\n').map(x => x.replace(/\s+$/, '')).filter(x => x.trim()).map((x, i) => {
+    const m = x.match(/^\s*(-{0,2})\s*(\?\s+)?(.*)$/), text = m[3].trim(), prev = (old || [])[i];
+    const line = { text, level: m[1].length, color: prev && prev.color || 'blue', reveal: !!m[2] };
+    if (prev && (prev.text || '').trim() === text && prev.html) line.html = prev.html;
+    return line;
+  });
+  let open = {};   // which card has its words / repeat panel open
+
+  // every board, wherever it lives
+  function collect(T){
+    const out = [];
+    (T.library || []).forEach((it, i) => {
+      if (!it.id) it.id = Suite.uid();
+      const id = 'L-' + it.id, where = [];
+      Object.entries(T.rows || {}).forEach(([k, r]) => { if ((r.lineup || []).includes(id)) where.push({ k, when: 'every day' }); });
+      Object.entries(T.days || {}).forEach(([d, day]) => { if (d < today) return; Object.entries(day).forEach(([k, r]) => { if ((r.lineup || []).includes(id) && !((T.rows[k] || {}).lineup || []).includes(id)) where.push({ k, when: fmtDay(d), d }); }); });
+      out.push({ kind: 'lib', ref: { i }, uid: 'lib-' + it.id, board: it.board || {}, name: it.name || nameOf(it.board || {}), where, rep: it.repeat && it.repeat.on ? it.repeat : null, linked: where.length > 0 });
+    });
+    Object.entries(T.rows || {}).forEach(([k, r]) => {
+      Object.entries(r.boards || {}).forEach(([id, b]) => { if (!isCustomId(id)) return;
+        out.push({ kind: 'row', ref: { k, id }, uid: 'row-' + k + '-' + id, board: b, name: nameOf(b), where: [{ k, when: (r.lineup || []).includes(id) ? 'every day' : 'saved, not shown' }] }); });
+    });
+    Object.entries(T.days || {}).sort().forEach(([d, day]) => { if (d < today) return;
+      Object.entries(day).forEach(([k, r]) => Object.entries(r.boards || {}).forEach(([id, b]) => {
+        if (!isCustomId(id) || /^c-rep-/.test(id) || ((T.rows[k] || {}).boards || {})[id]) return;   // only boards made for that day
+        if (!(r.lineup || []).includes(id)) return;
+        out.push({ kind: 'day', ref: { d, k, id }, uid: 'day-' + d + '-' + k + '-' + id, board: b, name: nameOf(b), where: [{ k, when: fmtDay(d), d }] });
+      }));
+    });
+    return out;
+  }
+  const whereHtml = x => {
+    if (x.kind === 'lib') {
+      const parts = [];
+      if (x.where.length) parts.push('<span class="tag link">Linked</span>' + x.where.map(w => `<b>${esc(keyName(w.k))}</b> (${esc(w.when)})`).join(', '));
+      if (x.rep) parts.push('<span class="tag rep">Repeats</span>' + esc(repSummary(x.rep)));
+      return parts.join('<br>') || 'Saved in My boards; not shown in any class yet.';
+    }
+    const w = x.where[0]; return `<span class="tag ${x.kind === 'day' ? 'day' : 'every'}">${x.kind === 'day' ? 'One day' : 'Every day'}</span><b>${esc(keyName(w.k))}</b> (${esc(w.when)})`;
+  };
+  const DAYN = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' };
+  const repSummary = r => `${(r.days || []).length === 5 || !(r.days || []).length ? 'every school day' : r.days.map(d => DAYN[d]).join(', ')}${r.keys && r.keys.length ? ' in ' + r.keys.map(keyName).join(', ') : ' in every class'}${r.to ? ' until ' + fmtDay(r.to) : ''}`;
+  function card(x, T){
+    const b = x.board, op = open[x.uid];
+    const arrange = (() => { const w = x.where.find(w => w.k) || null; if (!w) return ''; const cid = keyClass(w.k); if (!cid) return ''; const id = x.kind === 'lib' ? 'L-' + T.library[x.ref.i].id : x.ref.id;
+      return `<a class="btn small" href="today.html#date=${w.d || today}&class=${encodeURIComponent(cid)}&board=${encodeURIComponent(id)}&edit=1">Arrange in Today</a>`; })();
+    let html = `<div class="bcard" data-uid="${esc(x.uid)}">
+      <div class="top"><span class="nm">${esc(x.name)}${plainOf(b.heading) && plainOf(b.heading) !== x.name ? `<span class="hd">shows as "${esc(plainOf(b.heading))}"</span>` : ''}</span>
+        <span class="acts"><button class="btn small" data-a="rename">Rename</button><button class="btn small" data-a="words">${op === 'words' ? 'Close words' : 'Edit words'}</button>${arrange}<button class="btn small" data-a="dup">Duplicate</button>${x.kind === 'lib' ? `<button class="btn small" data-a="add">Add to classes…</button><button class="btn small" data-a="rep">${op === 'rep' ? 'Close repeat' : 'Repeat…'}</button>` : '<button class="btn small" data-a="save">Save to My boards</button>'}<button class="btn small quiet danger" data-a="del">Delete</button></span></div>
+      <p class="where">${whereHtml(x)}</p>`;
+    if (op === 'words') html += `<div class="words"><label>Heading <input class="field" data-w="heading" value="${esc(plainOf(b.heading))}" style="width:100%"></label>
+      <textarea data-w="lines" aria-label="Board lines">${esc(linesToText(b.lines))}</textarea>
+      <span class="hint">One line per bullet. Start a line with "-" to indent it, or "? " to keep it hidden until you reveal it.${x.kind === 'lib' && x.where.length ? ' This board is linked, so the change shows everywhere it\'s used.' : x.kind === 'row' ? ' Changes the everyday version, plus any upcoming days that still match it.' : ''}</span>
+      <div class="bar"><button class="btn primary small" data-a="savewords">Save words</button></div></div>`;
+    if (op === 'rep' && x.kind === 'lib') { const r = Object.assign({ on: false, days: [1, 2, 3, 4, 5], from: '', to: '', keys: [], first: true }, T.library[x.ref.i].repeat || {});
+      html += `<div class="repeat"><label class="rv" style="margin:0"><input type="checkbox" data-r="on"${r.on ? ' checked' : ''}> Repeat this board automatically</label>
+        ${r.on ? `<div class="bar">On ${[1, 2, 3, 4, 5].map(d => `<label class="rv" style="margin:0"><input type="checkbox" data-r="day" value="${d}"${r.days.includes(d) ? ' checked' : ''}> ${DAYN[d]}</label>`).join('')}</div>
+        <div class="bar">From <input type="date" class="field" data-r="from" value="${esc(r.from)}"> to <input type="date" class="field" data-r="to" value="${esc(r.to)}"> <span class="muted small">(leave empty for no end)</span></div>
+        <div class="bar">For ${rowsAll().map(([k, n]) => `<label class="rv" style="margin:0"><input type="checkbox" data-r="key" value="${esc(k)}"${r.keys.includes(k) ? ' checked' : ''}> ${esc(n)}</label>`).join('')} <span class="muted small">(none checked: every class)</span></div>
+        <label class="rv"><input type="checkbox" data-r="first"${r.first ? ' checked' : ''}> Show it right after the Welcome board (otherwise last)</label>` : ''}</div>`; }
+    return html + '</div>';
+  }
+  function render(){
+    const T = TS(), all = collect(T);
+    const lib = all.filter(x => x.kind === 'lib'), rows = all.filter(x => x.kind === 'row'), days = all.filter(x => x.kind === 'day');
+    $('#app').innerHTML = `<h1>Boards</h1>
+      <p class="intro">Every custom board you've made, and where each one shows. Rename boards, change their words, or copy them here. To move boxes, pictures, and tools around, use <b>Arrange in Today</b>.</p>
+      <section class="group"><h2>My boards</h2><p class="gh">Saved boards you can reuse. A linked board is one board shared by several classes or days: change it once and it changes everywhere.</p>${lib.map(x => card(x, T)).join('') || '<p class="empty">None yet. In Today, use Day settings → "Use in other classes…" or "Save to My boards".</p>'}</section>
+      <section class="group"><h2>Class boards</h2><p class="gh">Custom boards in a class's or course's usual setup, shown every day.</p>${rows.map(x => card(x, T)).join('') || '<p class="empty">None yet.</p>'}</section>
+      <section class="group"><h2>Boards for one day</h2><p class="gh">Custom boards made for a single upcoming day.</p>${days.map(x => card(x, T)).join('') || '<p class="empty">None coming up.</p>'}</section>`;
+  }
+  // find the stored board for a card (and a way to write it back)
+  function locate(T, uid){
+    const x = collect(T).find(y => y.uid === uid); if (!x) return null;
+    if (x.kind === 'lib') { const it = T.library[x.ref.i]; return { x, get: () => it.board, set: b => { it.board = b; it.name = nameOf(b); } }; }
+    if (x.kind === 'row') { const r = T.rows[x.ref.k]; return { x, get: () => r.boards[x.ref.id], set: b => { r.boards[x.ref.id] = b; } }; }
+    const r = T.days[x.ref.d][x.ref.k]; return { x, get: () => r.boards[x.ref.id], set: b => { r.boards[x.ref.id] = b; } };
+  }
+  const save = T => { Suite.set('today', T); render(); };
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-a]'), cardEl = e.target.closest('.bcard'); if (!btn || !cardEl) return;
+    const a = btn.dataset.a, uid = cardEl.dataset.uid, T = TS(), L = locate(T, uid); if (!L) return; const x = L.x, b = L.get();
+    if (a === 'words' || a === 'rep') { open = { [uid]: open[uid] === a ? null : a }; render(); return; }
+    if (a === 'rename') { const nm = await Suite.dialog({ title: 'Rename this board', body: 'The name used in lists. What students see on the board doesn\'t change.', input: x.name, ok: 'Rename' }); if (!nm || !nm.trim()) return; b.name = nm.trim(); L.set(b); save(T); Suite.toast('Renamed'); return; }
+    if (a === 'savewords') {
+      const old = JSON.stringify(b), nb = JSON.parse(old), hEl = cardEl.querySelector('[data-w="heading"]'), lEl = cardEl.querySelector('[data-w="lines"]');
+      if (plainOf(nb.heading) !== hEl.value.trim()) nb.heading = esc(hEl.value.trim());
+      nb.lines = textToLines(lEl.value, b.lines); L.set(nb);
+      if (x.kind === 'row') Object.entries(T.days || {}).forEach(([d, day]) => { if (d < today) return; const r = day[x.ref.k]; if (r && r.boards && r.boards[x.ref.id] && JSON.stringify(r.boards[x.ref.id]) === old) r.boards[x.ref.id] = JSON.parse(JSON.stringify(nb)); });
+      open = {}; save(T); Suite.toast('Words saved'); return;
+    }
+    if (a === 'dup') { const nb = JSON.parse(JSON.stringify(b)); nb.name = x.name + ' (copy)'; (nb.pics || []).forEach(p => { p.id = Suite.uid(); }); (nb.tools || []).forEach(w => { w.id = Suite.uid(); });
+      if (x.kind === 'lib') T.library.push({ id: Suite.uid(), name: nb.name, board: nb });
+      else { const r = x.kind === 'row' ? T.rows[x.ref.k] : T.days[x.ref.d][x.ref.k], id = 'c-' + Suite.uid(); r.boards[id] = nb; const i = (r.lineup || []).indexOf(x.ref.id); r.lineup = r.lineup || []; r.lineup.splice(i < 0 ? r.lineup.length : i + 1, 0, id); }
+      save(T); Suite.toast('Copy made: ' + nb.name); return; }
+    if (a === 'save') { T.library.push({ id: Suite.uid(), name: x.name, from: x.ref.id, board: JSON.parse(JSON.stringify(b)) }); save(T); Suite.toast('Saved to My boards'); return; }
+    if (a === 'add') {
+      const it = T.library[x.ref.i], id = 'L-' + it.id;
+      const back = document.createElement('div'); back.className = 'suite-dialog-back';
+      back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>Add "${esc(x.name)}" to classes</h2><p>It's added as a linked board, every day. Change it once and it changes everywhere.</p>${rowsAll().map(([k, n]) => `<label class="rv" style="display:flex;gap:6px"><input type="checkbox" value="${esc(k)}"${((T.rows[k] || {}).lineup || []).includes(id) ? ' checked disabled' : ''}> ${esc(n)}</label>`).join('')}
+        <div class="suite-dialog-actions"><button class="btn" data-s="x">Cancel</button><button class="btn primary" data-s="go">Add it</button></div></div>`;
+      document.body.appendChild(back);
+      back.addEventListener('click', ev => { if (ev.target === back || ev.target.closest('[data-s="x"]')) return back.remove(); if (!ev.target.closest('[data-s="go"]')) return;
+        const keys = [...back.querySelectorAll('input:checked:not(:disabled)')].map(i => i.value); const T2 = TS();
+        keys.forEach(k => { const r = T2.rows[k]; if (!r) { Suite.toast('Open ' + keyName(k) + ' in Today once first, then try again'); return; } r.lineup = r.lineup || []; if (!r.lineup.includes(id)) r.lineup.push(id); });
+        back.remove(); save(T2); if (keys.length) Suite.toast('Added to ' + keys.length + ' class' + (keys.length === 1 ? '' : 'es')); });
+      return;
+    }
+    if (a === 'del') {
+      const where = x.where.map(w => keyName(w.k) + ' (' + w.when + ')').join(', ');
+      if (!await Suite.dialog({ title: `Delete "${x.name}"?`, body: (where ? 'It will be removed from: ' + where + '. ' : '') + 'You can undo this right after.', ok: 'Delete', danger: true })) return;
+      const snap = Suite.snapshot(['today']);
+      if (x.kind === 'lib') { const id = 'L-' + T.library[x.ref.i].id; T.library.splice(x.ref.i, 1); Object.values(T.rows || {}).forEach(r => { r.lineup = (r.lineup || []).filter(t => t !== id); }); Object.values(T.days || {}).forEach(day => Object.values(day).forEach(r => { r.lineup = (r.lineup || []).filter(t => t !== id); })); }
+      else { const r = x.kind === 'row' ? T.rows[x.ref.k] : T.days[x.ref.d][x.ref.k]; delete r.boards[x.ref.id]; r.lineup = (r.lineup || []).filter(t => t !== x.ref.id); }
+      Suite.set('today', T); render(); Suite.undoToast(`"${x.name}" deleted`, snap); return;
+    }
+  });
+  document.addEventListener('change', e => {
+    const k = e.target.dataset.r, cardEl = e.target.closest('.bcard'); if (!k || !cardEl) return;
+    const T = TS(), L = locate(T, cardEl.dataset.uid); if (!L || L.x.kind !== 'lib') return; const it = T.library[L.x.ref.i];
+    const r = it.repeat = Object.assign({ on: false, days: [1, 2, 3, 4, 5], from: '', to: '', keys: [], first: true }, it.repeat || {}), t = e.target;
+    if (k === 'on') r.on = t.checked; else if (k === 'from') r.from = t.value; else if (k === 'to') r.to = t.value; else if (k === 'first') r.first = t.checked;
+    else { const arr = k === 'day' ? r.days : r.keys, v = k === 'day' ? +t.value : t.value, i = arr.indexOf(v); if (t.checked && i < 0) arr.push(v); if (!t.checked && i > -1) arr.splice(i, 1); }
+    save(T);
+  });
+  window.addEventListener('suite:change', e => { if (e.detail && e.detail.key === 'today' && e.detail.external) render(); });
+  Suite.mountNav('boards');
+  render();
+})();
+</script>
+</body>
+</html>

@@ -14,6 +14,7 @@ tracker.html      Table points: points, captains, weekly prizes, projector view
 seating.html      Seating charts and room setup; print one class or all
 settings.html     Settings: classes and rosters, schedule, Today screen, sub plans, look, backup
 sub.html          Printable substitute packet
+boards.html       Boards: every custom board, where it's used, rename and edit words
 help.html         Help, Getting started, and the menu tour
 
 Tools menu

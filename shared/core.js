@@ -36,6 +36,7 @@
     { id: 'settings', label: 'Classes and rosters', href: 'settings.html#classes' },
     { id: 'sub', label: 'Print sub plans', href: 'sub.html' },
     { id: 'general', label: 'Settings', href: 'settings.html#schedule' },
+    { id: 'boards', label: 'Boards', href: 'boards.html' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
   const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader', 'hallpass', 'rosters'];
@@ -43,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-22c';   // bump with every build; pages check they match
+  const VERSION = '2026-10-23a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1083,10 +1084,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-22', items: [
-    'Today is out of beta. Its toolbar now stays put: switching classes, days, boards, the lesson, or Edit on screen no longer moves anything.',
-    'Day settings is organized into tabs: Boards, Look, Routines (clean-up duties, bell reminder, warm-up timer), and Events.',
-    'Help has a new Getting started section, handy for colleagues. Seating, Activities, and the Spinner also keep their buttons in place.'] };
+  const NEWS = { id: '2026-10-23', items: [
+    'New: the Boards page (gear menu → Boards). Every custom board in one place: where it shows, rename it, edit its words, copy it, repeat it, or open it in Today to arrange.',
+    'Boards now have names separate from what students see, so copies are easy to tell apart. Rename them in Day settings or on the Boards page.',
+    'Editing a linked board in Today now tells you where else it shows, with a "Just change it for this day" button.',
+    'Today: a class dropdown next to Auto, working Tools menus, Back and Next while editing, and Day settings in tabs.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
@@ -1125,10 +1127,10 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
         ${current === 'dashboard' ? '' : '<a class="pclock" id="st-pclock" href="index.html" title="Time left in this period (opens the dashboard)" hidden></a>'}
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
         <button class="gear" data-dd="pop" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false" aria-haspopup="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
-        <button class="gear${current === 'settings' || current === 'sub' || current === 'help' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
+        <button class="gear${current === 'settings' || current === 'sub' || current === 'help' || current === 'boards' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
         ${menu('tools', toolItems, 'Tools')}
         ${menu('pop', [{ pop: 'timer', label: 'Timer' }].concat(S.feature('points') && !office ? [{ pop: 'points', label: S.word('team', { cap: true }) + ' points' }] : [], office ? [] : [{ pop: 'name', label: 'Name picker' }]), 'Pop out a mini window')}
-        ${menu('gear', office ? GEAR_MENU.filter(n => !['settings', 'sub'].includes(n.id)) : GEAR_MENU, 'Setup')}
+        ${menu('gear', office ? GEAR_MENU.filter(n => !['settings', 'sub', 'boards'].includes(n.id)) : GEAR_MENU, 'Setup')}
       </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw(); timerDraw();

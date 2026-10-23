@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-22c">
-<script src="shared/core.js?v=2026-10-22c"></script>
-<script>window.PAGE_VERSION = '2026-10-22c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-23a">
+<script src="shared/core.js?v=2026-10-23a"></script>
+<script>window.PAGE_VERSION = '2026-10-23a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -925,13 +925,7 @@ main{min-width:0;max-width:820px}
       <div class="bar"><label class="btn small">Add a bitmoji<input type="file" accept="image/png,image/webp,image/*" data-ts="badd" hidden></label><span class="muted small">PNGs with a see-through background work best.</span></div>
 
       <h3 class="tsh">My boards</h3>
-      ${(T.library || []).map((x, i) => { const r = Object.assign({ on: false, days: [], from: '', to: '', keys: [], first: true }, x.repeat || {}), rowsAll = Suite.courses().map(co => ['course:' + co.id, co.name]).concat(Suite.classes().filter(c => !Suite.courseOf(c.id)).map(c => [c.id, c.name]));
-        return `<div class="libitem"><div class="tsrow"><span>${esc(x.name)}</span><label class="rv" style="margin:0"><input type="checkbox" data-ts="ron" data-i="${i}"${r.on ? ' checked' : ''}> Repeat</label><button class="btn quiet danger small" data-ts="ldel" data-i="${i}">Delete</button></div>
-          ${r.on ? `<div class="repeat">
-            <div class="bar">On ${[[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri']].map(([d, n]) => `<label class="rv" style="margin:0"><input type="checkbox" data-ts="rday" data-i="${i}" value="${d}"${r.days.includes(d) ? ' checked' : ''}> ${n}</label>`).join('')}</div>
-            <div class="bar">From <input type="date" class="field" data-ts="rfrom" data-i="${i}" value="${esc(r.from)}"> to <input type="date" class="field" data-ts="rto" data-i="${i}" value="${esc(r.to)}"> <span class="muted small">(leave empty for no end)</span></div>
-            <div class="bar">For ${rowsAll.map(([k, n]) => `<label class="rv" style="margin:0"><input type="checkbox" data-ts="rkey" data-i="${i}" value="${esc(k)}"${r.keys.includes(k) ? ' checked' : ''}> ${esc(n)}</label>`).join('')} <span class="muted small">(none checked: every class)</span></div>
-            <label class="rv"><input type="checkbox" data-ts="rfirst" data-i="${i}"${r.first ? ' checked' : ''}> Show it right after the Welcome board (otherwise last)</label></div>` : ''}</div>`; }).join('') || '<p class="muted small">Save a custom board from Today (Day settings → Custom boards) to reuse it here.</p>'}`;
+      <p class="hint">Your saved and linked boards, their repeat settings, and every class's custom boards are all on the <a href="boards.html">Boards page</a> (gear menu → Boards).</p>`;
   }
   const tsArea = () => document.getElementById('today-area');
   document.addEventListener('change', async e => {

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-22c">
-<script src="shared/core.js?v=2026-10-22c"></script>
-<script>window.PAGE_VERSION = '2026-10-22c';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-23a">
+<script src="shared/core.js?v=2026-10-23a"></script>
+<script>window.PAGE_VERSION = '2026-10-23a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -17,7 +17,7 @@ body{overflow:hidden;display:flex;flex-direction:column}
 .tw{flex:1;min-height:0;display:flex;flex-direction:column}
 /* control rail (suite style) */
 .rail{position:relative;display:flex;flex-direction:column;gap:8px;padding:8px 16px;background:var(--paper);border-bottom:2px solid var(--rule)}
-.rail .rrow{display:flex;flex-wrap:nowrap;align-items:center;gap:8px 12px;min-height:40px;overflow-x:auto;scrollbar-width:none}
+.rail .rrow{display:flex;flex-wrap:nowrap;align-items:center;gap:8px 12px;min-height:40px}
 .rail .rrow::-webkit-scrollbar{display:none}
 .rail .r1 .pills{flex:0 0 auto;flex-wrap:nowrap}
 .rail .clspick{flex:0 0 190px;width:190px;font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:var(--paper);border:2px solid var(--edge);border-radius:999px;padding:5px 12px;cursor:pointer;text-overflow:ellipsis}
@@ -189,11 +189,14 @@ body.full #suite-nav,body.full .rail{display:none}
 .bell.big.withdu .b-bigtime{font-size:11cqw}.bell.big.withdu .b-bigmsg{font-size:4.6cqw}
 .b-du{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6cqw 2.4cqw;margin-top:1cqw;font:600 2.3cqw var(--sans);text-align:left}
 .b-du .du-r{grid-template-columns:auto auto 1fr;background:rgba(255,255,255,.7);border-radius:.8cqw;padding:.5cqw 1cqw}
+#drawer:not([data-tab="boards"]) .bdlink{display:none}
 .dtabs{display:flex;gap:4px;border-bottom:2px solid var(--rule);margin:6px 0 10px}
 .dtabs button{font:inherit;font-weight:700;font-size:14px;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-2px;padding:8px 12px;color:var(--ink-2);cursor:pointer}
 .dtabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--land)}
 #drawer[data-tab="boards"] details.sec[data-dt]:not([data-dt="boards"]),#drawer[data-tab="look"] details.sec[data-dt]:not([data-dt="look"]),#drawer[data-tab="routines"] details.sec[data-dt]:not([data-dt="routines"]),#drawer[data-tab="events"] details.sec[data-dt]:not([data-dt="events"]){display:none}
 #drawer .dfoot{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;align-items:center}#drawer .dfoot .btn{flex:0 0 auto;width:auto}
+.shnote{background:#fff4d6;border:2px solid #e0a800;border-radius:10px;padding:8px 10px;color:#3b2f00;font-size:14px;line-height:1.4}
+.shnote .btn{margin-left:6px}
 .bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
@@ -393,7 +396,7 @@ details.sec>summary .muted{font-weight:400}
   const isCustom = t => t === 'custom' || /^c-|^L-/.test(t);
   const boardOf = (rec, t) => (rec.boards || {})[t] || (String(t).startsWith('L-') && ((T.library || []).find(x => 'L-' + x.id === t) || {}).board) || { heading: BOARDS[t] ? BOARDS[t].heading : 'MY BOARD', lines: [] };
   const plainOf = h => String(h || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').trim();
-  const boardLabel = (rec, t) => BOARDS[t] ? BOARDS[t].label : (plainOf(boardOf(rec, t).heading) || 'Custom board');
+  const boardLabel = (rec, t) => BOARDS[t] ? BOARDS[t].label : (boardOf(rec, t).name || plainOf(boardOf(rec, t).heading) || 'Custom board');
   const STARTER_LINES = [
     { color: 'blue', level: 0, text: 'Find your seat and get settled.' },
     { color: 'blue', level: 0, text: 'Get out the materials listed under Have Out.' },
@@ -407,7 +410,7 @@ details.sec>summary .muted{font-weight:400}
   // linked boards live in My boards (T.library); any edited copy in a day or usual setup is moved back there when saving
   function moveLinked(){
     const lib = T.library || []; lib.forEach(x => { if (!x.id) x.id = Suite.uid(); });
-    const take = recx => { if (!recx || !recx.boards) return; Object.keys(recx.boards).forEach(k => { if (!k.startsWith('L-')) return; const it = lib.find(x => 'L-' + x.id === k); if (it) { it.board = recx.boards[k]; const nm = String(it.board.heading || '').replace(/<[^>]+>/g, '').trim(); if (nm) it.name = nm; } delete recx.boards[k]; }); };
+    const take = recx => { if (!recx || !recx.boards) return; Object.keys(recx.boards).forEach(k => { if (!k.startsWith('L-')) return; const it = lib.find(x => 'L-' + x.id === k); if (it) { it.board = recx.boards[k]; const nm = it.board.name || String(it.board.heading || '').replace(/<[^>]+>/g, '').trim(); if (nm) it.name = nm; } delete recx.boards[k]; }); };
     Object.values(T.days || {}).forEach(day => Object.values(day).forEach(take)); Object.values(T.rows || {}).forEach(take);
   }
   const save = () => { moveLinked(); Suite.set('today', T); };
@@ -797,11 +800,11 @@ details.sec>summary .muted{font-weight:400}
       <div class="status">${isIdle() ? (() => { const I = idleInfo(); return `<b>${esc(I.label)}</b>${I.endHM ? ' until ' + Suite.fmt12(I.endHM) : ''} · between classes. Pick a class to plan for it`; })() : cid ? `<b>${esc((list.find(c => c.id === cid) || {}).name || '')}</b>${auto ? ' · ' + esc(auto.text) : ''}${viewDate !== today ? ' · previewing ' + esc(longDate(viewDate)) : ''}` : ''}</div>
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="ldot${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       </div>
-      ${editMode ? '<div class="edfloat">' : ''}${editMode && cid && isCustom(S[screen] || '') ? (() => { const bd = boardOf(dayFor(viewDate, cid), S[screen]), h = bd.hide || {};
+      ${editMode ? '<div class="edfloat">' + sharedNotice(cid, S[screen]) : ''}${editMode && cid && isCustom(S[screen] || '') ? (() => { const bd = boardOf(dayFor(viewDate, cid), S[screen]), h = bd.hide || {};
           return `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">On this board:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>`; })() : ''}
       ${editMode ? `<div class="bar alignbar">${alignSel.size ? `<span class="small"><b>${alignSel.size}</b> picked. Align ${alignSel.size === 1 ? 'to the screen' : 'together'}:</span>${[['left', 'Left'], ['hcenter', 'Center'], ['right', 'Right'], ['top', 'Top'], ['vmiddle', 'Middle'], ['bottom', 'Bottom']].map(([k, n]) => `<button class="btn small" data-a="align" data-v="${k}">${n}</button>`).join('')}<button class="btn quiet small" data-a="alignclear">Clear</button>` : '<span class="muted small">Tip: Shift+click boxes to line them up. Boxes snap to each other as you drag (hold Alt to place freely).</span>'}</div>
       <span class="muted small edhint">Click any text to type. Drag <b>⠿</b> to move a box and its corner to resize. Changes save as you go.</span></div>
-      <div class="rrow r2 bar"><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}${everyMenu(cid)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="rrow r2 bar">
+      <div class="rrow r2 bar"><button class="btn" data-a="prev" title="Previous board">‹ Back</button><button class="btn primary" data-a="next" title="Next board">Next ›</button><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}${everyMenu(cid)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="rrow r2 bar">
         <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
         ${lesson ? '<button class="btn slot-lesson" data-a="boards">Back to boards</button>' : '<button class="btn slot-lesson" data-a="lesson" title="L">Lesson</button>'}
         ${toolMenu('opentool', 'Open a tool on top of the board', TOOL_PAGES)}
@@ -835,11 +838,12 @@ details.sec>summary .muted{font-weight:400}
         ${co ? `<div class="scope">Changes apply to <select data-d="scope"><option value="course"${scope === 'course' ? ' selected' : ''}>all of ${esc(co.name)}</option><option value="period"${scope === 'period' ? ' selected' : ''}>${esc(c.name)} only</option></select>${ownExists ? `<div class="hintline">${esc(c.name)} has its own setup this day. <a href="#" data-d="unown">Use the course setup again</a></div>` : ''}</div>` : ''}
         <div class="bar" style="margin:8px 0 2px"><a class="btn small" href="planner.html#date=${viewDate}&class=${encodeURIComponent(cid)}&from=today">Plan this day</a><button class="btn small" data-d="movetext">Edit on screen</button></div>
         <p class="hintline" style="margin:2px 0 4px">The plan, student boards, and slides come from the Planner; arrange the boards with Edit on screen.</p>
-        <div class="dtabs" role="tablist" aria-label="Day settings">${[['boards', 'Boards'], ['look', 'Look'], ['routines', 'Routines'], ['events', 'Events']].map(([k, n]) => `<button role="tab" data-d="dtab" data-v="${k}" aria-selected="${dTab === k}">${n}</button>`).join('')}</div>
+        <div class="dtabs" role="tablist" aria-label="Day settings">${''}${[['boards', 'Boards'], ['look', 'Look'], ['routines', 'Routines'], ['events', 'Events']].map(([k, n]) => `<button role="tab" data-d="dtab" data-v="${k}" aria-selected="${dTab === k}">${n}</button>`).join('')}</div>
+        <p class="hintline bdlink" style="margin:0 0 6px"><a href="boards.html">See all your boards</a>: rename them, edit their words, and see where each one is used.</p>
         <details class="sec" data-dt="boards" open><summary>Boards and order <span class="muted small">${lineup.length} boards</span></summary>
           <ul class="lineup">${all.map(t => { const on = lineup.includes(t); return `<li>
             <input type="checkbox" data-d="lineup" data-t="${esc(t)}"${on ? ' checked' : ''} aria-label="Show ${esc(boardLabel(rec, t))}"><span>${esc(boardLabel(rec, t))}${t.startsWith('L-') ? ' <span class="muted small">(linked)</span>' : isCustom(t) ? ' <span class="muted small">(custom)</span>' : ''}</span>
-            ${on ? `<button class="btn quiet" data-d="up" data-t="${esc(t)}" aria-label="Move up">↑</button><button class="btn quiet" data-d="down" data-t="${esc(t)}" aria-label="Move down">↓</button>` : ''}<button class="btn quiet small" data-d="cdup" data-t="${esc(t)}" title="Make a copy of this board (same look and layout)">Duplicate</button>${isCustom(t) ? `<button class="btn quiet danger" data-d="crm" data-t="${esc(t)}" aria-label="Delete this board">×</button>` : ''}</li>`; }).join('')}</ul>
+            ${on ? `<button class="btn quiet" data-d="up" data-t="${esc(t)}" aria-label="Move up">↑</button><button class="btn quiet" data-d="down" data-t="${esc(t)}" aria-label="Move down">↓</button>` : ''}${isCustom(t) ? `<button class="btn quiet small" data-d="cren" data-t="${esc(t)}" title="Rename this board (the name in lists, not what students see)">Rename</button>` : ''}<button class="btn quiet small" data-d="cdup" data-t="${esc(t)}" title="Make a copy of this board (same look and layout)">Duplicate</button>${isCustom(t) ? `<button class="btn quiet danger" data-d="crm" data-t="${esc(t)}" aria-label="Delete this board">×</button>` : ''}</li>`; }).join('')}</ul>
           <div class="bar" style="margin-top:6px"><button class="btn small" data-d="cadd">Add a custom board</button>${(T.library || []).length ? `<select data-d="libadd" aria-label="Add a saved board"><option value="">Add a copy of a saved board…</option>${T.library.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join('')}</select><select data-d="liblink" aria-label="Add a linked board"><option value="">Add a linked board…</option>${T.library.map(x => `<option value="${esc(x.id || '')}">${esc(x.name)}</option>`).join('')}</select>` : ''}</div>
           <p class="hintline">Empty boards are skipped in class. Custom boards can have a picture and their own background, and any line can stay hidden until you click (in Edit on screen, use "Hide until click").</p></details>
         ${customs.length ? `<details class="sec" data-dt="boards" open><summary>Custom boards</summary>${customs.map(t => { const bd = boardOf(rec, t); return `<div class="cboard"><b>${esc(boardLabel(rec, t))}</b>
@@ -914,12 +918,17 @@ details.sec>summary .muted{font-weight:400}
       const r = editable(viewDate, cid), src = clone(boardOf(dayFor(viewDate, cid), el.dataset.t)), id = 'c-' + Suite.uid();
       if (!isCustom(el.dataset.t)) { src.layout = src.layout || clone(getLayout(roomFor(viewDate, cid).look)); }
       if (src.layout && !src.layout.extras) src.layout.extras = [];
-      src.heading = (src.heading || boardLabel(dayFor(viewDate, cid), el.dataset.t)) + ' (copy)';
+      src.name = boardLabel(dayFor(viewDate, cid), el.dataset.t) + ' (copy)'; if (!src.heading) src.heading = BOARDS[el.dataset.t] ? BOARDS[el.dataset.t].heading : 'MY BOARD';
       (src.pics || []).forEach(p2 => { p2.id = Suite.uid(); }); (src.tools || []).forEach(w => { w.id = Suite.uid(); });
       r.boards = r.boards || {}; r.boards[id] = src; const i = r.lineup.indexOf(el.dataset.t); r.lineup.splice(i < 0 ? r.lineup.length : i + 1, 0, id);
       commit(true); Suite.toast('Copy made. Change its words in Edit on screen.'); return;
     }
     if (d === 'cshare') { shareBoard(cid, el.dataset.t); return; }
+    if (d === 'cren') { const t = el.dataset.t, cur = boardLabel(dayFor(viewDate, cid), t);
+      const nm = await Suite.dialog({ title: 'Rename this board', body: 'The name shown in lists like this one. What students see on the board doesn\'t change.', input: cur, ok: 'Rename' }); if (!nm || !nm.trim()) return;
+      if (t.startsWith('L-')) { const it = (T.library || []).find(x => 'L-' + x.id === t); if (it) { it.name = nm.trim(); it.board.name = nm.trim(); } }
+      else { const r = editable(viewDate, cid); r.boards = r.boards || {}; r.boards[t] = r.boards[t] || clone(boardOf(dayFor(viewDate, cid), t)); r.boards[t].name = nm.trim(); const u = usual(cid); if (u.boards && u.boards[t]) u.boards[t].name = nm.trim(); }
+      commit(true); return; }
     if (d === 'dushift') { const u = usual(cid); if (u.duties) { u.duties.shift = (u.duties.shift || 0) + (+el.dataset.v); commit(true); Suite.toast(+el.dataset.v > 0 ? 'Duties rotated' : 'Duties moved back a week'); } return; }
     if (d === 'bomadd') { const u = usual(cid), o = u.bellOwn = u.bellOwn || { on: true, minutes: 7, messages: [] }; o.messages = (o.messages || []).concat({ min: 7, text: 'Clean-up time!', chime: true, big: true }); commit(true); return; }
     if (d === 'bosndtry') { bellChime(bellCfg()); return; }
@@ -1025,7 +1034,11 @@ details.sec>summary .muted{font-weight:400}
   }
   document.addEventListener('selectionchange', () => { if (active) syncBar(); });
   function placeBar(){ if (!active || ftb.hidden) return; const r = $('#stage').getBoundingClientRect(), w = ftb.offsetWidth;
-    ftb.style.left = Math.max(8, r.left + (r.width - w) / 2) + 'px'; ftb.style.top = Math.max(4, r.top - ftb.offsetHeight - 8) + 'px'; }
+    ftb.style.left = Math.max(8, r.left + (r.width - w) / 2) + 'px';
+    // never over the menus or the editing toolbar: above the text if there's room, otherwise just below it
+    const floor = (document.getElementById('rail') ? document.getElementById('rail').getBoundingClientRect().bottom : 0) + 6, h = ftb.offsetHeight;
+    let top = r.top - h - 8; if (top < floor) top = r.bottom + 8 + h < innerHeight ? r.bottom + 8 : floor;
+    ftb.style.top = top + 'px'; }
   function hideBar(){ ftb.hidden = true; active = null; }
   window.addEventListener('resize', placeBar); window.addEventListener('scroll', placeBar, true);
   const curLi = () => { const n = getSelection().anchorNode; const el = n && (n.nodeType === 1 ? n : n.parentElement); return el && el.closest ? el.closest('ul.lines > li') : null; };
@@ -1189,6 +1202,16 @@ details.sec>summary .muted{font-weight:400}
   }
 
 
+  const S0cur = () => screens(viewDate, activeId())[screen];
+  // ---- while editing a board that also shows on other days or in other classes, say so ----
+  function sharedNotice(cid, t){
+    if (!t || !String(t).startsWith('L-')) return '';
+    const it = (T.library || []).find(x => 'L-' + x.id === t); if (!it) return '';
+    const where = new Set(); const nm = k => { if (k.startsWith('course:')) { const co = Suite.courses().find(x => 'course:' + x.id === k); return co ? co.name : k; } const c = classes().find(x => x.id === k); return c ? c.name : k; };
+    Object.entries(T.rows || {}).forEach(([k, r]) => { if ((r.lineup || []).includes(t)) where.add(nm(k) + ' (every day)'); });
+    Object.entries(T.days || {}).forEach(([d, day]) => { if (d < Suite.dateKey(new Date())) return; Object.entries(day).forEach(([k, r]) => { if ((r.lineup || []).includes(t) && !(((T.rows || {})[k] || {}).lineup || []).includes(t)) where.add(nm(k) + ' (' + longDate(d).replace(/,? \d{4}$/, '') + ')'); }); });
+    return `<div class="shnote"><b>This board is linked</b> and shows in: ${[...where].slice(0, 4).map(esc).join(', ')}${where.size > 4 ? ` and ${where.size - 4} more` : ''}. Changes show everywhere it's used. <button class="btn small" data-a="unlinkday">Just change it for ${esc(longDate(viewDate).replace(/,? \d{4}$/, ''))}</button></div>`;
+  }
   // ---- one place to read or write any item's position (layout boxes, text boxes, tools, pictures) ----
   function getBoxK(k, look){
     const bd = boardOf(dayFor(viewDate, activeId()), stageEl.dataset.type), lay = getLayout(look);
@@ -1480,6 +1503,9 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'full') { full = !full; if (full && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); else if (!full && document.fullscreenElement) document.exitFullscreen().catch(() => {}); render(); }
     else if (a === 'startedit') startEdit();
     else if (a === 'addpic') { let inp = document.getElementById('picadd'); if (!inp) { inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'picadd'; inp.hidden = true; document.body.appendChild(inp); } inp.click(); return; }
+    else if (a === 'unlinkday') { const cid = activeId(), t = S0cur(), r = editable(viewDate, cid), id = 'c-' + Suite.uid(), src = clone(boardOf(dayFor(viewDate, cid), t));
+      src.name = (src.name || plainOf(src.heading) || 'Board') + ' (this day)'; r.boards = r.boards || {}; r.boards[id] = src; r.lineup = r.lineup.map(x => x === t ? id : x); delete r.boards[t];
+      save(); render(); Suite.toast('Now a separate copy, just for this day. The linked board is unchanged.'); return; }
     else if (a === 'align') { doAlign(el.dataset.v); return; }
     else if (a === 'alignclear') { alignSel.clear(); markAlign(); renderRail(activeId()); return; }
     else if (a === 'everytool') { const cid = activeId(), u = usual(cid), list = u.boardTools = u.boardTools || [], i = list.findIndex(w => w.kind === el.dataset.id);
@@ -1542,10 +1568,14 @@ details.sec>summary .muted{font-weight:400}
   });
   { const md = location.hash.match(/date=(\d{4}-\d{2}-\d{2})/), mc = location.hash.match(/class=([\w-]+)/);
     if (md) viewDate = md[1];
-    if (mc && classes().some(c => c.id === decodeURIComponent(mc[1]))) setMode(decodeURIComponent(mc[1])); }
+    if (mc && classes().some(c => c.id === decodeURIComponent(mc[1]))) setMode(decodeURIComponent(mc[1]));
+  }
   Suite.mountNav('today');
   resetTimer(activeId()); lastCid = activeId();
   render();
+  // opened from the Boards page: go straight to that board (and start editing)
+  { const mb = location.hash.match(/board=([\w-]+)/);
+    if (mb) setTimeout(() => { const S0 = screens(viewDate, activeId()), k = S0.indexOf(decodeURIComponent(mb[1])); if (k > -1) { screen = k; reveal = 0; render(); } if (/edit=1/.test(location.hash) && !editMode) startEdit(); }, 60); }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(fitAll));
 })();
 </script>
