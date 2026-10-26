@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-23b">
-<script src="shared/core.js?v=2026-10-23b"></script>
-<script>window.PAGE_VERSION = '2026-10-23b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-26a">
+<script src="shared/core.js?v=2026-10-26a"></script>
+<script>window.PAGE_VERSION = '2026-10-26a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:2px}
@@ -177,6 +177,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     return rows.filter(r => r[1] === best).map(r => r[0]);
   }
   const tname = (c, id) => (c.tables.find(t => t.id === id) || { name: 'Removed table' }).name;
+  const withScore = (c, ids, f) => ids.map(i => `${esc(tname(c, i))} <span class="muted">· ${esc(f(i))}</span>`).join(', ');
   const names = (c, ids) => ids && ids.length ? ids.map(i => esc(tname(c, i))).join(', ') : '<span class="muted">None yet</span>';
 
   const W = (k, o) => Suite.word(k, o);
@@ -300,14 +301,15 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           <div class="scroll"><table class="plain">
             <thead><tr><th>Award</th><th>This week so far</th><th>${prev >= 1 ? 'Week ' + prev + ' final' : 'Last week'}</th></tr></thead>
             <tbody>
-              <tr><td>Top table</td><td>${names(c, lead)}</td><td>${prev >= 1 ? names(c, prevLead) : '<span class="muted">—</span>'}</td></tr>
+              <tr><td>Top table</td><td>${names(c, lead)}</td><td>${prev >= 1 ? (prevLead.length ? withScore(c, prevLead, id => pts(c.id, id, prev) + ' pts') : '<span class="muted">No points that week</span>') : '<span class="muted">—</span>'}</td></tr>
               <tr><td>Most improved</td><td>${T.week === 1 ? '<span class="muted">Starts week 2</span>' : imp ? (imp.length ? names(c, imp) : '<span class="muted">No table ahead of last week yet</span>') : '<span class="muted">Waiting for points</span>'}</td>
-                  <td>${prevImp ? names(c, prevImp) : '<span class="muted">—</span>'}</td></tr>
+                  <td>${prevImp ? (prevImp.length ? withScore(c, prevImp, id => { const a = pts(c.id, id, prev - 1), b2 = pts(c.id, id, prev); return '+' + (b2 - a) + ' (' + a + ' → ' + b2 + ')'; }) : '<span class="muted">No table beat its week ' + (prev - 1) + ' score</span>') : '<span class="muted">' + (prev === 1 ? 'Starts week 2' : '—') + '</span>'}</td></tr>
               <tr><td>Streak bonus</td><td>${streakNow.length ? names(c, streakNow) + ' <span class="muted">if they hold on</span>' : '<span class="muted">None yet</span>'}</td>
-                  <td>${prev >= 1 ? names(c, streakPrev) : '<span class="muted">—</span>'}</td></tr>
+                  <td>${prev >= 1 ? (streakPrev.length ? withScore(c, streakPrev, id => (streaks[id] || 0) + ' wks') : '<span class="muted">No streaks</span>') : '<span class="muted">—</span>'}</td></tr>
               <tr><td>Quarter leader</td><td colspan="2">${names(c, qLead)}</td></tr>
             </tbody></table></div>
-          <p class="hint" style="margin-top:8px">Ties share the prize. Short week? Don't end it, and its points roll into the next week.</p>
+          ${prev >= 1 ? `<h3 class="sub" style="margin:14px 0 6px">Week ${prev} final standings</h3><div class="scroll"><table class="plain"><thead><tr><th>${esc(W('team', { cap: true }))}</th><th>Week ${prev}</th>${prev >= 2 ? `<th>Change from week ${prev - 1}</th>` : ''}<th>Quarter</th></tr></thead><tbody>${act.map(t => [t, pts(c.id, t.id, prev), prev >= 2 ? pts(c.id, t.id, prev) - pts(c.id, t.id, prev - 1) : null]).sort((a, b) => b[1] - a[1]).map(([t, p, d]) => `<tr><td><span class="swatch" style="background:${esc(t.color)}"></span> ${esc(t.name)}</td><td><b>${p}</b></td>${d === null ? '' : `<td>${d > 0 ? '+' + d : d}</td>`}<td>${pts(c.id, t.id)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+          <p class="hint" style="margin-top:8px">Winners use each week's points, not the quarter total. Ties share the prize. Short week? Don't end it, and its points roll into the next week.</p>
         </section>
 
         <section class="panel goalspanel" aria-labelledby="h-goals"><h2 id="h-goals">Weekly goals</h2>

@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-23b">
-<script src="shared/core.js?v=2026-10-23b"></script>
-<script>window.PAGE_VERSION = '2026-10-23b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-26a">
+<script src="shared/core.js?v=2026-10-26a"></script>
+<script>window.PAGE_VERSION = '2026-10-26a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -293,6 +293,12 @@ body.editing-screen .stage-wrap{background:#1b2633}
 .w-wn{display:flex;flex-wrap:wrap;align-items:center;gap:.3em .5em;font-weight:800;font-size:1.15em}
 .w-wn .dot{display:inline-block;width:.9em;height:.9em;border-radius:50%;border:1.5px solid #1f2a33}
 .w-empty{font-weight:500;font-size:.8em;opacity:.75;padding-top:1cqh}
+.w-win{font-size:min(6.6cqh,5cqw)}
+.w-wt{display:inline-flex;align-items:center;gap:.35em;margin-right:.7em}.w-wt i{font-style:normal;font-weight:600;font-size:.8em;opacity:.75}
+.w-none{font-weight:500;font-size:.85em;opacity:.7}
+.w-stand{margin-top:1.4cqh;border-top:2px solid #dfe3e6;padding-top:.8cqh}
+.w-sr{display:grid;grid-template-columns:1.4em auto 1fr auto;gap:.45em;align-items:center;padding:.15em 0;font-size:.9em}
+.w-sr .w-rk{font-weight:800;opacity:.6;text-align:right}.w-sr .dot{width:.85em;height:.85em;border-radius:50%;border:1.5px solid #1f2a33}.w-sr b{font-variant-numeric:tabular-nums}
 .bell{position:absolute;z-index:8;background:rgba(18,26,36,.86);color:#fff;font-family:var(--sans);border-radius:1.2cqw;padding:.8cqw 1.4cqw;box-shadow:0 .4cqw 1.2cqw rgba(0,0,0,.3);pointer-events:none;transition:background .3s}
 .bell[hidden]{display:none}
 .bell .b-main{display:flex;align-items:baseline;gap:.8cqw;white-space:nowrap}
@@ -1357,7 +1363,7 @@ details.sec>summary .muted{font-weight:400}
 
   /* ---------- suite tools: open one on top, or place one on a board ---------- */
   const TOOL_PAGES = { timeleft: ['Time left (full screen)', ''], spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
-  const WIDGETS = { duties: ['Clean-up duties', [1360, 300, 520, 360]], clock: ['Time left', [1440, 40, 440, 250]], winners: ["Last week's winners", [1360, 260, 500, 440]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
+  const WIDGETS = { duties: ['Clean-up duties', [1360, 300, 520, 360]], clock: ['Time left', [1440, 40, 440, 250]], winners: ["Last week's winners", [1320, 200, 560, 720]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
   // clean-up duties: set per class, rotating every Monday (plus any Rotate / Back adjustments)
   const mondayKey = k => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return Suite.dateKey(d); };
   function dutiesFor(cid, dateKey){
@@ -1442,7 +1448,7 @@ details.sec>summary .muted{font-weight:400}
   const everyMenu = cid => { const on = new Set((usual(cid).boardTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Place a tool once and show it on all of this class's boards">On every board ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="everytool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   /* ---------- widgets pinned on top of the lesson slides (per class, kept until removed) ---------- */
-  const LT_SIZE = { duties: [1360, 300, 520, 360], clock: [1440, 40, 440, 250], winners: [1360, 260, 500, 440], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
+  const LT_SIZE = { duties: [1360, 300, 520, 360], clock: [1440, 40, 440, 250], winners: [1320, 200, 560, 720], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
   const pinMenu = cid => { const on = new Set((usual(cid).lessonTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Keep a tool on top of your slides">Pin to slides ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="pintool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   function drawLessonTools(cid){ drawPinned(cid, 'ltools', 'lessonTools'); drawPinned(cid, 'btools', 'boardTools'); }
@@ -1481,17 +1487,26 @@ details.sec>summary .muted{font-weight:400}
     if (kind === 'picker') return `<div class="w-pick"><div class="w-name" data-w="name">${esc(w.last || '')}</div><button class="w-btn" data-w="pick">Pick a name</button></div>`;
     if (kind === 'noise') return `<div class="w-noise"><div class="w-nlab" data-w="nlab">${mic ? '' : 'Noise meter'}</div><div class="w-meter"><span data-w="nbar"></span><i style="left:${(Suite.get('noise', {}) || {}).line || 60}%"></i></div>${mic ? '' : '<button class="w-btn" data-w="mic">Start listening</button>'}</div>`;
     if (kind === 'timer') { const t = Suite.timerState(); return `<div class="w-timer"><div class="w-time" data-w="time">${Suite.fmtDuration(t.left || 0)}</div><div class="w-row">${[1, 3, 5].map(m => `<button class="w-btn sm" data-w="tstart" data-m="${m}">${m} min</button>`).join('')}<button class="w-btn sm" data-w="ttog">${t.state === 'running' ? 'Pause' : 'Go'}</button></div></div>`; }
-    if (kind === 'winners') {   // the prizes Table points recorded for this class's most recent ended week
-      const c = classes().find(x => x.id === activeId()), T0 = Object.assign({ prizes: [] }, Suite.get('tracker', {})), team = Suite.word('team', { cap: true });
+    if (kind === 'winners') {   // the most recent ended week: winners with their scores, then every table's points that week
+      const c = classes().find(x => x.id === activeId()), T0 = Object.assign({ prizes: [], log: [] }, Suite.get('tracker', {})), team = Suite.word('team', { cap: true });
       if (!c || !Suite.feature('points')) return '<div class="w-pts muted">Points are turned off.</div>';
       const mine = (T0.prizes || []).filter(x => x.c === c.id && x.kind !== 'quarter');
       if (!mine.length) return `<div class="w-pts w-win"><div class="w-ph">Last week's winners</div><div class="w-empty">Winners show here after you end a week in ${esc(team)} points.</div></div>`;
-      const last = mine.reduce((m, x) => (x.q > m.q || (x.q === m.q && x.w > m.w)) ? x : m), wk = mine.filter(x => x.q === last.q && x.w === last.w);
-      const champ = (T0.prizes || []).find(x => x.c === c.id && x.kind === 'quarter' && x.q === last.q && last.w >= (T0.quarterWeeks || 0));
-      const NAMES = { top: 'Top ' + team.toLowerCase(), improved: 'Most improved', streak: 'Streak bonus' }, ORDER = ['top', 'improved', 'streak'];
+      const last = mine.reduce((m, x) => (x.q > m.q || (x.q === m.q && x.w > m.w)) ? x : m), q = last.q, wk = last.w;
+      const P = (tid, w) => (T0.log || []).reduce((a, e) => a + (e.c === c.id && e.t === tid && e.q === q && e.w === w ? e.d : 0), 0);
+      const rec = kind2 => (mine.find(x => x.q === q && x.w === wk && x.kind === kind2) || null);
       const color = id => (c.tables.find(t => t.id === id) || {}).color || '#888';
-      const rows = wk.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind)).map(x => `<div class="w-wr"><span class="w-wk">${esc(NAMES[x.kind] || x.kind)}</span><span class="w-wn">${x.tables.map(t => `<span class="dot" style="background:${esc(color(t.id))}"></span>${esc(t.name)}`).join(', ')}</span></div>`).join('');
-      return `<div class="w-pts w-win"><div class="w-ph">Last week's winners <span class="w-wq">Q${last.q} week ${last.w}</span></div>${rows}</div>`;
+      const tn = id => (c.tables.find(t => t.id === id) || { name: 'Removed table' }).name;
+      const streakLen = id => { let n = 0; for (let w = wk; w >= 1; w--) { if ((T0.prizes || []).some(x => x.c === c.id && x.q === q && x.w === w && x.kind === 'top' && x.tables.some(t => t.id === id))) n++; else break; } return n; };
+      const who = (r, f) => r && r.tables.length ? r.tables.map(t => `<span class="w-wt"><span class="dot" style="background:${esc(color(t.id))}"></span>${esc(tn(t.id))} <i>${esc(f(t.id))}</i></span>`).join('') : null;
+      const top = who(rec('top'), id => P(id, wk) + ' pts');
+      const imp = wk >= 2 ? who(rec('improved'), id => '+' + (P(id, wk) - P(id, wk - 1)) + ' (' + P(id, wk - 1) + ' → ' + P(id, wk) + ')') : null;
+      const str = who(rec('streak'), id => streakLen(id) + ' weeks');
+      const rows = [['Top ' + team.toLowerCase(), top || '<span class="w-none">No points that week</span>'], ['Most improved', wk < 2 ? '<span class="w-none">Starts week 2</span>' : (imp || `<span class="w-none">No ${esc(team.toLowerCase())} beat its week ${wk - 1} score</span>`)]].concat(str ? [['Streak bonus', str]] : []);
+      const stand = Suite.activeTables(c).map(t => [t, P(t.id, wk)]).sort((a, b) => b[1] - a[1]);
+      let rank = 0, prevPts = null;
+      const standHtml = stand.map(([t, p], k) => { if (p !== prevPts) { rank = k + 1; prevPts = p; } return `<div class="w-sr"><span class="w-rk">${rank}</span><span class="dot" style="background:${esc(t.color || '#888')}"></span><span class="w-sn">${esc(t.name)}</span><b>${p}</b></div>`; }).join('');
+      return `<div class="w-pts w-win"><div class="w-ph">Last week's winners <span class="w-wq">Q${q} week ${wk}</span></div>${rows.map(([k, v]) => `<div class="w-wr"><span class="w-wk">${esc(k)}</span><span class="w-wn">${v}</span></div>`).join('')}<div class="w-stand"><div class="w-wk">Week ${wk} standings</div>${standHtml}</div></div>`;
     }
     if (kind === 'points') {
       const c = classes().find(x => x.id === activeId()), T0 = Object.assign({ quarter: 1, week: 1, log: [] }, Suite.get('tracker', {}));
