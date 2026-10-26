@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-26a">
-<script src="shared/core.js?v=2026-10-26a"></script>
-<script>window.PAGE_VERSION = '2026-10-26a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-26b">
+<script src="shared/core.js?v=2026-10-26b"></script>
+<script>window.PAGE_VERSION = '2026-10-26b';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -206,6 +206,8 @@ body.peek .stage-wrap{padding:0;background:transparent}
 body.peek .stage{width:100vw!important;border-radius:0;pointer-events:none}
 .edtips{display:flex;align-items:center;gap:10px}.edtips p{margin:0;flex:1}
 .edopt .pieces{margin-top:6px}
+.edopt .items{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}
+.edopt .item{display:inline-flex;align-items:center;gap:4px;background:var(--wash);border-radius:999px;padding:2px 4px 2px 10px;font-size:13px}
 .bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
@@ -293,7 +295,7 @@ body.editing-screen .stage-wrap{background:#1b2633}
 .w-wn{display:flex;flex-wrap:wrap;align-items:center;gap:.3em .5em;font-weight:800;font-size:1.15em}
 .w-wn .dot{display:inline-block;width:.9em;height:.9em;border-radius:50%;border:1.5px solid #1f2a33}
 .w-empty{font-weight:500;font-size:.8em;opacity:.75;padding-top:1cqh}
-.w-win{font-size:min(6.6cqh,5cqw)}
+.w-win{font-size:min(7.4cqh,5.6cqw)}
 .w-wt{display:inline-flex;align-items:center;gap:.35em;margin-right:.7em}.w-wt i{font-style:normal;font-weight:600;font-size:.8em;opacity:.75}
 .w-none{font-weight:500;font-size:.85em;opacity:.7}
 .w-stand{margin-top:1.4cqh;border-top:2px solid #dfe3e6;padding-top:.8cqh}
@@ -428,7 +430,13 @@ details.sec>summary .muted{font-weight:400}
     const take = recx => { if (!recx || !recx.boards) return; Object.keys(recx.boards).forEach(k => { if (!k.startsWith('L-')) return; const it = lib.find(x => 'L-' + x.id === k); if (it) { it.board = recx.boards[k]; const nm = it.board.name || String(it.board.heading || '').replace(/<[^>]+>/g, '').trim(); if (nm) it.name = nm; } delete recx.boards[k]; }); };
     Object.values(T.days || {}).forEach(day => Object.values(day).forEach(take)); Object.values(T.rows || {}).forEach(take);
   }
-  const save = () => { if (STUDIO && STUDIO.peek) return; if (STUDIO) studioSync(); moveLinked(); const sb = T.days[SBOX]; delete T.days[SBOX]; Suite.set('today', T); if (sb) T.days[SBOX] = sb; };
+  let undoStack = [], lastSaved = null, undoing = false;
+  function undo(){
+    if (!undoStack.length) { Suite.toast('Nothing to undo'); return; }
+    const prev = undoStack.pop(); T = JSON.parse(prev); lastSaved = prev; undoing = true; save(); undoing = false; render(); if (editing) renderDrawer(); Suite.toast('Undone');
+  }
+  const save = () => { if (STUDIO && STUDIO.peek) return;
+    if (editMode && !undoing) { const now = JSON.stringify(T); if (lastSaved && now !== lastSaved) { undoStack.push(lastSaved); if (undoStack.length > 25) undoStack.shift(); } lastSaved = now; } if (STUDIO) studioSync(); moveLinked(); const sb = T.days[SBOX]; delete T.days[SBOX]; Suite.set('today', T); if (sb) T.days[SBOX] = sb; };
   let viewDate = Suite.dateKey(new Date()), screen = 0, reveal = 0, lesson = false, full = false, editing = false;
   let editMode = false;   // editing right on the screen
   const urls = {};
@@ -669,7 +677,7 @@ details.sec>summary .muted{font-weight:400}
     const handles = k => E ? `<span class="grip" data-g="move" data-k="${k}" title="Drag to move" aria-hidden="true">⠿</span><span class="rz" data-g="size" data-k="${k}" title="Drag to resize" aria-hidden="true"></span>` : '';
     const ce = (f, extra) => E ? ` contenteditable="true" spellcheck="true" data-f="${f}"${extra || ''}` : '';
     let html = '';
-    setTimeout(markAlign, 0);
+    setTimeout(markAlign, 0); setTimeout(rescue, 30);
     if (lesson) { html = lessonHtml(cid, rec); setTimeout(() => drawLessonTools(cid), 0); }
     else {
       const planBoard = (type === 'due' || type === 'agenda') && b.source !== 'custom';
@@ -808,7 +816,7 @@ details.sec>summary .muted{font-weight:400}
     const list = classes(), today = Suite.dateKey(new Date()), auto = MODE === 'auto' ? autoPick() : null;
     const seen = new Set(), picks = list.filter(c => { const k = rowKeyOf(c.id); if (seen.has(k + c.id)) return false; seen.add(k + c.id); return true; });
     const u = cid ? usual(cid) : null, L = cid ? lookOf(cid, viewDate) : null;
-    if (STUDIO) { $('#rail').innerHTML = studioRail() + `<div class="rrow r2 bar"><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn quiet" data-a="edtips" title="Editing tips">?</button></div>` + edFloat(cid, S);
+    if (STUDIO) { $('#rail').innerHTML = studioRail() + `<div class="rrow r2 bar"><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn" data-a="edundo" title="Undo (Ctrl+Z)">↶ Undo</button><button class="btn quiet" data-a="edtips" title="Editing tips">?</button></div>` + edFloat(cid, S);
       document.documentElement.style.setProperty('--railh', $('#rail').offsetHeight + 'px'); return; }
     $('#rail').innerHTML = `<div class="rrow r1"><div class="pills" role="radiogroup" aria-label="Which class to show">
         <button role="radio" data-a="mode" data-id="auto" aria-checked="${MODE === 'auto'}" title="Follow the bell schedule">Auto</button>
@@ -819,7 +827,7 @@ details.sec>summary .muted{font-weight:400}
       <div class="steps" aria-label="Boards">${S.map((t, i) => `<i class="${!lesson && i === screen ? 'on' : ''}" data-a="go" data-i="${i}" title="${esc(boardLabel(dayFor(viewDate, cid), t))}"></i>`).join('')}<i class="ldot${lesson ? ' on' : ''}" data-a="go" data-i="lesson" title="Lesson slides"></i></div>
       </div>
       ${edFloat(cid, S)}
-      ${editMode ? `<div class="rrow r2 bar"><button class="btn" data-a="prev" title="Previous board">‹ Back</button><button class="btn primary" data-a="next" title="Next board">Next ›</button><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}${everyMenu(cid)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn quiet" data-a="edtips" title="Editing tips">?</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="rrow r2 bar">
+      ${editMode ? `<div class="rrow r2 bar"><button class="btn" data-a="prev" title="Previous board">‹ Back</button><button class="btn primary" data-a="next" title="Next board">Next ›</button><button class="btn" data-a="xaddbox">Add a text box</button>${toolMenu('addtool', 'Place a tool on this board', WIDGETS)}${everyMenu(cid)}<button class="btn" data-a="addpic">Add a picture</button><button class="btn" data-a="edundo" title="Undo (Ctrl+Z)">↶ Undo</button><button class="btn quiet" data-a="edtips" title="Editing tips">?</button><button class="btn" data-a="settings">Day settings</button><button class="btn primary" data-a="editdone">Done editing</button></div>` : `<div class="rrow r2 bar">
         <button class="btn" data-a="prev" title="Previous (left arrow)">‹ Back</button><button class="btn primary" data-a="next" title="Next (right arrow or clicker)">${lesson ? 'Lesson' : 'Next ›'}</button>
         ${lesson ? '<button class="btn slot-lesson" data-a="boards">Back to boards</button>' : '<button class="btn slot-lesson" data-a="lesson" title="L">Lesson</button>'}
         ${toolMenu('opentool', 'Open a tool on top of the board', TOOL_PAGES)}
@@ -1018,7 +1026,7 @@ details.sec>summary .muted{font-weight:400}
     const lay = T.layouts[look] = T.layouts[look] || clone(getLayout(look)); lay.boxes = lay.boxes || {}; lay.panels = lay.panels || {}; lay.extras = lay.extras || []; lay.styles = lay.styles || {}; if (!Object.keys(lay.boxes).length) Object.assign(lay.boxes, getLayout(look).boxes); return lay; }
   // switching in or out of editing keeps you on the same board (editing also lists empty boards, which shifts the order)
   function keepBoard(fn){ const cid = activeId(); const cur = cid ? (lesson ? null : screens(viewDate, cid)[screen]) : null; fn(); if (cid && cur) { const i = screens(viewDate, cid).indexOf(cur); screen = i > -1 ? i : 0; } }
-  function startEdit(){ if (!activeId()) return; keepBoard(() => { editMode = true; }); lesson = false; editing = false; $('#drawer').hidden = true; render(); }
+  function startEdit(){ if (!activeId()) return; undoStack = []; lastSaved = JSON.stringify(T); keepBoard(() => { editMode = true; }); lesson = false; editing = false; $('#drawer').hidden = true; render(); }
   function endEdit(){ const a = document.activeElement; if (a && a.dataset && a.dataset.f) syncNow(a); keepBoard(() => { editMode = false; }); hideBar(); render(); }
   const ftb = document.createElement('div'); ftb.className = 'ftb'; ftb.hidden = true; ftb.setAttribute('role', 'toolbar'); ftb.setAttribute('aria-label', 'Text formatting');
   document.body.appendChild(ftb);
@@ -1156,6 +1164,7 @@ details.sec>summary .muted{font-weight:400}
       if (drag.resize) { const sx2 = near([b[0] + b[2]], drag.xs), sy2 = near([b[1] + b[3]], drag.ys); if (sx2) { b[2] += sx2.d; gx = sx2.l; } if (sy2) { b[3] += sy2.d; gy = sy2.l; } }
       else { const sx2 = near([b[0], b[0] + b[2] / 2, b[0] + b[2]], drag.xs), sy2 = near([b[1], b[1] + b[3] / 2, b[1] + b[3]], drag.ys); if (sx2) { b[0] += sx2.d; gx = sx2.l; } if (sy2) { b[1] += sy2.d; gy = sy2.l; } }
     }
+    if (drag.k !== 'bm') { if (drag.resize) { b[2] = Math.min(b[2], 1920 - b[0]); b[3] = Math.min(b[3], 1080 - b[1]); } else { b[0] = Math.max(0, Math.min(1920 - b[2], b[0])); b[1] = Math.max(0, Math.min(1080 - b[3], b[1])); } }
     showGuides(gx, gy);
     drag.box = b.map(Math.round); if (drag.resize) requestAnimationFrame(fitAll); const keep = drag.region.getAttribute('style').replace(/left:[^;]*;top:[^;]*;width:[^;]*;height:[^;]*/, ''); drag.region.setAttribute('style', place(drag.box) + ';' + keep.replace(/^;/, ''));
   });
@@ -1258,8 +1267,10 @@ details.sec>summary .muted{font-weight:400}
   function edFloat(cid, S){
     if (!editMode) return '';
     const t = S[screen] || '', notice = STUDIO ? '' : sharedNotice(cid, t);
-    const opts = cid && isCustom(t) ? (() => { const bd = boardOf(dayFor(viewDate, cid), t), h = bd.hide || {};
-      return `<div class="edopt"><button class="btn small quiet" data-a="edopts" aria-expanded="${edOpts}">Board options ${edOpts ? '▾' : '▴'}</button>${edOpts ? `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">Show:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>` : ''}</div>`; })() : '';
+    const opts = cid && t ? (() => { const bd = boardOf(dayFor(viewDate, cid), t), h = bd.hide || {};
+      const items = boardItems(cid, t);
+      return `<div class="edopt"><button class="btn small quiet" data-a="edopts" aria-expanded="${edOpts}">Board options ${edOpts ? '▾' : '▴'}</button>${edOpts ? `${isCustom(t) ? `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">Show:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>` : ''}
+        <div class="items"><span class="small muted">On this board:</span>${items.length ? items.map(it => `<span class="item">${esc(it.label)}<button class="btn quiet danger small" data-a="itemdel" data-kind="${it.kind}" data-id="${esc(it.id)}" aria-label="Remove ${esc(it.label)}">Remove</button></span>`).join('') : '<span class="small muted">No added text boxes, tools, or pictures.</span>'}</div>` : ''}</div>`; })() : '';
     const align = alignSel.size ? `<div class="bar alignbar"><span class="small"><b>${alignSel.size}</b> picked. Align ${alignSel.size === 1 ? 'to the screen' : 'together'}:</span>${[['left', 'Left'], ['hcenter', 'Center'], ['right', 'Right'], ['top', 'Top'], ['vmiddle', 'Middle'], ['bottom', 'Bottom']].map(([k, n]) => `<button class="btn small" data-a="align" data-v="${k}">${n}</button>`).join('')}<button class="btn quiet small" data-a="alignclear">Clear</button></div>` : '';
     const tips = edTips ? `<div class="edtips"><p>Click any text to type. Drag <b>⠿</b> to move a box, and its corner to resize. Boxes snap to each other as you drag (hold Alt to place freely). Shift+click boxes to line them up. Changes save as you go.</p><button class="btn small primary" data-a="edtipsok">Got it</button></div>` : '';
     return notice || align || tips || opts ? `<div class="edfloat">${notice}${tips}${align}${opts}</div>` : '';
@@ -1273,6 +1284,35 @@ details.sec>summary .muted{font-weight:400}
     Object.entries(T.rows || {}).forEach(([k, r]) => { if ((r.lineup || []).includes(t)) where.add(nm(k) + ' (every day)'); });
     Object.entries(T.days || {}).forEach(([d, day]) => { if (d < Suite.dateKey(new Date())) return; Object.entries(day).forEach(([k, r]) => { if ((r.lineup || []).includes(t) && !(((T.rows || {})[k] || {}).lineup || []).includes(t)) where.add(nm(k) + ' (' + longDate(d).replace(/,? \d{4}$/, '') + ')'); }); });
     return `<div class="shnote"><b>This board is linked</b> and shows in: ${[...where].slice(0, 4).map(esc).join(', ')}${where.size > 4 ? ` and ${where.size - 4} more` : ''}. Changes show everywhere it's used. <button class="btn small" data-a="unlinkday">Just change it for ${esc(longDate(viewDate).replace(/,? \d{4}$/, ''))}</button></div>`;
+  }
+  // ---- everything added to this board (text boxes, tools, pictures, tools on every board), for Board options ----
+  function boardItems(cid, t){
+    const out = [], look = stageEl.dataset.look, lay = look ? getLayout(look) : { extras: [] }, bd = boardOf(dayFor(viewDate, cid), t);
+    (lay.extras || []).forEach((x, i) => { const txt = plainOf(x.html || x.text || ''); out.push({ kind: 'x', id: x.id, label: 'Text box' + (txt ? ': ' + txt.slice(0, 24) + (txt.length > 24 ? '…' : '') : ' ' + (i + 1)) }); });
+    (bd.tools || []).forEach(w => out.push({ kind: 't', id: w.id, label: (WIDGETS[w.kind] || ['Tool'])[0] }));
+    (bd.pics || []).forEach((p2, i) => out.push({ kind: 'p', id: p2.id, label: 'Picture ' + (i + 1) }));
+    (usual(cid).boardTools || []).forEach(w => out.push({ kind: 'b', id: w.id, label: (WIDGETS[w.kind] || ['Tool'])[0] + ' (every board)' }));
+    return out;
+  }
+  function removeItem(kind, id){
+    const cid = activeId(), t = stageEl.dataset.type, look = stageEl.dataset.look;
+    if (kind === 'x') { const lay = ownLayout(look); lay.extras = lay.extras.filter(y => y.id !== id); }
+    else if (kind === 't' || kind === 'p') { const r = editable(viewDate, cid); r.boards = r.boards || {}; const bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); if (kind === 't') bd.tools = (bd.tools || []).filter(w => w.id !== id); else bd.pics = (bd.pics || []).filter(p2 => p2.id !== id); }
+    else if (kind === 'b') { const u = usual(cid); u.boardTools = (u.boardTools || []).filter(w => w.id !== id); }
+    save(); render(); Suite.toast('Removed. Undo brings it back.');
+  }
+  // ---- rescue: pull anything that's partly off the board back on (never the bitmoji, which may sit low) ----
+  const fitBox = b => { if (!Array.isArray(b) || b.length < 4) return null; const w = Math.min(b[2], 1920), h = Math.min(b[3], 1080), x = Math.max(0, Math.min(1920 - w, b[0])), y = Math.max(0, Math.min(1080 - h, b[1])); return (x !== b[0] || y !== b[1] || w !== b[2] || h !== b[3]) ? [x, y, w, h] : null; };
+  function rescue(){
+    if (lesson || STUDIO && STUDIO.peek) return; const cid = activeId(), t = stageEl.dataset.type, look = stageEl.dataset.look; if (!cid || !t || !look) return;
+    let changed = false; const fix = o => { const f = fitBox(o.box); if (f) { o.box = f; changed = true; } };
+    // fix things where they're saved (everyday setup, this day, or My boards), so they stay fixed
+    const bd = boardOf(dayFor(viewDate, cid), t);
+    (bd.tools || []).forEach(fix); (bd.pics || []).forEach(fix);
+    const bk = boardKey(look), ownL = bk ? (boardOf(dayFor(viewDate, cid), bk) || {}).layout : T.layouts[fixLook(look)];
+    if (ownL) { Object.keys(ownL.boxes || {}).forEach(k => { if (k === 'bm') return; const f = fitBox(ownL.boxes[k]); if (f) { ownL.boxes[k] = f; changed = true; } }); (ownL.extras || []).forEach(fix); }
+    const u = usual(cid); ['boardTools', 'lessonTools'].forEach(n => (u[n] || []).forEach(fix));
+    if (changed) { save(); render(); Suite.toast('Moved something back onto the board'); }
   }
   // ---- one place to read or write any item's position (layout boxes, text boxes, tools, pictures) ----
   function getBoxK(k, look){
@@ -1363,7 +1403,7 @@ details.sec>summary .muted{font-weight:400}
 
   /* ---------- suite tools: open one on top, or place one on a board ---------- */
   const TOOL_PAGES = { timeleft: ['Time left (full screen)', ''], spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
-  const WIDGETS = { duties: ['Clean-up duties', [1360, 300, 520, 360]], clock: ['Time left', [1440, 40, 440, 250]], winners: ["Last week's winners", [1320, 200, 560, 720]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
+  const WIDGETS = { duties: ['Clean-up duties', [1360, 300, 520, 360]], clock: ['Time left', [1440, 40, 440, 250]], winners: ["Last week's winners", [1360, 260, 500, 440]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
   // clean-up duties: set per class, rotating every Monday (plus any Rotate / Back adjustments)
   const mondayKey = k => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return Suite.dateKey(d); };
   function dutiesFor(cid, dateKey){
@@ -1427,6 +1467,7 @@ details.sec>summary .muted{font-weight:400}
     if (C.chime5 && i.left <= 5 * 60000 && i.left > 5 * 60000 - 3000 && !tlFired.has(key + '|5')) { tlFired.add(key + '|5'); Suite.chimeFor('timeleft'); }
     if (C.chimeEnd && i.left <= 1500 && i.left > -2000 && !tlFired.has(key + '|end')) { tlFired.add(key + '|end'); Suite.chimeFor('timeleft'); }
   }
+  document.addEventListener('keydown', e => { if (!editMode || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return; const a = document.activeElement; if (a && (a.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(a.tagName))) return; e.preventDefault(); undo(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('time-left') && !document.getElementById('time-left').hidden) { e.stopPropagation(); closeTimeLeft(); } }, true);
   // the Time left widget (on a board, every board, or pinned to the slides)
   setInterval(() => { tickTimeLeft(); tlChimes(); if (!document.querySelector('.w-clock')) return; const I = timeLeftInfo();
@@ -1448,7 +1489,7 @@ details.sec>summary .muted{font-weight:400}
   const everyMenu = cid => { const on = new Set((usual(cid).boardTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Place a tool once and show it on all of this class's boards">On every board ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="everytool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   /* ---------- widgets pinned on top of the lesson slides (per class, kept until removed) ---------- */
-  const LT_SIZE = { duties: [1360, 300, 520, 360], clock: [1440, 40, 440, 250], winners: [1320, 200, 560, 720], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
+  const LT_SIZE = { duties: [1360, 300, 520, 360], clock: [1440, 40, 440, 250], winners: [1360, 260, 500, 440], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
   const pinMenu = cid => { const on = new Set((usual(cid).lessonTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Keep a tool on top of your slides">Pin to slides ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="pintool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   function drawLessonTools(cid){ drawPinned(cid, 'ltools', 'lessonTools'); drawPinned(cid, 'btools', 'boardTools'); }
@@ -1472,7 +1513,7 @@ details.sec>summary .muted{font-weight:400}
     e.preventDefault(); const r = st.getBoundingClientRect(), sx = 1920 / r.width, sy = 1080 / r.height, x0 = e.clientX, y0 = e.clientY, b0 = w.box.slice(), resize = h.hasAttribute('data-lt-size');
     const shield = document.createElement('div'); shield.className = 'lt-shield'; st.appendChild(shield);
     const move = ev => { const dx = (ev.clientX - x0) * sx, dy = (ev.clientY - y0) * sy;
-      if (resize) { w.box[2] = Math.max(180, b0[2] + dx); w.box[3] = Math.max(110, b0[3] + dy); } else { w.box[0] = Math.max(0, Math.min(1920 - b0[2], b0[0] + dx)); w.box[1] = Math.max(0, Math.min(1080 - b0[3], b0[1] + dy)); }
+      if (resize) { w.box[2] = Math.max(180, Math.min(1920 - b0[0], b0[2] + dx)); w.box[3] = Math.max(110, Math.min(1080 - b0[1], b0[3] + dy)); } else { w.box[0] = Math.max(0, Math.min(1920 - b0[2], b0[0] + dx)); w.box[1] = Math.max(0, Math.min(1080 - b0[3], b0[1] + dy)); }
       Object.assign(box.style, { left: (w.box[0] / 19.2) + '%', top: (w.box[1] / 10.8) + '%', width: (w.box[2] / 19.2) + '%', height: (w.box[3] / 10.8) + '%' }); };
     const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); shield.remove(); save(); };
     document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
@@ -1503,10 +1544,7 @@ details.sec>summary .muted{font-weight:400}
       const imp = wk >= 2 ? who(rec('improved'), id => '+' + (P(id, wk) - P(id, wk - 1)) + ' (' + P(id, wk - 1) + ' → ' + P(id, wk) + ')') : null;
       const str = who(rec('streak'), id => streakLen(id) + ' weeks');
       const rows = [['Top ' + team.toLowerCase(), top || '<span class="w-none">No points that week</span>'], ['Most improved', wk < 2 ? '<span class="w-none">Starts week 2</span>' : (imp || `<span class="w-none">No ${esc(team.toLowerCase())} beat its week ${wk - 1} score</span>`)]].concat(str ? [['Streak bonus', str]] : []);
-      const stand = Suite.activeTables(c).map(t => [t, P(t.id, wk)]).sort((a, b) => b[1] - a[1]);
-      let rank = 0, prevPts = null;
-      const standHtml = stand.map(([t, p], k) => { if (p !== prevPts) { rank = k + 1; prevPts = p; } return `<div class="w-sr"><span class="w-rk">${rank}</span><span class="dot" style="background:${esc(t.color || '#888')}"></span><span class="w-sn">${esc(t.name)}</span><b>${p}</b></div>`; }).join('');
-      return `<div class="w-pts w-win"><div class="w-ph">Last week's winners <span class="w-wq">Q${q} week ${wk}</span></div>${rows.map(([k, v]) => `<div class="w-wr"><span class="w-wk">${esc(k)}</span><span class="w-wn">${v}</span></div>`).join('')}<div class="w-stand"><div class="w-wk">Week ${wk} standings</div>${standHtml}</div></div>`;
+      return `<div class="w-pts w-win"><div class="w-ph">Last week's winners <span class="w-wq">Q${q} week ${wk}</span></div>${rows.map(([k, v]) => `<div class="w-wr"><span class="w-wk">${esc(k)}</span><span class="w-wn">${v}</span></div>`).join('')}</div>`;
     }
     if (kind === 'points') {
       const c = classes().find(x => x.id === activeId()), T0 = Object.assign({ quarter: 1, week: 1, log: [] }, Suite.get('tracker', {}));
@@ -1577,6 +1615,8 @@ details.sec>summary .muted{font-weight:400}
     else if (a === 'unlinkday') { const cid = activeId(), t = S0cur(), r = editable(viewDate, cid), id = 'c-' + Suite.uid(), src = clone(boardOf(dayFor(viewDate, cid), t));
       src.name = (src.name || plainOf(src.heading) || 'Board') + ' (this day)'; r.boards = r.boards || {}; r.boards[id] = src; r.lineup = r.lineup.map(x => x === t ? id : x); delete r.boards[t];
       save(); render(); Suite.toast('Now a separate copy, just for this day. The linked board is unchanged.'); return; }
+    else if (a === 'edundo') { undo(); return; }
+    else if (a === 'itemdel') { removeItem(el.dataset.kind, el.dataset.id); return; }
     else if (a === 'edopts') { edOpts = !edOpts; renderRail(activeId()); return; }
     else if (a === 'edtips') { edTips = !edTips; renderRail(activeId()); return; }
     else if (a === 'edtipsok') { edTips = false; Suite.set('edtipsSeen', true); renderRail(activeId()); return; }
