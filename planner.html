@@ -7,9 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-26b">
-<script src="shared/core.js?v=2026-10-26b"></script>
-<script>window.PAGE_VERSION = '2026-10-26b';</script>
+<link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-27a">
+<script src="shared/core.js?v=2026-10-27a"></script>
+<script>window.PAGE_VERSION = '2026-10-27a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -89,6 +91,11 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   .evchip{background:#fff;color:#111;border:1px solid #111}
   .cellbtn ol,.cellbtn .tg{font-size:11px}
 }
+.schedpick{display:block;margin:2px auto 0;font:inherit;font-size:12px;font-weight:600;color:var(--ink-2);background:none;border:1.5px solid transparent;border-radius:999px;padding:1px 8px;cursor:pointer}
+.schedpick:hover{border-color:var(--rule)}
+.schedpick.special{background:#fff1d6;color:#6b4b00;border-color:#e0a800}
+.pslist{display:grid;gap:4px;margin:6px 0 10px}
+@media print{.schedpick{border:0;background:none;padding:0}}
 </style>
 </head>
 <body>
@@ -125,7 +132,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     const fri = D[4], label = D[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' to ' + fri.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const offs = Suite.getSchedule().special, outs = (Suite.get('sub', {}) || {}).out || {};
     const head = D.map(d => { const sc = Suite.scheduleFor(d), k = keyOf(d), off = offs.find(x => x.date === k && x.scheduleId === 'none');
-      return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<span>${esc(sc.periods.length ? sc.scheduleName || sc.label : sc.label)}</span>
+      const spc = offs.find(x => x.date === k && x.scheduleId !== 'none');
+      return `<th class="day${k === today ? ' today' : ''}">${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}<button class="schedpick${spc ? ' special' : ''}" data-a="sched" data-date="${k}" title="Change this day's bell schedule">${esc(spc ? (spc.label || sc.scheduleName || 'Special schedule') : sc.periods.length ? sc.scheduleName || sc.label : sc.label)} ▾</button>
         ${outs[k] ? '<span class="subday">Sub day</span>' : ''}
         <button class="dayoff noprint" data-a="${off ? 'dayon' : 'dayoff'}" data-date="${k}">${off ? 'Undo day off' : 'Mark day off'}</button>${off ? '' : `<button class="dayoff noprint" data-a="subout" data-date="${k}">${outs[k] ? 'Not out after all' : "I'm out"}</button>`}</th>`; }).join('');
     const evRow = `<tr class="evrow"><th class="rowh" scope="row"><span class="nm">Events</span><span class="secs">School events, plus your own (⏳ counts down on the dashboard)</span></th>${D.map(d => {
@@ -363,6 +371,31 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
 
   /* ---------- days off (holidays, breaks): saved to the bell schedule as no-school days ---------- */
   const listDays = (a, b) => { const out = [], d = parse(a), end = parse(b || a); while (d <= end) { const wd = d.getDay(); if (wd > 0 && wd < 6) out.push(keyOf(d)); d.setDate(d.getDate() + 1); } return out; };
+  // a day's bell schedule: as usual, any saved schedule, or no school (saved as a special day, like Settings does)
+  function pickSchedule(k){
+    const S = Suite.getSchedule(), cur = S.special.find(x => x.date === k), d = new Date(k + 'T12:00');
+    const usualId = S.weekdays[d.getDay()], usualName = ((S.schedules.find(x => x.id === usualId) || {}).name) || 'no school';
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" aria-labelledby="ps-t"><h2 id="ps-t">Bell schedule for ${esc(d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))}</h2>
+      <div class="pslist">
+        <label class="rv"><input type="radio" name="ps" value=""${cur ? '' : ' checked'}> As usual <span class="muted small">(${esc(usualName)})</span></label>
+        ${S.schedules.map(x => `<label class="rv"><input type="radio" name="ps" value="${esc(x.id)}"${cur && cur.scheduleId === x.id ? ' checked' : ''}> ${esc(x.name)}</label>`).join('')}
+        <label class="rv"><input type="radio" name="ps" value="none"${cur && cur.scheduleId === 'none' ? ' checked' : ''}> No school</label>
+      </div>
+      <label class="lb" for="ps-label">Label <span class="muted small">(optional, like "Assembly" or "Picture day")</span></label><input class="field" id="ps-label" style="width:100%" value="${esc(cur ? cur.label || '' : '')}">
+      <p class="small" style="margin:10px 0 0"><a href="settings.html#schedule">Make a new bell schedule…</a></p>
+      <div class="suite-dialog-actions"><button class="btn" data-r="no">Cancel</button><button class="btn primary" data-r="yes">Save</button></div></div>`;
+    document.body.appendChild(back);
+    back.addEventListener('click', e => {
+      if (e.target === back || e.target.closest('[data-r="no"]')) return back.remove();
+      if (!e.target.closest('[data-r="yes"]')) return;
+      const id = back.querySelector('input[name="ps"]:checked').value, label = back.querySelector('#ps-label').value.trim();
+      const S2 = Suite.getSchedule(); S2.special = S2.special.filter(x => x.date !== k);
+      if (id) S2.special.push({ date: k, label: label || (id === 'none' ? 'No school' : ((S2.schedules.find(x => x.id === id) || {}).name || '')), scheduleId: id });
+      Suite.saveSchedule(S2); back.remove(); render();
+      Suite.toast(id ? 'Schedule set for ' + d.toLocaleDateString(undefined, { weekday: 'long' }) : 'Back to the usual schedule');
+    });
+  }
   function setDaysOff(dates, label){ const S = Suite.getSchedule(); dates.forEach(k => { S.special = S.special.filter(x => x.date !== k); S.special.push({ date: k, label: label || 'No school', scheduleId: 'none' }); }); Suite.saveSchedule(S); }
   function clearDaysOff(dates){ const S = Suite.getSchedule(); S.special = S.special.filter(x => !(dates.includes(x.date) && x.scheduleId === 'none')); Suite.saveSchedule(S); }
   function openDaysOff(){
@@ -625,6 +658,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     else if (a === 'edit') openEditor(el.dataset.row, el.dataset.date, null);
     else if (a === 'courses') openCourses();
     else if (a === 'daysoff') openDaysOff();
+    else if (a === 'sched') pickSchedule(el.dataset.date);
     else if (a === 'units') openUnits();
     else if (a === 'copyweek') openCopyWeek();
     else if (a === 'subout') { const S = Object.assign({}, Suite.get('sub', {}) || {}); S.out = Object.assign({}, S.out || {}); if (S.out[el.dataset.date]) delete S.out[el.dataset.date]; else S.out[el.dataset.date] = true; Suite.set('sub', S); render(); }

@@ -29,6 +29,7 @@ rosters.html      Weekly roster sheets (attendance and points)
 shared/core.js    Shared data, schedule, timer, menus, and helpers
 shared/guide.js   First-visit setup guide and tour
 shared/style.css  Shared look
+shared/favicon.svg  Tab icon (favicon-32.png is the fallback)
 ```
 
 ## Where the data lives

@@ -7,9 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-26b">
-<script src="shared/core.js?v=2026-10-26b"></script>
-<script>window.PAGE_VERSION = '2026-10-26b';</script>
+<link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="shared/style.css?v=2026-10-27a">
+<script src="shared/core.js?v=2026-10-27a"></script>
+<script>window.PAGE_VERSION = '2026-10-27a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -398,7 +400,7 @@ main{min-width:0;max-width:820px}
       <h3>Edit a schedule</h3>
       <div class="stabs">${S.schedules.map(x => `<button data-a="spick" data-id="${esc(x.id)}"${x.id === editSched ? ' aria-current="true"' : ''}>${esc(x.name)}</button>`).join('')}<button data-a="snew">New schedule</button></div>
       ${cur ? `<div class="bar" style="margin-bottom:8px"><label class="small" for="sname">Name</label><input id="sname" class="field" data-s="sname" value="${esc(cur.name)}">
-        <button class="btn quiet danger" data-a="sdel"${S.schedules.length < 2 ? ' disabled' : ''}>Delete schedule</button></div>
+        <button class="btn quiet" data-a="sdup">Duplicate</button><button class="btn quiet danger" data-a="sdel"${S.schedules.length < 2 ? ' disabled' : ''}>Delete schedule</button></div>
       <div class="bar" style="margin-bottom:10px">
         <label class="small" for="plen">Passing periods are</label>
         <input id="plen" class="field num" type="number" min="1" max="15" data-s="plen" value="${S.passingMinutes}">
@@ -450,11 +452,18 @@ main{min-width:0;max-width:820px}
   async function scheduleClick(a, el){
     const i = +el.dataset.i;
     if (a === 'spick') { editSched = el.dataset.id; renderSchedule(); }
-    else if (a === 'snew') {
-      const name = await Suite.dialog({ title: 'New schedule name', body: 'It starts as a copy of the schedule you are viewing.', input: 'Early release', ok: 'Create schedule' });
-      if (!name) return;
-      let newId = null;
-      withSched((S, cur) => { const n = { id: Suite.uid(), name, periods: JSON.parse(JSON.stringify(cur ? cur.periods : [])) }; S.schedules.push(n); editSched = n.id; newId = n.id; });
+    else if (a === 'snew' || a === 'sdup') {
+      const S0 = Suite.getSchedule(), cur0 = S0.schedules.find(x => x.id === editSched) || S0.schedules[0];
+      const pick = await new Promise(res => { const back = document.createElement('div'); back.className = 'suite-dialog-back';
+        back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>${a === 'sdup' ? 'Duplicate this schedule' : 'New bell schedule'}</h2>
+          <label class="lb" for="ns-name">Name</label><input class="field" id="ns-name" style="width:100%" value="${esc(a === 'sdup' && cur0 ? cur0.name + ' (copy)' : 'Assembly')}">
+          <label class="lb" for="ns-from">Start from</label><select class="field" id="ns-from" style="width:100%"><option value="">Blank (no periods)</option>${S0.schedules.map(x => `<option value="${esc(x.id)}"${cur0 && x.id === cur0.id ? ' selected' : ''}>A copy of ${esc(x.name)}</option>`).join('')}</select>
+          <div class="suite-dialog-actions"><button class="btn" data-r="no">Cancel</button><button class="btn primary" data-r="yes">Create schedule</button></div></div>`;
+        document.body.appendChild(back); const inp = back.querySelector('#ns-name'); inp.focus(); inp.select();
+        back.addEventListener('click', e => { if (e.target === back || e.target.closest('[data-r="no"]')) { back.remove(); res(null); } else if (e.target.closest('[data-r="yes"]')) { const v = { name: inp.value.trim(), from: back.querySelector('#ns-from').value }; back.remove(); res(v.name ? v : null); } }); });
+      if (!pick) return;
+      const name = pick.name; let newId = null;
+      withSched(S => { const src = S.schedules.find(x => x.id === pick.from); const n = { id: Suite.uid(), name, periods: JSON.parse(JSON.stringify(src ? src.periods : [])) }; S.schedules.push(n); editSched = n.id; newId = n.id; });
       // a schedule named after a weekday usually runs on that day
       const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], hit = days.findIndex(d => name.toLowerCase().includes(d));
       if (hit > -1 && await Suite.dialog({ title: 'Run it every ' + days[hit][0].toUpperCase() + days[hit].slice(1) + '?', body: 'The dashboard uses this schedule on that weekday. You can change it anytime under "Which schedule runs each day."', ok: 'Yes, use it', cancel: 'Not now' }))
@@ -498,7 +507,8 @@ main{min-width:0;max-width:820px}
       withSched((S, cur) => { n = Suite.fillPassing(cur.periods); });
       Suite.toast(n ? 'Added ' + n + ' passing period' + (n === 1 ? '' : 's') : 'No gaps to fill');
     }
-    else if (a === 'padd') withSched((S, cur) => { const last = cur.periods[cur.periods.length - 1]; cur.periods.push({ name: 'New period', start: last ? last.end : '08:00', end: last ? last.end : '09:00', isBreak: false, classId: '' }); });
+    else if (a === 'padd') withSched((S, cur) => { const last = cur.periods[cur.periods.length - 1], plus = (hm, m) => { const [h, mm] = hm.split(':').map(Number), t = Math.min(23 * 60 + 59, h * 60 + mm + m); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+      const start = last ? last.end : '08:00'; cur.periods.push({ name: 'New period', start, end: plus(start, 40), isBreak: false, classId: '' }); });
     else if (a === 'dadd') withSched(S => { S.special.push({ date: Suite.dateKey(new Date()), label: '', scheduleId: S.schedules[0] ? S.schedules[0].id : 'none' }); });
     else if (a === 'drm') withSched(S => { S.special.splice(i, 1); });
   }
@@ -688,7 +698,7 @@ main{min-width:0;max-width:820px}
     if (['shopen','shgo','shcancel','shapply','shundo','apadd','aprm'].includes(a)) return shuffleClick(a, el);
     if (a === 'cdadd') { const l = Suite.countdowns(); const d = new Date(); d.setDate(d.getDate() + 7); l.push({ id: Suite.uid(), date: Suite.dateKey(d), label: '', school: false }); Suite.set('countdowns', l); renderCountdowns(); const f = document.querySelector('.cdrow:last-of-type [data-cd="label"]'); if (f) f.focus(); return; }
     if (a === 'cdrm') { Suite.set('countdowns', Suite.countdowns().filter(x => x.id !== id)); renderCountdowns(); return; }
-    if (['spick','snew','sdel','pins','prm','padd','dadd','drm','pfill','ppass','spreset'].includes(a)) {
+    if (['spick','snew','sdup','sdel','pins','prm','padd','dadd','drm','pfill','ppass','spreset'].includes(a)) {
       const f = document.activeElement;
       if (f && f.dataset && f.dataset.s && f !== el) scheduleChange(f, true);
       return scheduleClick(a, el);
