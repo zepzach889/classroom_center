@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-27a">
-<script src="shared/core.js?v=2026-10-27a"></script>
-<script>window.PAGE_VERSION = '2026-10-27a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-28a">
+<script src="shared/core.js?v=2026-10-28a"></script>
+<script>window.PAGE_VERSION = '2026-10-28a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -170,6 +170,9 @@ main{min-width:0;max-width:820px}
 .repeat{background:var(--wash);border-radius:10px;padding:8px 10px;margin:4px 0 2px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .repeat .bar{gap:10px}
 .names li .bk{width:84px;font-size:14px;padding:3px 6px;border:1.5px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink)}
+.season{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin:6px 0;background:var(--paper);display:grid;gap:6px}
+.season .bar{flex-wrap:wrap;gap:6px 10px;align-items:center}
+.season select{font:inherit;font-size:14px}
 </style>
 </head>
 <body>
@@ -214,6 +217,13 @@ main{min-width:0;max-width:820px}
       <details class="fold" data-fold="countdowns">
         <summary><h2 id="h-cd">Countdowns</h2><span class="fold-hint">Show</span></summary>
         <p class="hint">Countdowns now live in the <a href="planner.html">Planner</a>: add an event and check <b>Count down to it</b> (and <b>Just for me</b> for personal ones). You can add a time, too. Your earlier countdowns were moved there.</p><div id="cd-area" hidden></div>
+      </details>
+    </section>
+    <section class="block" id="seasons" aria-labelledby="h-seasons">
+      <details class="fold" data-fold="seasons">
+        <summary><h2 id="h-seasons">Seasonal calendar</h2><span class="fold-hint">Show</span></summary>
+        <p class="hint">Holiday looks for the Today screen in every class: a falling effect plus, if you like, a background and bitmoji. Dates repeat every year. A class can turn these off or choose its own in Today → Day settings → Look.</p>
+        <div id="season-area"></div>
       </details>
     </section>
     <section class="block" id="today" aria-labelledby="h-today">
@@ -358,7 +368,7 @@ main{min-width:0;max-width:820px}
     renderSchedule();
     renderCountdowns();
     renderLook();
-    renderWords(); renderToday(); renderSubInfo(); renderSounds(); renderQuarters();
+    renderWords(); renderToday(); renderSubInfo(); renderSounds(); renderQuarters(); renderSeasons();
   }
 
   function renderBackup(){
@@ -868,7 +878,7 @@ main{min-width:0;max-width:820px}
     const h = d.querySelector('.fold-hint'); if (h) h.textContent = d.open ? 'Hide' : 'Show';
   }, true);
   // each settings tab shows its own sections (they open automatically, since each tab is short)
-  const TAB_OF = { schedule: 'schedule', quarters: 'schedule', countdowns: 'schedule', today: 'today', subinfo: 'subinfo', mode: 'look', words: 'look', sounds: 'look', appearance: 'look', backup: 'backup' };
+  const TAB_OF = { schedule: 'schedule', quarters: 'schedule', countdowns: 'schedule', seasons: 'today', today: 'today', subinfo: 'subinfo', mode: 'look', words: 'look', sounds: 'look', appearance: 'look', backup: 'backup' };
   const TAB_IDS = ['classes', 'schedule', 'today', 'subinfo', 'look', 'backup'];
   function showTab(t){
     if (t === 'general') t = 'schedule';
@@ -1060,6 +1070,41 @@ main{min-width:0;max-width:820px}
     if (office) { P.savedFeatures = P.features || {}; const off = {}; ['points', 'captains', 'goals', 'seating', 'spinner', 'topics', 'game', 'stations', 'tally', 'groups', 'noise', 'grader', 'hallpass', 'rosters'].forEach(f => { off[f] = false; }); P.features = off; P.mode = 'office'; }
     else { P.features = P.savedFeatures || {}; delete P.savedFeatures; P.mode = 'teacher'; }
     Suite.set('prefs', P); Suite.toast(office ? 'Switched to Office' : 'Switched to Teacher'); setTimeout(() => location.reload(), 500); });
+
+  // ---- the seasonal calendar ----
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mdPick = (v, attr) => { const [m, d] = (v || '01-01').split('-').map(Number); return `<select ${attr}="m" aria-label="Month">${MONTHS.map((n, i) => `<option value="${i + 1}"${m === i + 1 ? ' selected' : ''}>${n}</option>`).join('')}</select><select ${attr}="d" aria-label="Day">${Array.from({ length: 31 }, (_, i) => `<option${d === i + 1 ? ' selected' : ''}>${i + 1}</option>`).join('')}</select>`; };
+  function renderSeasons(){
+    const el = document.getElementById('season-area'); if (!el) return;
+    const T = Suite.get('today', {}) || {}, list = T.seasons || Suite.SEASON_DEFAULTS, custom = T.custom || {}, bms = T.bitmojis || {};
+    const lookSel = v => `<option value="">Keep the usual</option>${Object.entries(custom).map(([k, x]) => `<option value="${esc(k)}"${v === k ? ' selected' : ''}>${esc(x.name || 'Background')}</option>`).join('')}`;
+    const bmSel = v => `<option value="">Keep the usual</option><option value="none"${v === 'none' ? ' selected' : ''}>No bitmoji</option>${Object.entries(bms).map(([k, x]) => `<option value="${esc(k)}"${v === k ? ' selected' : ''}>${esc(x.name || 'Bitmoji')}</option>`).join('')}`;
+    el.innerHTML = list.map((x, i) => `<div class="season" data-i="${i}">
+        <div class="bar"><label class="rv"><input type="checkbox" data-se="on"${x.on ? ' checked' : ''}></label><input class="field" data-se="name" value="${esc(x.name)}" aria-label="Name" style="flex:1;min-width:140px">
+          <span class="small">From</span> ${mdPick(x.from, 'data-sef')} <span class="small">to</span> ${mdPick(x.to, 'data-set')}
+          <button class="btn quiet danger small" data-a="serm" aria-label="Remove ${esc(x.name)}">×</button></div>
+        <div class="bar small"><label>Effect <select data-se="effect">${Object.entries(Suite.FX_KINDS).map(([k, n]) => `<option value="${k}"${x.effect === k ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+          <label>Amount <select data-se="amount">${[['light', 'Light'], ['medium', 'Medium'], ['lots', 'Lots']].map(([k, n]) => `<option value="${k}"${(x.amount || 'light') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label>Background <select data-se="look">${lookSel(x.look || '')}</select></label>
+          <label>Bitmoji <select data-se="bitmoji">${bmSel(x.bitmoji || '')}</select></label>
+          <label class="rv"><input type="checkbox" data-se="overSlides"${x.overSlides ? ' checked' : ''}> Over the lesson slides</label>
+          <label class="rv"><input type="checkbox" data-se="idle"${x.idle ? ' checked' : ''}> Between classes</label></div></div>`).join('') +
+      `<div class="bar" style="margin-top:8px"><button class="btn small" data-a="seadd">Add a season</button>${T.seasons ? '<button class="btn quiet small" data-a="sereset">Reset to the suggested holidays</button>' : ''}</div>
+       <p class="hint">${Object.keys(custom).length || Object.keys(bms).length ? 'Backgrounds and bitmojis you upload below show up in these lists.' : 'Upload holiday backgrounds and bitmojis below (under Backgrounds and Bitmojis), and they will show up in these lists.'}</p>`;
+  }
+  const saveSeasons = mut => { const T = Suite.get('today', {}) || {}; T.seasons = JSON.parse(JSON.stringify(T.seasons || Suite.SEASON_DEFAULTS)); mut(T.seasons, T); Suite.set('today', T); renderSeasons(); };
+  document.addEventListener('change', e => {
+    const box = e.target.closest('.season'); if (!box) return; const i = +box.dataset.i, t = e.target;
+    saveSeasons(L => { const x = L[i]; if (!x) return;
+      if (t.dataset.se) x[t.dataset.se] = t.type === 'checkbox' ? t.checked : t.value;
+      if (t.dataset.sef || t.dataset.set) { const k = t.dataset.sef ? 'from' : 'to', m = box.querySelector(`[data-se${k === 'from' ? 'f' : 't'}="m"]`).value, d = box.querySelector(`[data-se${k === 'from' ? 'f' : 't'}="d"]`).value; x[k] = String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'); } });
+  });
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-a="seadd"],[data-a="serm"],[data-a="sereset"]'); if (!b) return;
+    if (b.dataset.a === 'seadd') saveSeasons(L => L.push({ id: Suite.uid(), name: 'New season', effect: 'none', from: '05-01', to: '05-07', on: true, amount: 'light', overSlides: false, idle: true, look: '', bitmoji: '' }));
+    else if (b.dataset.a === 'serm') { const i = +b.closest('.season').dataset.i; saveSeasons(L => L.splice(i, 1)); }
+    else if (await Suite.dialog({ title: 'Reset the seasonal calendar?', body: 'Your seasons and dates go back to the five suggested holidays.', ok: 'Reset' })) { const T = Suite.get('today', {}) || {}; delete T.seasons; Suite.set('today', T); renderSeasons(); }
+  });
   function route(){
     const h = location.hash.replace('#', '');
     if (['schedule', 'today', 'subinfo', 'look', 'backup', 'general'].includes(h)) { showTab(h === 'general' ? 'schedule' : h); window.scrollTo(0, 0); }   // a tab: start at the top

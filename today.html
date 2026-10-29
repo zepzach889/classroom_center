@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-27a">
-<script src="shared/core.js?v=2026-10-27a"></script>
-<script>window.PAGE_VERSION = '2026-10-27a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-28a">
+<script src="shared/core.js?v=2026-10-28a"></script>
+<script>window.PAGE_VERSION = '2026-10-28a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -210,6 +210,9 @@ body.peek .stage{width:100vw!important;border-radius:0;pointer-events:none}
 .edopt .pieces{margin-top:6px}
 .edopt .items{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}
 .edopt .item{display:inline-flex;align-items:center;gap:4px;background:var(--wash);border-radius:999px;padding:2px 4px 2px 10px;font-size:13px}
+#fx{position:fixed;z-index:8;pointer-events:none}
+body.full #fx{z-index:8}
+.fxpick{display:grid;gap:6px;margin:6px 0}
 .bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
@@ -596,9 +599,10 @@ details.sec>summary .muted{font-weight:400}
     const u = usual(cid), d = T.days[date] || {}, own = d[cid] || d[rowKeyOf(cid)] || {};
     const pu = Suite.unitFor(cid, date);   // a unit from the Planner sets the look while it runs
     const unit = (u.schedule || []).filter(x => x.from && x.from <= date).sort((a, b) => a.from < b.from ? -1 : 1).pop();
-    const look = own.look || (pu && pu.look) || (unit && unit.look) || u.look;
+    const sl = seasonLook(date, cid);
+    const look = own.look || sl.look || (pu && pu.look) || (unit && unit.look) || u.look;
     const lk = fixLook(look);
-    return { look: LOOKS[lk] || T.custom[lk] ? lk : 'paper', bitmoji: own.bitmoji || (pu && pu.bitmoji) || (unit && unit.bitmoji) || u.bitmoji || 'none', unit, pu };
+    return { look: LOOKS[lk] || T.custom[lk] ? lk : 'paper', bitmoji: own.bitmoji || sl.bitmoji || (pu && pu.bitmoji) || (unit && unit.bitmoji) || u.bitmoji || 'none', unit, pu };
   }
   const fixLook = id => id === 'basic' ? 'paper' : id;
   // a custom board's own layout: its background's layout, plus anything moved on that board
@@ -679,7 +683,7 @@ details.sec>summary .muted{font-weight:400}
     const handles = k => E ? `<span class="grip" data-g="move" data-k="${k}" title="Drag to move" aria-hidden="true">⠿</span><span class="rz" data-g="size" data-k="${k}" title="Drag to resize" aria-hidden="true"></span>` : '';
     const ce = (f, extra) => E ? ` contenteditable="true" spellcheck="true" data-f="${f}"${extra || ''}` : '';
     let html = '';
-    setTimeout(markAlign, 0); setTimeout(rescue, 30);
+    setTimeout(markAlign, 0); setTimeout(rescue, 30); setTimeout(fxCheck, 40);
     if (lesson) { html = lessonHtml(cid, rec); setTimeout(() => drawLessonTools(cid), 0); }
     else {
       const planBoard = (type === 'due' || type === 'agenda') && b.source !== 'custom';
@@ -888,6 +892,19 @@ details.sec>summary .muted{font-weight:400}
           ${room.bitmoji !== 'none' ? `<span class="lb">Fit ${esc(bmName(room.bitmoji))} <span class="muted small">(saved for this bitmoji)</span></span>
           <div class="bmrow"><label class="small">Size <input type="range" min="60" max="130" data-d="bmscale" value="${bmAdj(room.bitmoji).scale}"></label><label class="small">Left or right <input type="range" min="-200" max="300" data-d="bmdx" value="${bmAdj(room.bitmoji).dx}"></label></div>` : ''}
           <p class="hintline">Add or remove backgrounds and bitmojis in <a href="settings.html#today">Settings → Today screen</a>.</p></details>
+        ${(() => { const f = usual(cid).fx || {}, mode = f.mode || 'auto', se = seasonFor(viewDate), lineupNow = screens(viewDate, cid);
+          return `<details class="sec" data-dt="look" open><summary>Seasonal effect <span class="muted small">${mode === 'off' ? 'off' : mode === 'pick' ? esc((Suite.FX_KINDS[f.effect] || 'chosen').split(' (')[0]) : se ? 'calendar: ' + esc(se.name) : 'calendar'}</span></summary>
+          <label class="rv" style="display:flex;gap:6px"><input type="radio" name="fxm" data-d="fxmode" value="auto"${mode === 'auto' ? ' checked' : ''}> Use the seasonal calendar (<a href="settings.html#today">edit it</a>)${se ? ` <span class="muted small">now: ${esc(se.name)}</span>` : ''}</label>
+          <label class="rv" style="display:flex;gap:6px"><input type="radio" name="fxm" data-d="fxmode" value="off"${mode === 'off' ? ' checked' : ''}> Off for this class</label>
+          <label class="rv" style="display:flex;gap:6px"><input type="radio" name="fxm" data-d="fxmode" value="pick"${mode === 'pick' ? ' checked' : ''}> Choose one for this class</label>
+          ${mode === 'pick' ? `<div class="fxpick">
+            <label class="lb">Effect <select data-d="fxeff">${Object.entries(Suite.FX_KINDS).map(([k, n]) => `<option value="${k}"${(f.effect || 'snow') === k ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+            <label class="lb">Show it on <select data-d="fxwhere"><option value="all"${f.where !== 'board' ? ' selected' : ''}>All boards</option>${lineupNow.filter(t => t !== 'lesson').map(t => `<option value="b:${esc(t)}"${f.where === 'board' && f.board === t ? ' selected' : ''}>Just: ${esc(boardLabel(dayFor(viewDate, cid), t))}</option>`).join('')}</select></label>
+            <label class="lb">Amount <select data-d="fxamt">${[['light', 'Light'], ['medium', 'Medium'], ['lots', 'Lots']].map(([k, n]) => `<option value="${k}"${(f.amount || 'light') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+            <label class="rv"><input type="checkbox" data-d="fxslides"${f.overSlides ? ' checked' : ''}> Also over the lesson slides</label>
+            <label class="lb">Background <select data-d="fxlook">${lookOpts(f.look || '', 'Keep the usual')}</select></label>
+            <label class="lb">Bitmoji <select data-d="fxbm">${bmOpts(f.bitmoji || '', 'Keep the usual')}</select></label></div>` : ''}
+          <p class="hintline">Tools ▾ → "Seasonal effects on / off" turns every effect off for a test or a serious moment.</p></details>`; })()}
         <details class="sec" data-dt="events" open><summary>School events <span class="muted small">${u.showEvents ? 'shown' : 'off'}</span></summary>
           <label class="rv" style="display:flex;gap:6px"><input type="checkbox" data-d="evon"${u.showEvents ? ' checked' : ''}> Show today's school events from the Planner (like picture day) on the boards</label>
           <p class="hintline">Optional. Place the events strip with Edit on screen.</p></details>
@@ -1000,6 +1017,10 @@ details.sec>summary .muted{font-weight:400}
       if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
       commit(true); return; }
     if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (['fxmode', 'fxeff', 'fxwhere', 'fxamt', 'fxslides', 'fxlook', 'fxbm'].includes(d)) { const u = usual(cid), f = u.fx = Object.assign({ mode: 'auto', effect: 'snow', where: 'all', amount: 'light' }, u.fx || {});
+      if (d === 'fxmode') f.mode = el.value; else if (d === 'fxeff') f.effect = el.value; else if (d === 'fxamt') f.amount = el.value; else if (d === 'fxslides') f.overSlides = el.checked; else if (d === 'fxlook') f.look = el.value; else if (d === 'fxbm') f.bitmoji = el.value;
+      else if (d === 'fxwhere') { if (el.value === 'all') { f.where = 'all'; delete f.board; } else { f.where = 'board'; f.board = el.value.slice(2); } }
+      commit(true); return; }
     if (d === 'bown') { const base = Object.assign({}, BELL_DEFAULT, T.bell || {}), u = usual(cid); u.bellOwn = Object.assign({ minutes: base.minutes, messages: [], chimeStart: !!base.chimeStart, chimeEnd: !!base.chimeEnd, sound: '' }, u.bellOwn || {}, { on: el.value === 'own' }); commit(true); return; }
     if (d === 'dulist') { const u = usual(cid), list = el.value.split('\n').map(x => x.trim()).filter(Boolean); u.duties = Object.assign({ start: mondayKey(Suite.dateKey(new Date())), shift: 0 }, u.duties || {}, { list }); commit(true); return; }
     if (d === 'bomd') { const o = usual(cid).bellOwn; const m = o && o.messages[+el.dataset.k]; if (m) { m.duties = el.checked; save(); } return; }
@@ -1404,7 +1425,7 @@ details.sec>summary .muted{font-weight:400}
   setInterval(() => { updateBell(); updateIdle(); }, 500);
 
   /* ---------- suite tools: open one on top, or place one on a board ---------- */
-  const TOOL_PAGES = { timeleft: ['Time left (full screen)', ''], spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
+  const TOOL_PAGES = { fxtoggle: ['Seasonal effects on / off', ''], timeleft: ['Time left (full screen)', ''], spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
   const WIDGETS = { duties: ['Clean-up duties', [1360, 300, 520, 360]], clock: ['Time left', [1440, 40, 440, 250]], winners: ["Last week's winners", [1360, 260, 500, 440]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
   // clean-up duties: set per class, rotating every Monday (plus any Rotate / Back adjustments)
   const mondayKey = k => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return Suite.dateKey(d); };
@@ -1419,6 +1440,68 @@ details.sec>summary .muted{font-weight:400}
     return { rows, open };
   }
   const dutiesHtml = (cid, cls) => { const R = dutiesFor(cid, viewDate); if (!R) return ''; return `<div class="${cls}">${R.rows.map(r => `<div class="du-r"><span class="dot" style="background:${esc(r.t.color || '#888')}"></span><b>${esc(r.t.name)}</b><span>${esc(r.duty)}</span></div>`).join('')}${R.open.length ? `<div class="du-r du-open"><span></span><b>Not assigned</b><span>${R.open.map(esc).join(', ')}</span></div>` : ''}</div>`; };
+
+  /* ---------- seasonal looks and falling effects ---------- */
+  const seasonsList = () => T.seasons || Suite.SEASON_DEFAULTS;
+  const seasonFor = date => seasonsList().find(x => Suite.seasonOn(x, date)) || null;
+  function seasonLook(date, cid){
+    const f = (cid && usual(cid).fx) || {};
+    if (f.mode === 'off') return {};
+    if (f.mode === 'pick') return { look: f.look || '', bitmoji: f.bitmoji || '' };
+    const se = seasonFor(date); if (!se) return {};
+    const okLook = id => id && (LOOKS[id] || T.custom[id]), okBm = id => id && (id === 'none' || BITMOJI[id] || T.bitmojis[id]);
+    return { look: okLook(se.look) ? se.look : '', bitmoji: okBm(se.bitmoji) ? se.bitmoji : '' };
+  }
+  const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function fxWanted(){
+    if (T.fxOff || editMode || document.hidden || RM || STUDIO) return null;
+    const se = seasonFor(viewDate);
+    if (isIdle()) return se && se.idle && se.effect !== 'none' ? se : null;
+    const cid = activeId(); if (!cid) return null;
+    const f = usual(cid).fx || {};
+    if (f.mode === 'off') return null;
+    if (f.mode === 'pick') { if (!f.effect || f.effect === 'none') return null; if (lesson ? !f.overSlides : (f.where === 'board' && f.board !== screens(viewDate, cid)[screen])) return null; return { effect: f.effect, amount: f.amount || 'light' }; }
+    if (!se || se.effect === 'none' || (lesson && !se.overSlides)) return null;
+    return se;
+  }
+  const FXG = { halloween: ['🦇', '🦇', '🍬', '👻'], leaves: ['🍂', '🍁', '🍂', '🍁'], snow: ['❄️', '•', '•', '•', '•'], hearts: ['💗', '❤️', '💕', '💗'], shamrocks: ['☘️', '🍀', '☘️', '🪙'] };
+  const FXN = { light: 22, medium: 40, lots: 70 };
+  let fxCv = null, fxCtx = null, fxParts = [], fxKey = '', fxRaf = 0, fxLast = 0; const fxSprite = {};
+  function sprite(g){
+    if (fxSprite[g]) return fxSprite[g];
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+    if (g === '•') { const gr = x.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.45, 'rgba(236,244,252,.95)'); gr.addColorStop(.7, 'rgba(150,180,215,.55)'); gr.addColorStop(1, 'rgba(150,180,215,0)'); x.fillStyle = gr; x.beginPath(); x.arc(32, 32, 30, 0, 7); x.fill(); }
+    else { x.font = '46px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(g, 32, 36); }
+    return (fxSprite[g] = c);
+  }
+  function fxNew(kind, W, H, top){
+    const g = FXG[kind][Math.floor(Math.random() * FXG[kind].length)], bat = g === '🦇', dot = g === '•';
+    const size = (dot ? 6 + Math.random() * 8 : 18 + Math.random() * 16) * (W / 1200);
+    return { g, x: Math.random() * W, y: top ? -size - Math.random() * H : Math.random() * H, size, vx: bat ? (Math.random() < .5 ? -1 : 1) * (40 + Math.random() * 50) : (Math.random() - .5) * 20, vy: bat ? -10 + Math.random() * 30 : (kind === 'snow' ? 25 : 35) + Math.random() * 35, rot: Math.random() * 6, vr: bat || dot ? 0 : (Math.random() - .5) * 1.4, ph: Math.random() * 6, sw: 15 + Math.random() * 25, bat };
+  }
+  function fxFrame(t){
+    fxRaf = 0; const w = fxWanted(); if (!w) { fxStop(); return; }
+    const st = document.getElementById('stage'); if (!st) return; const r = st.getBoundingClientRect(); if (!r.width) { fxRaf = requestAnimationFrame(fxFrame); return; }
+    const dpr = Math.min(1.5, devicePixelRatio || 1), W = r.width, H = r.height;
+    if (!fxCv) { fxCv = document.createElement('canvas'); fxCv.id = 'fx'; fxCv.setAttribute('aria-hidden', 'true'); document.body.appendChild(fxCv); fxCtx = fxCv.getContext('2d'); }
+    Object.assign(fxCv.style, { left: r.left + 'px', top: r.top + 'px', width: W + 'px', height: H + 'px' });
+    if (fxCv.width !== Math.round(W * dpr) || fxCv.height !== Math.round(H * dpr)) { fxCv.width = Math.round(W * dpr); fxCv.height = Math.round(H * dpr); }
+    const key = w.effect + '|' + (w.amount || 'light'), n = FXN[w.amount] || FXN.light;
+    if (key !== fxKey) { fxKey = key; fxParts = Array.from({ length: n }, () => fxNew(w.effect, W, H, false)); }
+    const dt = Math.min(.05, fxLast ? (t - fxLast) / 1000 : 0); fxLast = t;
+    const c = fxCtx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+    fxParts.forEach((p, i) => {
+      p.ph += dt * 1.6; p.y += p.vy * dt * (H / 600); p.x += (p.vx + Math.sin(p.ph) * p.sw) * dt; p.rot += p.vr * dt;
+      if (p.y > H + 40 || p.y < -H - 60 || p.x < -80 || p.x > W + 80) { fxParts[i] = fxNew(w.effect, W, H, true); if (p.bat) { fxParts[i].y = Math.random() * H * .7; fxParts[i].x = fxParts[i].vx > 0 ? -40 : W + 40; } return; }
+      c.save(); c.globalAlpha = p.g === '•' ? .8 : .9; c.translate(p.x, p.y); c.rotate(p.rot); if (p.bat) c.scale(1, .75 + Math.abs(Math.sin(p.ph * 5)) * .35);
+      c.drawImage(sprite(p.g), -p.size / 2, -p.size / 2, p.size, p.size); c.restore();
+    });
+    fxRaf = requestAnimationFrame(fxFrame);
+  }
+  function fxStop(){ if (fxRaf) cancelAnimationFrame(fxRaf); fxRaf = 0; fxLast = 0; fxKey = ''; if (fxCv) { fxCv.remove(); fxCv = null; fxCtx = null; } }
+  function fxCheck(){ if (fxWanted()) { if (!fxRaf) fxRaf = requestAnimationFrame(fxFrame); } else fxStop(); }
+  setInterval(fxCheck, 700); document.addEventListener('visibilitychange', fxCheck);
+
   // what's happening now: in class (time left until the bell), or passing or a break (time until the next class)
   function timeLeftInfo(){
     const i = bellInfo(), now = new Date();
@@ -1476,6 +1559,7 @@ details.sec>summary .muted{font-weight:400}
     document.querySelectorAll('.w-clock').forEach(w => { w.querySelector('.wc-now').textContent = clockOf(I.now).replace(/\s?[AP]M$/i, ''); w.querySelector('.wc-left').textContent = I.left != null ? mmssOf(I.left) + (I.pct > 0 ? ' left' : '') : 'No class right now'; w.querySelector('.wc-lab').textContent = I.left != null ? (I.pct > 0 ? I.sub : I.sub) : ''; w.classList.toggle('is-low', I.left != null && I.left <= 5 * 60000 && I.pct > 0); }); }, 500);
   function openTool(kind){
     if (kind === 'timeleft') { openTimeLeft(); return; }
+    if (kind === 'fxtoggle') { T.fxOff = !T.fxOff; save(); fxCheck(); Suite.toast(T.fxOff ? 'Seasonal effects off (until you turn them back on)' : 'Seasonal effects on'); return; }
     if (kind === 'timer') { Suite.openTimer(); return; }
     const t = TOOL_PAGES[kind], cid = activeId();
     const ov = document.createElement('div'); ov.className = 'overlay';

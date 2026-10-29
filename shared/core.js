@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-27a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-28a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -362,6 +362,16 @@
   };
   // Office mode: just the dashboard, bell schedule, events, countdowns, and timer (no classes)
   S.isOffice = () => (S.get('prefs', {}) || {}).mode === 'office';
+  // Seasonal looks for the Today screen: dates are month-day and repeat every year
+  S.FX_KINDS = { halloween: 'Halloween (bats, candy, ghosts)', leaves: 'Autumn leaves', snow: 'Snow', hearts: 'Hearts', shamrocks: 'Shamrocks', none: 'No falling effect' };
+  S.SEASON_DEFAULTS = [
+    { id: 'halloween', name: 'Halloween', effect: 'halloween', from: '10-24', to: '10-31', on: true, amount: 'light', overSlides: false, idle: true, look: '', bitmoji: '' },
+    { id: 'autumn', name: 'Autumn / Thanksgiving', effect: 'leaves', from: '11-01', to: '11-27', on: true, amount: 'light', overSlides: false, idle: true, look: '', bitmoji: '' },
+    { id: 'winter', name: 'Winter', effect: 'snow', from: '12-01', to: '12-19', on: true, amount: 'light', overSlides: false, idle: true, look: '', bitmoji: '' },
+    { id: 'valentines', name: "Valentine's Day", effect: 'hearts', from: '02-07', to: '02-14', on: true, amount: 'light', overSlides: false, idle: true, look: '', bitmoji: '' },
+    { id: 'stpatricks', name: "St. Patrick's Day", effect: 'shamrocks', from: '03-11', to: '03-17', on: true, amount: 'light', overSlides: false, idle: true, look: '', bitmoji: '' }
+  ];
+  S.seasonOn = (s, dateKey) => { if (!s || !s.on || !s.from || !s.to) return false; const md = dateKey.slice(5); return s.from <= s.to ? md >= s.from && md <= s.to : md >= s.from || md <= s.to; };
   S.schoolDays = (a, b) => { let n = 0; const d = new Date(a + 'T12:00'); const end = new Date(b + 'T12:00'); while (d <= end) { if (S.scheduleFor(d).periods.length) n++; d.setDate(d.getDate() + 1); } return n; };
   S.activeTables = cls => (cls ? cls.tables.filter(t => t.open) : []);
 
@@ -1084,10 +1094,10 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-27', items: [
-    'Planner: click the schedule under any day (like "Regular day ▾") to give it a different bell schedule, such as an assembly, with an optional label. Special days are highlighted.',
-    'Settings → Schedule: New schedule can start blank or as a copy of any schedule, every schedule has Duplicate, and Add a period fills in a 40-minute period after the last one.',
-    'Today: Undo while editing, Board options lists everything on the board, and nothing can be dragged off the board anymore.'] };
+  const NEWS = { id: '2026-10-28', items: [
+    'New: seasonal looks for Today. Snow, leaves, bats, hearts, and shamrocks drift down the boards on their own around the holidays (Settings → Today screen → Seasonal calendar).',
+    'Each season can also switch the background and bitmoji. Upload holiday images and pick them in the calendar.',
+    'Each class can use the calendar, turn effects off, or pick its own (Day settings → Look). Tools ▾ → "Seasonal effects on / off" turns them all off for a test.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
