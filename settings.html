@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-28a">
-<script src="shared/core.js?v=2026-10-28a"></script>
-<script>window.PAGE_VERSION = '2026-10-28a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-29a">
+<script src="shared/core.js?v=2026-10-29a"></script>
+<script>window.PAGE_VERSION = '2026-10-29a';</script>
 <style>
 .layout{max-width:1180px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px}
 .layout[hidden]{display:none}
@@ -1076,7 +1076,7 @@ main{min-width:0;max-width:820px}
   const mdPick = (v, attr) => { const [m, d] = (v || '01-01').split('-').map(Number); return `<select ${attr}="m" aria-label="Month">${MONTHS.map((n, i) => `<option value="${i + 1}"${m === i + 1 ? ' selected' : ''}>${n}</option>`).join('')}</select><select ${attr}="d" aria-label="Day">${Array.from({ length: 31 }, (_, i) => `<option${d === i + 1 ? ' selected' : ''}>${i + 1}</option>`).join('')}</select>`; };
   function renderSeasons(){
     const el = document.getElementById('season-area'); if (!el) return;
-    const T = Suite.get('today', {}) || {}, list = T.seasons || Suite.SEASON_DEFAULTS, custom = T.custom || {}, bms = T.bitmojis || {};
+    const T = Suite.get('today', {}) || {}, list = Suite.seasonsOf(T), custom = T.custom || {}, bms = T.bitmojis || {};
     const lookSel = v => `<option value="">Keep the usual</option>${Object.entries(custom).map(([k, x]) => `<option value="${esc(k)}"${v === k ? ' selected' : ''}>${esc(x.name || 'Background')}</option>`).join('')}`;
     const bmSel = v => `<option value="">Keep the usual</option><option value="none"${v === 'none' ? ' selected' : ''}>No bitmoji</option>${Object.entries(bms).map(([k, x]) => `<option value="${esc(k)}"${v === k ? ' selected' : ''}>${esc(x.name || 'Bitmoji')}</option>`).join('')}`;
     el.innerHTML = list.map((x, i) => `<div class="season" data-i="${i}">
@@ -1084,7 +1084,8 @@ main{min-width:0;max-width:820px}
           <span class="small">From</span> ${mdPick(x.from, 'data-sef')} <span class="small">to</span> ${mdPick(x.to, 'data-set')}
           <button class="btn quiet danger small" data-a="serm" aria-label="Remove ${esc(x.name)}">×</button></div>
         <div class="bar small"><label>Effect <select data-se="effect">${Object.entries(Suite.FX_KINDS).map(([k, n]) => `<option value="${k}"${x.effect === k ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
-          <label>Amount <select data-se="amount">${[['light', 'Light'], ['medium', 'Medium'], ['lots', 'Lots']].map(([k, n]) => `<option value="${k}"${(x.amount || 'light') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label>Size <select data-se="size">${[['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']].map(([k, n]) => `<option value="${k}"${(x.size || 'medium') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label>Amount <select data-se="amount">${[['light', 'Light'], ['medium', 'Medium'], ['lots', 'Lots']].map(([k, n]) => `<option value="${k}"${(x.amount || 'medium') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
           <label>Background <select data-se="look">${lookSel(x.look || '')}</select></label>
           <label>Bitmoji <select data-se="bitmoji">${bmSel(x.bitmoji || '')}</select></label>
           <label class="rv"><input type="checkbox" data-se="overSlides"${x.overSlides ? ' checked' : ''}> Over the lesson slides</label>
@@ -1092,7 +1093,7 @@ main{min-width:0;max-width:820px}
       `<div class="bar" style="margin-top:8px"><button class="btn small" data-a="seadd">Add a season</button>${T.seasons ? '<button class="btn quiet small" data-a="sereset">Reset to the suggested holidays</button>' : ''}</div>
        <p class="hint">${Object.keys(custom).length || Object.keys(bms).length ? 'Backgrounds and bitmojis you upload below show up in these lists.' : 'Upload holiday backgrounds and bitmojis below (under Backgrounds and Bitmojis), and they will show up in these lists.'}</p>`;
   }
-  const saveSeasons = mut => { const T = Suite.get('today', {}) || {}; T.seasons = JSON.parse(JSON.stringify(T.seasons || Suite.SEASON_DEFAULTS)); mut(T.seasons, T); Suite.set('today', T); renderSeasons(); };
+  const saveSeasons = mut => { const T = Suite.get('today', {}) || {}; T.seasons = JSON.parse(JSON.stringify(Suite.seasonsOf(T))); mut(T.seasons, T); Suite.set('today', T); renderSeasons(); };
   document.addEventListener('change', e => {
     const box = e.target.closest('.season'); if (!box) return; const i = +box.dataset.i, t = e.target;
     saveSeasons(L => { const x = L[i]; if (!x) return;
@@ -1101,7 +1102,7 @@ main{min-width:0;max-width:820px}
   });
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-a="seadd"],[data-a="serm"],[data-a="sereset"]'); if (!b) return;
-    if (b.dataset.a === 'seadd') saveSeasons(L => L.push({ id: Suite.uid(), name: 'New season', effect: 'none', from: '05-01', to: '05-07', on: true, amount: 'light', overSlides: false, idle: true, look: '', bitmoji: '' }));
+    if (b.dataset.a === 'seadd') saveSeasons(L => L.push({ id: Suite.uid(), name: 'New season', effect: 'none', from: '05-01', to: '05-07', on: true, amount: 'medium', size: 'medium', overSlides: false, idle: true, look: '', bitmoji: '' }));
     else if (b.dataset.a === 'serm') { const i = +b.closest('.season').dataset.i; saveSeasons(L => L.splice(i, 1)); }
     else if (await Suite.dialog({ title: 'Reset the seasonal calendar?', body: 'Your seasons and dates go back to the five suggested holidays.', ok: 'Reset' })) { const T = Suite.get('today', {}) || {}; delete T.seasons; Suite.set('today', T); renderSeasons(); }
   });
