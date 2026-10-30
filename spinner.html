@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-29a">
-<script src="shared/core.js?v=2026-10-29a"></script>
-<script>window.PAGE_VERSION = '2026-10-29a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-10-30a">
+<script src="shared/core.js?v=2026-10-30a"></script>
+<script>window.PAGE_VERSION = '2026-10-30a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:2px}
@@ -64,13 +64,18 @@ body.proj #suite-nav,body.proj .tabs,body.proj .topbar,body.proj .below{display:
 html.mini,html.mini body{background:transparent!important;overflow:hidden}
 html.mini #exit-proj,html.mini .panel,html.mini aside,html.mini .backup-banner,html.mini #suite-news{display:none!important}
 html.mini .wrap{padding:4px!important;max-width:none}
-html.mini .result{min-height:0;margin:2px 0}html.mini .result .who{font-size:clamp(18px,7vw,40px)!important}
+html.mini .result{height:66px;min-height:66px;margin:2px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+html.mini .result .who{font-size:clamp(18px,6.5vw,36px)!important;font-weight:700;color:#1C2B3A!important;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+html.mini .result .sub{color:#3a4652!important;font-size:13px;font-weight:600;margin-top:2px}
 html.mini .spin{padding:6px 18px;font-size:16px;margin-top:2px}
 html.mini #wheel{cursor:pointer}
 body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
 body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
 body.proj .wrap{max-width:none;padding:16px 24px}
 body.proj .result .who{font-size:clamp(48px,7vw,96px)}
+.hist{margin-top:12px}.hist summary{cursor:pointer;font-weight:700}
+.hlist{margin:6px 0 8px;padding-left:1.4em;max-height:260px;overflow:auto;font-size:14px}
+.hlist li{padding:2px 0}.hlist .hw{color:var(--ink-2);font-size:12.5px;margin-right:6px}
 </style>
 </head>
 <body>
@@ -88,7 +93,7 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
   if (MINI) document.addEventListener('click', e => { if (e.target.id === 'wheel') { const b = document.getElementById('spinbtn'); if (b && !b.disabled) b.click(); } });
   let SP, rot = 0, spinning = false, result = null, spunList = null, proj = Suite.startInProjector || MINI;
 
-  function load(){ SP = Object.assign({ cur: null, mode: 'students', picked: {}, absent: {}, custom: '', removeAfter: true, hidePanel: false, last: null }, Suite.get('spinner', {})); }
+  function load(){ SP = Object.assign({ cur: null, mode: 'students', picked: {}, absent: {}, custom: '', removeAfter: true, hidePanel: false, last: null, history: {} }, Suite.get('spinner', {})); if (!SP.history) SP.history = {}; }
   function save(){ Suite.set('spinner', SP); }
   load();
   // opened for a specific class (for example, the Flag of the Week drawing)
@@ -128,7 +133,7 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
   function draw(list){
     const cv = $('#wheel'); if (!cv) return;
     const box = cv.parentElement;
-    const css = MINI ? Math.max(120, Math.min(window.innerWidth - 12, window.innerHeight - 92)) : proj ? Math.max(260, Math.min(box.clientWidth, window.innerHeight - 230, 900)) : Math.max(220, Math.min(box.clientWidth, window.innerHeight - 400, SP.hidePanel ? 760 : 600));
+    const css = MINI ? Math.max(100, Math.min(window.innerWidth - 12, window.innerHeight - 170)) : proj ? Math.max(260, Math.min(box.clientWidth, window.innerHeight - 230, 900)) : Math.max(220, Math.min(box.clientWidth, window.innerHeight - 400, SP.hidePanel ? 760 : 600));
     const dpr = window.devicePixelRatio || 1;
     cv.width = css * dpr; cv.height = css * dpr; cv.style.width = css + 'px'; cv.style.height = css + 'px';
     const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -174,6 +179,11 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
       rot = target % (Math.PI * 2); spinning = false;
       const win = list[idx];
       result = win;
+      { // the pick history: reload first so picks made in another window aren't lost, then add this one
+        const k = poolKey(c), fresh = Suite.get('spinner', {}) || {}; SP.history = fresh.history || SP.history || {};
+        const h = SP.history[k] = SP.history[k] || []; h.unshift({ n: win.label, id: win.id, at: Date.now() }); if (h.length > 200) h.length = 200;
+        if (!SP.removeAfter) save();
+      }
       if (SP.removeAfter) {
         const k = poolKey(c), done = SP.picked[k] = (SP.picked[k] || []).filter(id => items(c).some(x => x.id === id));
         if (done.length >= items(c).length) done.length = 0;   // everyone was picked: start a fresh round
@@ -232,6 +242,9 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
           : `<p class="muted">No students in this class yet. <a href="settings.html#class=${esc(c.id)}">Add them in settings.</a></p>`}
         <p class="hint" style="margin-top:8px">Unchecked students stay off the wheel for today only. For a prize drawing, press Deselect all, then check the students who earned a spot.</p>`;
     }
+    const hist = (SP.history || {})[poolKey(c || { id: '' })] || [];
+    const when = t => { const d = new Date(t); return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+    panel += `<details class="hist"${hist.length ? '' : ''}><summary>Pick history <span class="muted small">(${hist.length})</span></summary>${hist.length ? `<ol class="hlist">${hist.map(x => `<li><span class="hw">${esc(when(x.at))}</span> ${esc(x.n)}</li>`).join('')}</ol><button class="btn quiet small" data-a="hclear">Clear history</button>` : '<p class="muted small">Picks show here as you spin, newest first.</p>'}</details>`;
     panel += `<label class="opt"><input type="checkbox" data-c="remove"${SP.removeAfter ? ' checked' : ''}> Take picks off the wheel until everyone has had a turn</label>`;
 
     const keep = ['.plist', '.panel'].map(q => { const el = document.querySelector(q); return [q, el ? el.scrollTop : 0]; }), winY = window.scrollY;
@@ -274,9 +287,11 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
       result = null; save(); render();
     }
     else if (a === 'spin') spin();
+    else if (a === 'hclear') { (async () => { if (!await Suite.dialog({ title: 'Clear the pick history?', body: 'This clears the history for this class. Who has had a turn this round is not affected.', ok: 'Clear it' })) return; const c = curClass(); delete SP.history[poolKey(c || { id: '' })]; save(); render(); })(); return; }
     else if (a === 'putback' && SP.last) {
       const arr = SP.picked[SP.last.key] || [], i = arr.lastIndexOf(SP.last.id);
       if (i > -1) arr.splice(i, 1);
+      const h = (SP.history || {})[SP.last.key]; if (h && h[0] && h[0].id === SP.last.id) h.shift();   // a put-back pick leaves the history too
       SP.last = null; result = null; save(); render(); Suite.toast('Put back on the wheel');
     }
     else if (a === 'reset') { if (c || SP.mode === 'custom') { SP.picked[poolKey(c)] = []; SP.last = null; result = null; save(); render(); Suite.toast('New round started'); } }

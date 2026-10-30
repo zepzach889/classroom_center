@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-10-29a';   // bump with every build; pages check they match
+  const VERSION = '2026-10-30a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1096,9 +1096,9 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-10-29', items: [
-    'Seasonal effects are redrawn: tumbling maple and oak leaves, flapping bats and floating ghosts, real snowflakes, hearts, and shamrocks with gold coins. Bigger and easier to see.',
-    'A new Size choice (small, medium, large) sits next to Amount in the Seasonal calendar and in each class\'s Day settings → Look.'] };
+  const NEWS = { id: '2026-10-30', items: [
+    'Spinner: a Pick history for each class (on the Spinner page), with every pick and when it happened, including picks from the spinner on your boards.',
+    'The spinner widget on boards keeps its Spin button in view after a pick, and the winner\'s name is now dark and bold so it\'s easy to read.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
