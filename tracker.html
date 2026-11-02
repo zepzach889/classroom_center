@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-10-30a">
-<script src="shared/core.js?v=2026-10-30a"></script>
-<script>window.PAGE_VERSION = '2026-10-30a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-02a">
+<script src="shared/core.js?v=2026-11-02a"></script>
+<script>window.PAGE_VERSION = '2026-11-02a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:2px}
@@ -169,6 +169,9 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   const gkey = (tid, w) => tid + '|' + T.quarter + '|' + (w == null ? T.week : w);
   const leaders = rows => { if (!rows.length) return []; const top = Math.max(...rows.map(r => r[1])); return top > 0 ? rows.filter(r => r[1] === top).map(r => r[0]) : []; };
   const weekLeaders = (c, w) => leaders(Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w)]));
+  const byQuarter = () => T.topBy !== 'week';
+  const qThrough = (cid, tid, w) => T.log.reduce((n, e) => n + (e.c === cid && e.t === tid && e.q === T.quarter && e.w <= w ? e.d : 0), 0);
+  const topLeaders = (c, w) => byQuarter() ? leaders(Suite.activeTables(c).map(t => [t.id, qThrough(c.id, t.id, w)])) : weekLeaders(c, w);
   function improved(c, w){
     if (w < 2) return null;
     if (!T.log.some(e => e.c === c.id && e.q === T.quarter && e.w === w)) return null;
@@ -198,7 +201,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     }
     T.cur = c.id;
     const act = Suite.activeTables(c);
-    const lead = weekLeaders(c, T.week);
+    const lead = topLeaders(c, T.week);
     const imp = improved(c, T.week);
     const streaks = T.streaks[c.id] || {};
     const goals = T.goals[c.id] || {};
@@ -220,7 +223,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       const wk = pts(c.id, t.id, T.week);
       const num = order.indexOf(t.id) + 1;
       return `<article class="card${isLead ? ' lead' : ''}${picked === t.id ? ' picked' : ''}${bump === t.id ? ' bump' : ''}" data-card="${esc(t.id)}" style="--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)};grid-row:${lay.at[t.id].row};grid-column:${lay.at[t.id].col}">
-        <div class="band"><h2>${num <= 9 ? `<span class="keynum" title="Press ${num} to pick this table">${num}</span>` : ''}${esc(t.name)}</h2>${isLead ? '<span class="lead-tag">Leading this week</span>' : '<span class="speed" aria-hidden="true"><i></i><i></i><i></i></span>'}</div>
+        <div class="band"><h2>${num <= 9 ? `<span class="keynum" title="Press ${num} to pick this table">${num}</span>` : ''}${esc(t.name)}</h2>${isLead ? `<span class="lead-tag">${byQuarter() ? 'Leading the quarter' : 'Leading this week'}</span>` : '<span class="speed" aria-hidden="true"><i></i><i></i><i></i></span>'}</div>
         <div class="card-body">
           <div class="card-top">
             <div class="facts">
@@ -247,7 +250,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
 
     // prizes
     const prev = T.week - 1;
-    const prevLead = prev >= 1 ? weekLeaders(c, prev) : [];
+    const prevLead = prev >= 1 ? topLeaders(c, prev) : [];
     const prevImp = prev >= 2 ? improvedFinal(c, prev) : null;
     const streakNow = lead.filter(id => (streaks[id] || 0) + 1 >= 2);
     const streakPrev = act.filter(t => (streaks[t.id] || 0) >= 2).map(t => t.id);
@@ -303,15 +306,15 @@ body.proj .tag{font-size:18px;padding:2px 12px}
           <div class="scroll"><table class="plain">
             <thead><tr><th>Award</th><th>This week so far</th><th>${prev >= 1 ? 'Week ' + prev + ' final' : 'Last week'}</th></tr></thead>
             <tbody>
-              <tr><td>Top table</td><td>${names(c, lead)}</td><td>${prev >= 1 ? (prevLead.length ? withScore(c, prevLead, id => pts(c.id, id, prev) + ' pts') : '<span class="muted">No points that week</span>') : '<span class="muted">—</span>'}</td></tr>
+              <tr><td>Top table</td><td>${names(c, lead)}</td><td>${prev >= 1 ? (prevLead.length ? withScore(c, prevLead, id => byQuarter() ? qThrough(c.id, id, prev) + ' pts this quarter' : pts(c.id, id, prev) + ' pts') : '<span class="muted">No points that week</span>') : '<span class="muted">—</span>'}</td></tr>
               <tr><td>Most improved</td><td>${T.week === 1 ? '<span class="muted">Starts week 2</span>' : imp ? (imp.length ? names(c, imp) : '<span class="muted">No table ahead of last week yet</span>') : '<span class="muted">Waiting for points</span>'}</td>
                   <td>${prevImp ? (prevImp.length ? withScore(c, prevImp, id => { const a = pts(c.id, id, prev - 1), b2 = pts(c.id, id, prev); return '+' + (b2 - a) + ' (' + a + ' → ' + b2 + ')'; }) : '<span class="muted">No table beat its week ' + (prev - 1) + ' score</span>') : '<span class="muted">' + (prev === 1 ? 'Starts week 2' : '—') + '</span>'}</td></tr>
               <tr><td>Streak bonus</td><td>${streakNow.length ? names(c, streakNow) + ' <span class="muted">if they hold on</span>' : '<span class="muted">None yet</span>'}</td>
                   <td>${prev >= 1 ? (streakPrev.length ? withScore(c, streakPrev, id => (streaks[id] || 0) + ' wks') : '<span class="muted">No streaks</span>') : '<span class="muted">—</span>'}</td></tr>
               <tr><td>Quarter leader</td><td colspan="2">${names(c, qLead)}</td></tr>
             </tbody></table></div>
-          ${prev >= 1 ? `<h3 class="sub" style="margin:14px 0 6px">Week ${prev} final standings</h3><div class="scroll"><table class="plain"><thead><tr><th>${esc(W('team', { cap: true }))}</th><th>Week ${prev}</th>${prev >= 2 ? `<th>Change from week ${prev - 1}</th>` : ''}<th>Quarter</th></tr></thead><tbody>${act.map(t => [t, pts(c.id, t.id, prev), prev >= 2 ? pts(c.id, t.id, prev) - pts(c.id, t.id, prev - 1) : null]).sort((a, b) => b[1] - a[1]).map(([t, p, d]) => `<tr><td><span class="swatch" style="background:${esc(t.color)}"></span> ${esc(t.name)}</td><td><b>${p}</b></td>${d === null ? '' : `<td>${d > 0 ? '+' + d : d}</td>`}<td>${pts(c.id, t.id)}</td></tr>`).join('')}</tbody></table></div>` : ''}
-          <p class="hint" style="margin-top:8px">Winners use each week's points, not the quarter total. Ties share the prize. Short week? Don't end it, and its points roll into the next week.</p>
+          ${prev >= 1 ? `<h3 class="sub" style="margin:14px 0 6px">Week ${prev} final standings</h3><div class="scroll"><table class="plain"><thead><tr><th>${esc(W('team', { cap: true }))}</th><th>Week ${prev}</th>${prev >= 2 ? `<th>Change from week ${prev - 1}</th>` : ''}<th>Quarter</th></tr></thead><tbody>${act.map(t => [t, pts(c.id, t.id, prev), prev >= 2 ? pts(c.id, t.id, prev) - pts(c.id, t.id, prev - 1) : null, qThrough(c.id, t.id, prev)]).sort((a, b) => byQuarter() ? b[3] - a[3] || b[1] - a[1] : b[1] - a[1]).map(([t, p, d]) => `<tr><td><span class="swatch" style="background:${esc(t.color)}"></span> ${esc(t.name)}</td><td><b>${p}</b></td>${d === null ? '' : `<td>${d > 0 ? '+' + d : d}</td>`}<td>${pts(c.id, t.id)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+          <p class="hint" style="margin-top:8px">${byQuarter() ? 'Top table goes to the highest quarter total when you end the week; Most improved is the biggest jump in one week.' : 'Top table goes to the most points that week; Most improved is the biggest jump in one week.'} Ties share the prize. Short week? Don't end it, and its points roll into the next week.</p>
         </section>
 
         <section class="panel goalspanel" aria-labelledby="h-goals"><h2 id="h-goals">Weekly goals</h2>
@@ -360,6 +363,9 @@ body.proj .tag{font-size:18px;padding:2px 12px}
             <option value="fair"${T.capOrder !== 'seat' ? ' selected' : ''}>Next: whoever has had the fewest turns</option>
             <option value="seat"${T.capOrder === 'seat' ? ' selected' : ''}>Next: the next seat at each table</option>
           </select>
+          <label style="display:block;margin-top:16px"><b>Top table each week goes to</b>
+            <select data-c="topby" style="display:block;margin-top:4px"><option value="quarter"${byQuarter() ? ' selected' : ''}>The highest quarter total so far</option><option value="week"${byQuarter() ? '' : ' selected'}>The most points that week</option></select></label>
+          <p class="hint" style="margin-top:2px">Most improved is always the biggest jump from one week to the next. Weeks you've already ended keep their winners.</p>
           <label for="repq" style="display:block;margin-top:16px"><b>Quarter report</b></label>
           <p class="hint" style="margin-top:0">A spreadsheet file (CSV) with every class's weekly points, captains, and prizes. It opens in Google Sheets or Excel.</p>
           <div class="bar"><select id="repq">${quarters.map(q => `<option value="${q}">Quarter ${q}</option>`).join('')}</select>
@@ -524,7 +530,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       if (!await Suite.dialog({ title: 'End week ' + T.week + '?', body: 'This locks in this week\'s winners for every class and starts week ' + (T.week + 1) + '. For a short week, skip this so its points roll into next week.', ok: 'End week' })) return;
       const rotate = T.rotateEvery > 0 && T.week % T.rotateEvery === 0;
       classes().forEach(k => {
-        const w = weekLeaders(k, T.week), s = T.streaks[k.id] = T.streaks[k.id] || {};
+        const w = topLeaders(k, T.week), s = T.streaks[k.id] = T.streaks[k.id] || {};
         k.tables.forEach(t => { s[t.id] = w.includes(t.id) ? (s[t.id] || 0) + 1 : 0; });
         recordPrizes(k, 'top', w);
         if (T.week >= 2 && T.log.some(e => e.c === k.id && e.q === T.quarter && e.w === T.week)) recordPrizes(k, 'improved', improvedFinal(k, T.week));
@@ -553,6 +559,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (!c || !k) return;
     if (k === 'rot') { T.rotateEvery = +el.value; save(); render(); return; }
     if (k === 'caporder') { T.capOrder = el.value; save(); render(); return; }
+    if (k === 'topby') { T.topBy = el.value; save(); render(); Suite.toast(el.value === 'week' ? 'Top table: most points that week' : 'Top table: highest quarter total'); return; }
     if (k === 'given') { const x = T.prizes.find(p => p.id === id); if (x) { x.given = el.checked; save(); render(); } return; }
     if (k === 'cap') { (T.captains[c.id] = T.captains[c.id] || {})[id] = el.value; }
     else if (k === 'goal') { const g = T.goals[c.id] = T.goals[c.id] || {}; const key = gkey(id); g[key] = Object.assign({}, g[key], { text: el.value }); }
