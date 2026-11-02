@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-02a">
-<script src="shared/core.js?v=2026-11-02a"></script>
-<script>window.PAGE_VERSION = '2026-11-02a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-03a">
+<script src="shared/core.js?v=2026-11-03a"></script>
+<script>window.PAGE_VERSION = '2026-11-03a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .classes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:2px}
@@ -132,6 +132,18 @@ body.proj .tag{font-size:18px;padding:2px 12px}
 .cards.fit2 .sub{display:none}
 .cards.fit2 .awards{gap:5px}.cards.fit2 .awards button{min-height:34px!important;font-size:13px;padding:2px 6px}
 .cards.fit3 .cap{display:none}
+.wrec td.tm{white-space:nowrap}
+.wrec td.wcell>span,.wrec th{white-space:nowrap}.wrec .sofar{font-size:11px;font-weight:600}
+.wrec td.wcell{padding-left:6px;padding-right:6px}
+.wrec th.now{color:var(--land)}
+.wrec td.wcell{vertical-align:middle}
+.wrec td.wcell>span{display:block;text-align:center}
+.wrec .wt{font-size:20px;font-weight:800;line-height:1.1}
+.wrec .ww{font-size:12px;color:var(--ink-2)}.wrec .ww.neg{color:#c4513a}
+.wrec .wp{font-size:11px;font-weight:800;letter-spacing:.05em;color:var(--ink-2);text-transform:uppercase}.wrec .wp.p1{color:#c58a00}
+.wrec .wb{font-size:15px;min-height:18px}
+.wrec td.now{background:var(--wash)}.wrec td.now .wt{opacity:.75}
+.wlegend{font-size:13px;color:var(--ink-2);margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -175,10 +187,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   function improved(c, w){
     if (w < 2) return null;
     if (!T.log.some(e => e.c === c.id && e.q === T.quarter && e.w === w)) return null;
-    const rows = Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w) - pts(c.id, t.id, w - 1)]);
+    const rows = Suite.activeTables(c).map(t => { const now = pts(c.id, t.id, w), before = pts(c.id, t.id, w - 1); return [t.id, now > 0 && now > before ? now - before : 0]; });
     if (!rows.length) return null;
     const best = Math.max(...rows.map(r => r[1]));
-    if (best <= 0) return [];   // nobody gained on last week
+    if (best <= 0) return [];   // no table earned more than the week before
     return rows.filter(r => r[1] === best).map(r => r[0]);
   }
   const tname = (c, id) => (c.tables.find(t => t.id === id) || { name: 'Removed table' }).name;
@@ -327,11 +339,17 @@ body.proj .tag{font-size:18px;padding:2px 12px}
         </section>
 
         <section class="panel" aria-labelledby="h-weeks"><h2 id="h-weeks">This quarter by week</h2>
-          <div class="scroll"><table class="plain">
-            <thead><tr><th>Table</th>${weeks.map(w => `<th class="n">Wk ${w}</th>`).join('')}<th class="n">Total</th></tr></thead>
-            <tbody>${act.map(t => `<tr><td><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}</td>
-              ${weeks.map(w => `<td class="n">${pts(c.id, t.id, w)}</td>`).join('')}<td class="n"><b>${pts(c.id, t.id)}</b></td></tr>`).join('')}</tbody>
+          <p class="hint" style="margin-top:0">Big number: the quarter total after that week. Small (+ or −): points earned that week. Badges: prizes won that week.</p>
+          <div class="scroll"><table class="plain wrec">
+            <thead><tr><th>${esc(W('team', { cap: true }))}</th>${weeks.map(w => `<th class="n${w === T.week ? ' now' : ''}">${w === T.week ? 'Wk ' + w + '<br><span class="sofar">so far</span>' : 'Wk ' + w}</th>`).join('')}</tr></thead>
+            <tbody>${act.map(t => `<tr><td class="tm"><span class="swatch" style="background:${esc(t.color)}"></span>${esc(t.name)}</td>
+              ${weeks.map(w => { const wp = pts(c.id, t.id, w), tot = qThrough(c.id, t.id, w), done = w < T.week;
+                const all = act.map(x => qThrough(c.id, x.id, w)), place = 1 + all.filter(v => v > tot).length;
+                const won = kind => T.prizes.some(x => x.c === c.id && x.q === T.quarter && x.w === w && x.kind === kind && x.tables.some(y => y.id === t.id));
+                const badges = done ? (won('top') ? '🏆' : '') + (won('improved') ? '📈' : '') + (won('streak') ? '🔥' : '') : '';
+                return `<td class="n wcell${done ? '' : ' now'}"><span class="wt">${tot}</span><span class="ww${wp < 0 ? ' neg' : ''}">${wp > 0 ? '+' : ''}${wp}</span>${done ? `<span class="wp${place === 1 ? ' p1' : ''}">${place}${place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'}</span>` : ''}<span class="wb">${badges}</span></td>`; }).join('')}</tr>`).join('')}</tbody>
           </table></div>
+          <p class="wlegend">🏆 Top ${esc(W('team'))} (${byQuarter() ? 'highest quarter total' : 'most points that week'}) · 📈 Most improved (biggest gain over the week before) · 🔥 Streak (top 2+ weeks in a row)</p>
         </section>
 
         <section class="panel capspanel" aria-labelledby="h-caps"><h2 id="h-caps">${esc(W('lead', { plural: true, cap: true }))}</h2>
@@ -381,10 +399,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
 
   // "Final" most improved for a completed week (doesn't need current-week points check)
   function improvedFinal(c, w){
-    const rows = Suite.activeTables(c).map(t => [t.id, pts(c.id, t.id, w) - pts(c.id, t.id, w - 1)]);
+    const rows = Suite.activeTables(c).map(t => { const now = pts(c.id, t.id, w), before = pts(c.id, t.id, w - 1); return [t.id, now > 0 && now > before ? now - before : 0]; });
     if (!rows.length) return null;
     const best = Math.max(...rows.map(r => r[1]));
-    if (best <= 0) return [];   // nobody gained on last week
+    if (best <= 0) return [];   // no table earned more than the week before
     return rows.filter(r => r[1] === best).map(r => r[0]);
   }
 
@@ -429,6 +447,23 @@ body.proj .tag{font-size:18px;padding:2px 12px}
 
   /* ---------- prize record ---------- */
   const PRIZE_NAMES = { top: 'Top table', improved: 'Most improved', streak: 'Streak bonus', quarter: 'Quarter champion' };
+  function rescore(){
+    const before = JSON.stringify([T.prizes, T.streaks]);
+    const keepGiven = new Set(T.prizes.filter(x => x.given).map(x => [x.c, x.q, x.w, x.kind, x.tables.map(t => t.id).sort().join(',')].join('|')));
+    T.prizes = T.prizes.filter(x => !(x.q === T.quarter && ['top', 'improved', 'streak'].includes(x.kind)));
+    classes().forEach(k => {
+      const s = {}; k.tables.forEach(t => { s[t.id] = 0; });
+      for (let w = 1; w < T.week; w++) {
+        const lead = topLeaders(k, w); k.tables.forEach(t => { s[t.id] = lead.includes(t.id) ? s[t.id] + 1 : 0; });
+        recordPrizes(k, 'top', lead, w);
+        if (w >= 2 && T.log.some(e => e.c === k.id && e.q === T.quarter && e.w === w)) recordPrizes(k, 'improved', improvedFinal(k, w), w);
+        recordPrizes(k, 'streak', Suite.activeTables(k).filter(t => lead.includes(t.id) && s[t.id] >= 2).map(t => t.id), w);
+      }
+      T.streaks[k.id] = s;
+    });
+    T.prizes.forEach(x => { if (keepGiven.has([x.c, x.q, x.w, x.kind, x.tables.map(t => t.id).sort().join(',')].join('|'))) x.given = true; });
+    if (JSON.stringify([T.prizes, T.streaks]) !== before) save();
+  }
   function recordPrizes(c, kind, ids, w){
     if (!ids || !ids.length) return;
     T.prizes.push({ id: Suite.uid(), c: c.id, q: T.quarter, w: w || T.week, kind, tables: ids.map(id => ({ id, name: tname(c, id) })), given: false });
@@ -559,7 +594,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (!c || !k) return;
     if (k === 'rot') { T.rotateEvery = +el.value; save(); render(); return; }
     if (k === 'caporder') { T.capOrder = el.value; save(); render(); return; }
-    if (k === 'topby') { T.topBy = el.value; save(); render(); Suite.toast(el.value === 'week' ? 'Top table: most points that week' : 'Top table: highest quarter total'); return; }
+    if (k === 'topby') { T.topBy = el.value; rescore(); save(); render(); Suite.toast(el.value === 'week' ? 'Top table: most points that week' : 'Top table: highest quarter total'); return; }
     if (k === 'given') { const x = T.prizes.find(p => p.id === id); if (x) { x.given = el.checked; save(); render(); } return; }
     if (k === 'cap') { (T.captains[c.id] = T.captains[c.id] || {})[id] = el.value; }
     else if (k === 'goal') { const g = T.goals[c.id] = T.goals[c.id] || {}; const key = gkey(id); g[key] = Object.assign({}, g[key], { text: el.value }); }
@@ -584,6 +619,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   window.addEventListener('resize', () => requestAnimationFrame(fitCards));
   { const baseRender = render; render = function(){ const r = baseRender.apply(this, arguments); fitCards(); return r; }; }
   Suite.mountNav('tracker');
+  rescore();
   render();
 })();
 </script>

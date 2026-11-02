@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-02a';   // bump with every build; pages check they match
+  const VERSION = '2026-11-03a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1096,9 +1096,10 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-02', items: [
-    'Table points: Top table each week now goes to the highest quarter total (the big number), and Most improved is still the biggest jump in one week. You can switch back in Table points (under Captains).',
-    'Spinner: a Pick history for each class, and the board widget keeps its Spin button in view.'] };
+  const NEWS = { id: '2026-11-03', items: [
+    'Table points: "This quarter by week" now reads like a weekly record: each team\'s quarter total after every week, points that week, its place, and prize badges (🏆 📈 🔥) in the week they were won.',
+    'The board widget is now "Week results": teams in order with their totals and badges, plus a short line explaining each prize.',
+    'Most improved now goes only to a team that earned more than zero points and more than the week before. Ended weeks this quarter were re-scored the same way.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
