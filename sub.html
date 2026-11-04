@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-03a">
-<script src="shared/core.js?v=2026-11-03a"></script>
-<script>window.PAGE_VERSION = '2026-11-03a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-04a">
+<script src="shared/core.js?v=2026-11-04a"></script>
+<script>window.PAGE_VERSION = '2026-11-04a';</script>
 <style>
 .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
 .controls h1{font-size:32px;margin-bottom:4px}
@@ -232,7 +232,8 @@
       <h3>Schedule</h3>
       ${day.periods.length ? `<table><thead><tr><th>Time</th><th>Period</th><th>Class</th></tr></thead><tbody>${day.periods.filter(p => !Suite.isPassing(p)).map(p => {
         const c = Suite.classForPeriod(p, list);
-        return `<tr><td>${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)}</td><td>${esc(p.name)}</td><td>${c ? esc(c.name) : p.isBreak ? '' : '<span style="color:#666">No class</span>'}</td></tr>`; }).join('')}</tbody></table>`
+        const ncr = c ? Suite.noClassFor(date, c.id) : null;
+        return `<tr><td>${Suite.fmt12(p.start)} to ${Suite.fmt12(p.end)}</td><td>${esc(p.name)}</td><td>${c ? esc(c.name) + (ncr ? ` <b>No class: ${esc(ncr)}</b>` : '') : p.isBreak ? '' : '<span style="color:#666">No class</span>'}</td></tr>`; }).join('')}</tbody></table>`
         : '<p>No bells on this day.</p>'}
       ${usesPoints() ? block('How ' + Suite.word('team') + ' points work', S0.rules || RULES()) : ''}
     </section>`;

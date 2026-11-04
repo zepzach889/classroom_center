@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-03a">
-<script src="shared/core.js?v=2026-11-03a"></script>
-<script>window.PAGE_VERSION = '2026-11-03a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-04a">
+<script src="shared/core.js?v=2026-11-04a"></script>
+<script>window.PAGE_VERSION = '2026-11-04a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -520,15 +520,18 @@ details.sec>summary .muted{font-weight:400}
     const p = cur || (st.next >= 0 ? real(st.next) : null) || (st.cur >= 0 ? real(st.cur + 1) : null);
     const c = p ? Suite.classForPeriod(p, list) : null;
     const same = c && c.name.trim().toLowerCase() === (p ? p.name : '').trim().toLowerCase();
+    const ncr = c ? Suite.noClassFor(Suite.dateKey(now), c.id) : null;
+    if (ncr) return { cid: c.id, text: `no class (${ncr}), so the between-classes screen is up`, period: null, idle: true };
     if (c) return { cid: c.id, text: cur ? `${same ? '' : p.name + ' '}until ${Suite.fmt12(p.end)}` : `up next${same ? '' : ': ' + p.name} at ${Suite.fmt12(p.start)}`, period: p };
     return { cid: (list[0] || {}).id, text: 'no class right now, so the between-classes screen is up. Pick a class above to plan for it', period: null, idle: true };
   }
   function idleInfo(){
     const now = new Date(), day = Suite.scheduleFor(now), P = day.periods, st = Suite.periodStatus(P, now), list = classes();
     const curP = st.cur >= 0 ? P[st.cur] : null;
-    const label = !P.length ? (day.label || 'No school today') : curP ? (Suite.isPassing(curP) ? 'Passing period' : curP.name) : st.next >= 0 ? 'Before school' : 'After school';
+    const ncC = curP && !Suite.isPassing(curP) ? Suite.classForPeriod(curP, list) : null, ncR = ncC ? Suite.noClassFor(Suite.dateKey(now), ncC.id) : null;
+    const label = !P.length ? (day.label || 'No school today') : ncR ? 'No class: ' + ncR : curP ? (Suite.isPassing(curP) ? 'Passing period' : curP.name) : st.next >= 0 ? 'Before school' : 'After school';
     const endHM = curP ? curP.end : st.next >= 0 ? P[st.next].start : null;
-    let nx = null; const from = curP ? st.cur + 1 : st.next; for (let i = from; from >= 0 && i < P.length; i++) if (!Suite.isPassing(P[i]) && Suite.classForPeriod(P[i], list)) { nx = P[i]; break; }
+    let nx = null; const from = curP ? st.cur + 1 : st.next; for (let i = from; from >= 0 && i < P.length; i++) if (!Suite.isPassing(P[i]) && Suite.classForPeriod(P[i], list) && !Suite.noClassFor(Suite.dateKey(now), Suite.classForPeriod(P[i], list).id)) { nx = P[i]; break; }
     let left = null; if (endHM) { const [h, m] = endHM.split(':').map(Number), e = new Date(now); e.setHours(h, m, 0, 0); left = e - now; }
     const kind = !P.length ? 'none' : !curP ? (st.next >= 0 ? 'before' : 'after') : Suite.isPassing(curP) ? 'passing' : curP.staff ? 'staff' : curP.isBreak ? (/lunch/i.test(curP.name) ? 'lunch' : 'break') : /lunch/i.test(curP.name) ? 'lunch' : 'other';
     // go-home reminder: after the time you set, count up how long you've stayed (off unless turned on)
@@ -1391,6 +1394,7 @@ details.sec>summary .muted{font-weight:400}
   function bellInfo(){
     const now = new Date(), day = Suite.scheduleFor(now), P = day.periods, st = Suite.periodStatus(P, now);
     if (st.cur < 0) return null;
+    if (Suite.noClassFor(Suite.dateKey(now), activeId()) && isIdle()) return null;   // a class that isn't meeting: no bell reminder
     const p = P[st.cur], [h, m] = p.end.split(':').map(Number), end = new Date(now); end.setHours(h, m, 0, 0);
     let nx = null; for (let i = st.cur + 1; i < P.length; i++) if (!Suite.isPassing(P[i])) { nx = P[i]; break; }
     return { p, left: end - now, passing: Suite.isPassing(p), brk: !!p.isBreak && !Suite.isPassing(p), staff: !!p.staff, nx, key: Suite.dateKey(now) + p.start };

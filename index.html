@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-03a">
-<script src="shared/core.js?v=2026-11-03a"></script>
-<script>window.PAGE_VERSION = '2026-11-03a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-04a">
+<script src="shared/core.js?v=2026-11-04a"></script>
+<script>window.PAGE_VERSION = '2026-11-04a';</script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
 @media (min-width:861px) and (min-height:700px){
@@ -115,6 +115,7 @@
 .swap{display:inline-flex;align-items:center;gap:6px;margin-bottom:4px}.swap select{font:inherit;font-size:13px}
 .unitpace{font-size:14px;font-weight:600;color:var(--ink-2);margin:-4px 0 6px}.udot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 .stand .wk{font-size:12px;font-weight:700;color:var(--ink-2);margin-left:auto;margin-right:8px}
+.ncnote{font-size:.8em;font-weight:700;color:var(--land)}
 </style>
 </head>
 <body>
@@ -274,7 +275,7 @@
     $('#day-why').textContent = [day.why, day.offset ? 'Bells shifted ' + (day.offset > 0 ? '+' : '') + day.offset + ' min' : ''].filter(Boolean).join(' · ');
     $('#sched').innerHTML = P.length ? P.map((p, i) => {
       const cls = i === st.cur ? 'now' : secOf(p.end) <= st.sec ? 'past' : '';
-      return `<li class="${cls}${Suite.isPassing(p) ? ' pass' : p.staff ? ' staff' : p.isBreak ? ' brk' : ''}"${i === st.cur ? ' aria-current="true"' : ''}><span class="t">${Suite.fmt12(p.start)}</span><span class="n">${esc(p.name)}</span></li>`;
+      return `<li class="${cls}${Suite.isPassing(p) ? ' pass' : p.staff ? ' staff' : p.isBreak ? ' brk' : ''}"${i === st.cur ? ' aria-current="true"' : ''}><span class="t">${Suite.fmt12(p.start)}</span><span class="n">${esc(p.name)}${(() => { const c2 = !Suite.isPassing(p) && !p.isBreak ? Suite.classForPeriod(p, Suite.classes()) : null, r2 = c2 ? Suite.noClassFor(Suite.dateKey(now), c2.id) : null; return r2 ? ` <span class="ncnote">No class: ${esc(r2)}</span>` : ''; })()}</span></li>`;
     }).join('') : `<li class="none">No bells today.</li>`;
 
     let html = '', focus = null;
@@ -290,6 +291,7 @@
       focus = p;
       html = `<h1>${esc(p.name)} <span class="range">${Suite.fmt12(p.start).replace(/ (AM|PM)$/, '')} to ${Suite.fmt12(p.end)}</span></h1>
         <div class="pline"><div class="progress" role="progressbar" aria-label="Time through this period" aria-valuemin="0" aria-valuemax="100"><span id="bar"></span></div><div class="left"><span id="left"></span> left</div></div>
+        ${(() => { const c2 = Suite.classForPeriod(p, Suite.classes()), r2 = c2 ? Suite.noClassFor(Suite.dateKey(now), c2.id) : null; return r2 ? `<div class="nextup ncnote">No class this period: ${esc(r2)}</div>` : ''; })()}
         ${nx ? `<div class="nextup">Next: ${esc(nx.name)} at ${Suite.fmt12(nx.start)}</div>` : ''}`;
     } else if (st.next >= 0) {
       const nx = Suite.isPassing(P[st.next]) ? nextReal(P, st.next) || P[st.next] : P[st.next];

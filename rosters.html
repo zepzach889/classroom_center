@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-03a">
-<script src="shared/core.js?v=2026-11-03a"></script>
-<script>window.PAGE_VERSION = '2026-11-03a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-04a">
+<script src="shared/core.js?v=2026-11-04a"></script>
+<script>window.PAGE_VERSION = '2026-11-04a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .controls{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin-bottom:20px}
@@ -108,6 +108,7 @@ table.ros thead th{font-size:11px}
     const k = Suite.dateKey(d), day = Suite.scheduleFor(d);
     if (!day.periods.length) return { meets: false, why: day.label && !/regular/i.test(day.label) ? day.label : 'No school', fixed: true };
     const own = (R.blocks[k] || {})[c.id]; if (own) return { meets: false, why: own, own: true };
+    const nc = Suite.noClassFor(k, c.id); if (nc) return { meets: false, why: nc, fixed: true };
     const list = Suite.classes(), inDay = dd => Suite.scheduleFor(dd).periods.some(p => !Suite.isPassing(p) && Suite.classForPeriod(p, list) && Suite.classForPeriod(p, list).id === c.id);
     if (inDay(d)) return { meets: true };
     // a class that isn't tied to any bell-schedule period this week is assumed to meet every school day

@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-03a';   // bump with every build; pages check they match
+  const VERSION = '2026-11-04a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -824,6 +824,9 @@
   };
   // School-wide events (dress-up days, testing, field trips). Each has a start and end date.
   S.events = () => S.get('events', []);
+  // Classes that don't meet on a day (a grade-level field trip, say): marked in the Planner, or by a school event's "Classes that won't meet"
+  S.noClassKey = (dateKey, key) => { const m = ((S.get('noclass', {}) || {})[dateKey] || {})[key]; if (m) return m; const ev = (S.get('events', []) || []).find(e => (e.noClass || []).includes(key) && e.start <= dateKey && dateKey <= (e.end || e.start)); return ev ? ev.title : null; };
+  S.noClassFor = (dateKey, cid) => { if (!cid) return null; const co = S.courseOf(cid); return S.noClassKey(dateKey, cid) || (co ? S.noClassKey(dateKey, 'course:' + co.id) : null); };
   S.saveEvents = list => S.set('events', list);
   S.eventsOn = dateKey => S.events().filter(e => e.start <= dateKey && dateKey <= (e.end || e.start)).sort((a, b) => a.title.localeCompare(b.title));
   // Is an attached file still used by any plan or the sub page? (Checked before deleting it.)
@@ -1096,10 +1099,9 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-03', items: [
-    'Table points: "This quarter by week" now reads like a weekly record: each team\'s quarter total after every week, points that week, its place, and prize badges (🏆 📈 🔥) in the week they were won.',
-    'The board widget is now "Week results": teams in order with their totals and badges, plus a short line explaining each prize.',
-    'Most improved now goes only to a team that earned more than zero points and more than the week before. Ended weeks this quarter were re-scored the same way.'] };
+  const NEWS = { id: '2026-11-04', items: [
+    'New: mark a class as not meeting on a day (like a grade-level field trip). In the Planner, open the day and choose "No class this day," or check "Classes that won\'t meet" on a school event.',
+    'That period, Today shows a "No class" screen instead of the boards, and the dashboard, roster sheets, and sub plans show it too.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }

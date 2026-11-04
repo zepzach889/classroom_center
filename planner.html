@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-03a">
-<script src="shared/core.js?v=2026-11-03a"></script>
-<script>window.PAGE_VERSION = '2026-11-03a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-04a">
+<script src="shared/core.js?v=2026-11-04a"></script>
+<script>window.PAGE_VERSION = '2026-11-04a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -96,6 +96,10 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
 .schedpick.special{background:#fff1d6;color:#6b4b00;border-color:#e0a800}
 .pslist{display:grid;gap:4px;margin:6px 0 10px}
 @media print{.schedpick{border:0;background:none;padding:0}}
+.cellbtn.nocls{background:repeating-linear-gradient(135deg,var(--wash) 0 8px,transparent 8px 16px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.cellbtn.nocls .nct{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)}
+.cellbtn.nocls .ncr{font-size:13px}
+.evnc{margin-top:8px}.evnc summary{cursor:pointer;font-weight:600}
 </style>
 </head>
 <body>
@@ -145,6 +149,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       ${D.map(d => {
         const k = keyOf(d), sc = Suite.scheduleFor(d), day = A[k] || {};
         if (!sc.periods.length) return `<td class="cell"><div class="cellbtn off">${esc(sc.label)}</div></td>`;
+        const ncr = Suite.noClassKey(k, r.key);
+        if (ncr) return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn nocls" data-a="edit" data-row="${esc(r.key)}" data-date="${k}" aria-label="${esc(r.name)} has no class on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}"><span class="nct">No class</span><span class="ncr">${esc(ncr)}</span></button></td>`;
         const e = day[r.key], own = r.kind === 'course' ? r.classes.filter(c => day[c.id]) : [];
         return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn${e || own.length ? '' : ' empty'}" data-a="edit" data-row="${esc(r.key)}" data-date="${k}" aria-label="Plan for ${esc(r.name)} on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">
           ${(() => { const un = Suite.unitFor(r.key, k); if (!un) return ''; const prev = new Date(d); prev.setDate(prev.getDate() - 1); const first = k === un.start || d.getDay() === 1 || !Suite.unitFor(r.key, keyOf(prev)) || Suite.unitFor(r.key, keyOf(prev)).id !== un.id;
@@ -249,7 +255,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         <div class="bar" style="margin-top:6px"><button class="btn small" data-e="stadd" type="button">Add a board</button><a class="btn small" href="today.html#date=${dateKey}&class=${encodeURIComponent((r.classes[0] || {}).id || '')}" title="See this day's Today screen">Open in Today</a></div>
       </details>
       <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
-        <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
+        <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet small" data-e="nocls">${Suite.noClassKey(dateKey, target) ? 'Class meets after all' : 'No class this day…'}</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
         <span class="bar"><button class="btn quiet" data-e="repeat" title="Save, then copy this plan to the same weekday each week">Repeat weekly…</button><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
     document.body.appendChild(back);
     const close = () => { back.remove(); document.removeEventListener('keydown', onKey, true); };
@@ -347,6 +353,13 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       else if (k === 'course') { close(); openEditor(rowKey, dateKey, null); }
       else if (k === 'unown') { Suite.saveAgenda(dateKey, [one.id], null); close(); render(); Suite.toast(one.name + ' uses the course plan again'); }
       else if (k === 'clear') { const had = ((Suite.agendaAll()[dateKey] || {})[target] || {}).materials || []; Suite.saveAgenda(dateKey, [target], null); close(); dropUnused(had.filter(m => m.kind === 'file').map(m => m.file.id).concat(added)); render(); }
+      else if (k === 'nocls') {
+        const all = Suite.get('noclass', {}) || {}, day0 = all[dateKey] = all[dateKey] || {};
+        if (day0[target]) { delete day0[target]; if (!Object.keys(day0).length) delete all[dateKey]; Suite.set('noclass', all); clearDraft(); close(); render(); Suite.toast('Back on: this class meets that day'); return; }
+        if (Suite.noClassKey(dateKey, target)) { Suite.toast('A school event marks this class as not meeting. Change it in that event.'); return; }
+        Suite.dialog({ title: 'No class this day', body: 'Today shows a "No class" screen during this period instead of the boards, and roster sheets and sub plans skip it. Why?', input: 'Field trip', ok: 'Mark no class' }).then(why => {
+          if (!why) return; const a2 = Suite.get('noclass', {}) || {}; a2[dateKey] = a2[dateKey] || {}; a2[dateKey][target] = why.trim() || 'No class'; Suite.set('noclass', a2); clearDraft(); close(); render(); Suite.toast('Marked: no class that day'); });
+      }
       else if (k === 'prev') {
         const res = Suite.copyPrevDay(target, dateKey);
         if (!res) { Suite.toast('No earlier day to copy from'); return; }
@@ -552,6 +565,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         <label class="rv"><input type="checkbox" id="ev-cd"${ev && ev.countdown ? ' checked' : ''}> Count down to it on the dashboard</label>
         <label class="rv" style="margin-left:26px">at <input type="time" class="field" id="ev-time" value="${esc(ev ? ev.time || '' : '')}" style="width:130px"> <span class="muted small">(optional; leave empty to count down to the day)</span></label>
         <label class="rv"><input type="checkbox" id="ev-mine"${ev && ev.mine ? ' checked' : ''}> Just for me (don't show it on the Today screen or the sub page)</label>
+        ${Suite.isOffice() ? '' : `<details class="evnc"${ev && (ev.noClass || []).length ? ' open' : ''}><summary>Classes that won't meet <span class="muted small">(a grade-level field trip, say)</span></summary>
+          ${rows().map(r => `<label class="rv"><input type="checkbox" class="ev-nc" value="${esc(r.key)}"${ev && (ev.noClass || []).includes(r.key) ? ' checked' : ''}> ${esc(r.name)}</label>`).join('')}
+          <p class="hint" style="margin:4px 0 0">Every day of the event, these show "No class" in the Planner and Today.</p></details>`}
         <div class="suite-dialog-actions"><button class="btn" data-v="close">Done</button><button class="btn primary" data-v="save" data-id="${ev ? esc(ev.id) : ''}">${ev ? 'Save changes' : 'Add event'}</button></div></div>`;
       back.querySelector('#ev-title').focus();
     };
@@ -570,7 +586,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         const title = back.querySelector('#ev-title').value.trim(); if (!title) { Suite.toast('Add a name for the event'); return; }
         let start = back.querySelector('#ev-start').value || dateKey, end = back.querySelector('#ev-end').value || start;
         if (end < start) [start, end] = [end, start];
-        const list = Suite.events(), id = b.dataset.id, item = { id: id || Suite.uid(), title, start, end, note: back.querySelector('#ev-note').value.trim(), countdown: back.querySelector('#ev-cd').checked, mine: back.querySelector('#ev-mine').checked, time: back.querySelector('#ev-time').value || '' };
+        const list = Suite.events(), id = b.dataset.id, item = { id: id || Suite.uid(), title, start, end, note: back.querySelector('#ev-note').value.trim(), countdown: back.querySelector('#ev-cd').checked, mine: back.querySelector('#ev-mine').checked, noClass: [...back.querySelectorAll('.ev-nc:checked')].map(x => x.value), time: back.querySelector('#ev-time').value || '' };
         const i = list.findIndex(x => x.id === id); if (i > -1) list[i] = item; else list.push(item);
         Suite.saveEvents(list); draw();
       }
