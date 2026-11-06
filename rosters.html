@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-04a">
-<script src="shared/core.js?v=2026-11-04a"></script>
-<script>window.PAGE_VERSION = '2026-11-04a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-06a">
+<script src="shared/core.js?v=2026-11-06a"></script>
+<script>window.PAGE_VERSION = '2026-11-06a';</script>
 <style>
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .controls{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px;margin-bottom:20px}
@@ -45,6 +45,16 @@ table.ros th .sub2{font-weight:600;font-size:10px;color:#444}
 table.ros td.tot{border-left:2.5px solid var(--ink-sh);text-align:right;color:#7a848d;font-size:10px}
 table.ros tr.blank td{color:#999}
 table.ros td{height:.205in;font-size:11px}
+table.ros.nb td{height:.168in;font-size:10.5px}
+table.ros.nb thead th{padding:2px 2px}
+.sheet.withnotes{display:flex;flex-direction:column;height:8.35in}
+.rnotes{flex:1 1 auto;min-height:.8in;margin-top:.1in;border:1.5px solid var(--rule-sh);border-radius:6px;padding:.04in .12in .06in;display:flex;flex-direction:column;overflow:hidden}
+.rnh{font:700 12px var(--sans);color:var(--ink-sh);text-transform:uppercase;letter-spacing:.06em}
+.rnp{display:flex;align-items:flex-end;gap:6px;font:600 12px var(--sans);color:var(--ink-sh);height:.26in}
+.rnp .rnl{flex:1;border-bottom:1px solid #9aa2aa;margin-bottom:3px}
+.rnt{font:500 12px var(--sans);color:var(--ink-sh);margin:3px 0;font-style:italic}
+.rnlines{flex:1 1 auto;min-height:.26in;background-image:linear-gradient(to bottom,transparent calc(100% - 1px),#9aa2aa calc(100% - 1px));background-size:100% .25in;background-repeat:repeat-y;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rntype{margin-top:10px}.rntype textarea{width:100%}
 table.ros thead th.day.blockable{cursor:pointer}
 table.ros thead th.day.blockable:hover{outline:2px dashed #2f6fd0;outline-offset:-3px}
 .sets{margin-top:8px}.sets summary{cursor:pointer;font-weight:700}
@@ -62,6 +72,7 @@ table.ros thead th{font-size:11px}
   body{background:#fff}
   .wrap{max-width:none;padding:0}
   .sheet{border:0;border-radius:0;padding:0;margin:0;width:auto;break-after:page}
+  .sheet.withnotes{height:7.62in}
   .sheet:last-child{break-after:auto}
   table.ros thead{display:table-header-group}
   table.ros tr{break-inside:avoid}
@@ -131,15 +142,17 @@ table.ros thead th{font-size:11px}
     const cols = `<col style="width:${nameW}%">${book ? `<col style="width:${bookW}%">` : ''}${days.map(() => dayCols.map(col => `<col style="width:${(SIZE[col.size || 'wide'] * unit).toFixed(2)}%">`).join('')).join('')}${set.end.map(e => `<col style="width:${((e.type === 'blank' ? 2 : 1.4) * unit).toFixed(2)}%">`).join('')}`;
     const possible = e => { const col = dayCols[e.of]; return col ? count * (col.pts || 1) : 0; };
     const cells = () => info.map(x => dayCols.map((col, ci) => `<td class="${ci === 0 ? 'wu' : ''}${x.meets ? '' : ' off'}"></td>`).join('')).join('') + set.end.map(e => e.type === 'total' ? `<td class="tot">/${possible(e)}</td>` : '<td class="endb"></td>').join('');
-    return `<section class="sheet">
+    return `<section class="sheet${set.notes !== false ? ' withnotes' : ''}">
       <div class="sh-head"><div><h2>${esc(c.name)}${co ? ` <span class="sub">${esc(co.name)}</span>` : ''}</h2><div class="sub">${un ? 'Unit: ' + esc(un.name) + ' · ' : ''}${kids.length} student${kids.length === 1 ? '' : 's'}${kids.length > MAX_ROWS ? ' · <b>more than 32: some rows continue on a second page</b>' : ''}</div></div>
         <div class="wk">Week of ${days[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' })} to ${days[4].toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</div></div>
-      <table class="ros"><colgroup>${cols}</colgroup>
+      <table class="ros${set.notes !== false ? ' nb' : ''}"><colgroup>${cols}</colgroup>
         <thead><tr><th class="name" rowspan="2">Students</th>${book ? '<th rowspan="2">Book</th>' : ''}${days.map((d, i) => `<th class="day${info[i].meets ? '' : ' off'}${info[i].fixed ? '' : ' blockable'}" colspan="${dayCols.length}"${info[i].fixed ? '' : ` data-block="${Suite.dateKey(d)}" data-cid="${esc(c.id)}" title="${info[i].own ? 'Click to unblock this day' : 'Click to block this day for ' + esc(c.name)}"`}>${d.toLocaleDateString(undefined, { weekday: 'short' })} ${fmt(d)}${info[i].meets ? '' : `<span class="why">${esc(info[i].why)}</span>`}</th>`).join('')}${set.end.map(e => `<th rowspan="2" class="day">${esc(e.label)}${e.type === 'total' ? `<br><span class="sub2">/${possible(e)}</span>` : ''}</th>`).join('')}</tr>
           <tr>${info.map(x => dayCols.map((col, ci) => `<th class="sub2${x.meets ? '' : ' off'}"${ci === 0 ? ' style="border-left:2.5px solid var(--ink-sh)"' : ''}>${esc(col.label)}</th>`).join('')).join('')}</tr></thead>
         <tbody>${kids.map(s => `<tr><td class="name">${esc(s.name)}</td>${book ? `<td class="book">${esc(s.book || '')}</td>` : ''}${cells()}</tr>`).join('')}
           ${Array.from({ length: blanks }, () => `<tr class="blank"><td class="name"></td>${book ? '<td></td>' : ''}${cells()}</tr>`).join('')}</tbody>
-      </table></section>`;
+      </table>${set.notes !== false ? (() => { const typed = ((R.typed || {})[Suite.dateKey(week)] || {})[c.id] || '';
+        return `<div class="rnotes"><div class="rnh">Notes</div>${(set.prompts || []).filter(x => x.trim()).map(x => `<div class="rnp">${esc(x.trim())} <span class="rnl"></span></div>`).join('')}${typed ? `<div class="rnt">${esc(typed).replace(/\n/g, '<br>')}</div>` : ''}<div class="rnlines"></div></div>`; })() : ''}
+      <div class="noprint rntype"><label>Typed note for ${esc(c.name)} this week <span class="hint" style="margin:0">(prints in the Notes box)</span><textarea class="field" data-tn="${esc(c.id)}" rows="2" placeholder="Short week: Thanksgiving">${esc(((R.typed || {})[Suite.dateKey(week)] || {})[c.id] || '')}</textarea></label></div></section>`;
   }
 
   // ---- editing column sets ----
@@ -151,7 +164,8 @@ table.ros thead th{font-size:11px}
     const st = R.sets.find(x => x.id === editing);
     $('#setedit').innerHTML = `<div class="bar" style="margin-top:8px"><select id="seted">${R.sets.map(x => `<option value="${esc(x.id)}"${x.id === editing ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select><button class="btn small" data-s="new">New set</button><button class="btn small quiet" data-s="copy">Copy this set</button>${R.sets.length > 1 ? '<button class="btn small quiet danger" data-s="del">Delete this set</button>' : ''}</div>
       <div class="setbox">
-        <div class="bar"><label>Name <input class="field" data-f="name" value="${esc(st.name)}"></label><label><input type="checkbox" data-f="book"${st.book ? ' checked' : ''}> Book column (when students have book numbers)</label></div>
+        <div class="bar"><label>Name <input class="field" data-f="name" value="${esc(st.name)}"></label><label><input type="checkbox" data-f="notes"${st.notes !== false ? ' checked' : ''}> Notes box at the bottom</label><label><input type="checkbox" data-f="book"${st.book ? ' checked' : ''}> Book column (when students have book numbers)</label></div>
+        ${st.notes !== false ? `<div class="colhead">Notes box prompts</div><textarea class="field" data-f="prompts" rows="3" style="width:100%" placeholder="Flag of the Week winner:&#10;Make-ups:">${esc((st.prompts || []).join('\n'))}</textarea><p class="hint" style="margin:2px 0 8px">One per line. Each prints with a line to write on. The rest of the box is lined for notes.</p>` : ''}
         <div class="colhead">Each day</div>
         ${st.day.map((col, i) => `<div class="colrow"><input class="field" data-d="label" data-i="${i}" value="${esc(col.label)}" placeholder="Column name" aria-label="Column name">
           <select data-d="size" data-i="${i}">${['narrow', 'medium', 'wide'].map(z => `<option value="${z}"${(col.size || 'wide') === z ? ' selected' : ''}>${z[0].toUpperCase() + z.slice(1)}</option>`).join('')}</select>
@@ -182,12 +196,15 @@ table.ros thead th{font-size:11px}
     const t = e.target;
     if (t.id === 'wk' && t.value) { week = mondayOf(parse(t.value)); render(); return; }
     if (t.dataset.c) { R.skip = R.skip.filter(x => x !== t.dataset.c); if (!t.checked) R.skip.push(t.dataset.c); save(); render(); return; }
+    if (t.dataset.tn) { const wk2 = Suite.dateKey(week); R.typed = R.typed || {}; R.typed[wk2] = R.typed[wk2] || {}; if (t.value.trim()) R.typed[wk2][t.dataset.tn] = t.value.trim(); else delete R.typed[wk2][t.dataset.tn]; save(); render(); return; }
     if (t.id === 'blank') { R.blank = Math.max(0, Math.min(10, parseInt(t.value, 10) || 0)); save(); render(); return; }
     if (t.dataset.cs) { R.classSet[t.dataset.cs] = t.value; save(); render(); return; }
     if (t.id === 'seted') { editing = t.value; renderSets(); return; }
     const st = cur(); if (!st) return;
     if (t.dataset.f === 'name') st.name = t.value.trim() || st.name;
     else if (t.dataset.f === 'book') st.book = t.checked;
+    else if (t.dataset.f === 'notes') st.notes = t.checked;
+    else if (t.dataset.f === 'prompts') st.prompts = t.value.split('\n').map(x => x.trim()).filter(Boolean);
     else if (t.dataset.d) { const col = st.day[+t.dataset.i]; col[t.dataset.d] = t.dataset.d === 'pts' ? Math.max(0, parseFloat(t.value) || 0) : t.value; }
     else if (t.dataset.e) { const en = st.end[+t.dataset.i]; en[t.dataset.e] = t.dataset.e === 'of' ? +t.value : t.value; if (en.type === 'total' && en.of == null) en.of = 0; }
     else return;

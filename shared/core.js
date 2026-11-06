@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-04a';   // bump with every build; pages check they match
+  const VERSION = '2026-11-06a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1099,9 +1099,10 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-04', items: [
-    'New: mark a class as not meeting on a day (like a grade-level field trip). In the Planner, open the day and choose "No class this day," or check "Classes that won\'t meet" on a school event.',
-    'That period, Today shows a "No class" screen instead of the boards, and the dashboard, roster sheets, and sub plans show it too.'] };
+  const NEWS = { id: '2026-11-06', items: [
+    'Editing boards: Enter now starts a new line in text boxes, and colors and other formatting in Have Out stay put.',
+    'More text colors: the Color menu has 24 colors, your school colors, a Custom… color picker, and your recent custom colors.',
+    'Roster sheets have a lined Notes box, with prompts and a typed note for the week.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }

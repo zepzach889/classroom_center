@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-04a">
-<script src="shared/core.js?v=2026-11-04a"></script>
-<script>window.PAGE_VERSION = '2026-11-04a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-06a">
+<script src="shared/core.js?v=2026-11-06a"></script>
+<script>window.PAGE_VERSION = '2026-11-06a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -213,6 +213,14 @@ body.peek .stage{width:100vw!important;border-radius:0;pointer-events:none}
 #fx{position:fixed;z-index:8;pointer-events:none}
 body.full #fx{z-index:8}
 .fxpick{display:grid;gap:6px;margin:6px 0}
+.cpick{position:relative;display:inline-flex}
+.cmenu{position:absolute;top:calc(100% + 6px);left:0;z-index:5;background:var(--sheet);border:2px solid var(--edge);border-radius:12px;padding:8px 10px;box-shadow:0 10px 24px rgba(0,0,0,.25);display:grid;gap:6px;min-width:300px}
+.cmenu[hidden]{display:none}
+.cmenu .crow{display:flex;align-items:center;gap:5px}
+.cmenu .cg{font-size:11px;font-weight:700;color:var(--ink-2);width:52px;text-transform:uppercase;letter-spacing:.04em}
+.cmenu .cdot{width:24px;height:24px;min-width:24px;border-radius:50%;border:1.5px solid rgba(0,0,0,.25);padding:0}
+.cmenu .ccust{font-size:13px}
+.cmenu .ccol{width:34px;height:26px;padding:0;border:0;background:none}
 .bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
@@ -481,8 +489,8 @@ details.sec>summary .muted{font-weight:400}
   function dayFor(date, cid){
     const d = T.days[date] || {}, own = d[cid], co = d[rowKeyOf(cid)];
     const u = usual(cid), rec = own || co;
-    const base = !rec ? { lineup: u.lineup, haveOut: u.haveOut, boards: u.boards, slideLink: '' }
-      : Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
+    const base = !rec ? { lineup: u.lineup, haveOut: u.haveOut, haveOutFmt: u.haveOutFmt, boards: u.boards, slideLink: '' }
+      : Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, haveOutFmt: u.haveOutFmt, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
     return date === SBOX ? base : withLinked(withRepeats(base, date, cid));
   }
   function withLinked(rec){
@@ -506,7 +514,7 @@ details.sec>summary .muted{font-weight:400}
   function editable(date, cid){
     const key = scope === 'period' ? cid : rowKeyOf(cid);
     T.days[date] = T.days[date] || {};
-    if (!T.days[date][key]) { const cur = dayFor(date, cid); T.days[date][key] = clone({ lineup: cur.lineup, haveOut: cur.haveOut, boards: cur.boards, slideLink: cur.slideLink || '' }); }
+    if (!T.days[date][key]) { const cur = dayFor(date, cid); T.days[date][key] = clone({ lineup: cur.lineup, haveOut: cur.haveOut, haveOutFmt: cur.haveOutFmt || {}, boards: cur.boards, slideLink: cur.slideLink || '' }); }
     return T.days[date][key];
   }
 
@@ -650,8 +658,11 @@ details.sec>summary .muted{font-weight:400}
     const out = document.createElement('div');
     const walk = (src, dst) => src.childNodes.forEach(n => {
       if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.textContent)); return; }
-      if (n.nodeType !== 1 || n.tagName === 'BR' || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
-      let el = null; const tag = n.tagName;
+      if (n.nodeType !== 1 || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
+      if (n.tagName === 'BR') { dst.appendChild(document.createElement('br')); return; }
+      const tag = n.tagName; let el = null;
+      // a new line made with Enter arrives as a <div> or <p>: start it on its own line
+      if ((tag === 'DIV' || tag === 'P') && dst.childNodes.length && !(dst.lastChild && dst.lastChild.nodeName === 'BR')) dst.appendChild(document.createElement('br'));
       if (tag === 'B' || tag === 'STRONG') el = document.createElement('b');
       else if (tag === 'I' || tag === 'EM') el = document.createElement('i');
       else if (tag === 'U') el = document.createElement('u');
@@ -669,6 +680,7 @@ details.sec>summary .muted{font-weight:400}
       if (el) { walk(n, el); dst.appendChild(el); } else walk(n, dst);
     });
     walk(t.content, out);
+    while (out.lastChild && out.lastChild.nodeName === 'BR') out.removeChild(out.lastChild);   // no stray empty line at the end
     return out.innerHTML;
   }
   const lineInner = l => l.html ? clean(l.html) : esc(l.text || '').replace(/\*([^*]+)\*/g, '<span class="emph">$1</span>');
@@ -709,7 +721,7 @@ details.sec>summary .muted{font-weight:400}
         ${picUrl && !hide.pic ? `<div class="region pic${E ? ' ed' : ''}" data-k="pic" style="${place(L.pic)}"${E ? ' data-g="move"' : ''}><img src="${picUrl}" alt="">${handles('pic')}</div>` : ''}
         ${hide.date ? '' : `<div class="region date ${pn('date')}${E ? ' ed' : ''}" data-k="date" style="${place(L.date)};${boxStyle(L, 'date')}"><span id="dateText"${ce('date')}>${rec.dateText ? clean(rec.dateText) : esc(autoDate)}</span>${handles('date')}</div>`}
         ${hide.board ? '' : `<div class="region board ${pn('board')}${E ? ' ed' : ''}" data-k="board" style="${place(L.board)};${boxStyle(L, 'board')}"><div class="board-fit" id="boardFit"><h1 class="heading"${ce('heading', ` data-t="${type}"`)}>${clean(b.heading != null ? b.heading : (BOARDS[type] || {}).heading || '')}</h1><ul class="lines"${planBoard ? '' : ce('lines', ` data-t="${type}"`)}>${items}</ul>${E && planBoard ? `<p class="planned">This board comes from your Planner. To type your own version, choose "Write for students" in Day settings.</p>` : ''}</div>${handles('board')}</div>`}
-        ${hide.cork ? '' : `<div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>`}
+        ${hide.cork ? '' : `<div class="region cork ${pn('cork')}${E ? ' ed' : ''}" data-k="cork" style="${place(L.cork)};${boxStyle(L, 'cork')}"><div class="cork-fit" id="corkFit"><p class="have-out">Have out:</p><ul class="have-list"${ce('haveout')}>${(rec.haveOut || []).map(t => `<li>${(rec.haveOutFmt || {})[t] || esc(t)}</li>`).join('') || (E ? '<li></li>' : '')}</ul></div>${handles('cork')}</div>`}
         ${type === 'welcome' && L.timer && u.timer.on ? `<button class="region timer tm-${u.timer.style || 'digital'}${dark ? ' on-dark' : ''}${E ? ' ed' : ''}" id="rTimer" data-k="timer" style="${place(L.timer)};--tc:${esc(u.timer.color || '#2f6fd0')}"${E ? ' data-g="move" tabindex="-1"' : ''} aria-label="Warm-up timer. Click to start or pause."><span class="tm-in" id="timerIn">${timerInner(u.timer.style)}</span>${handles('timer')}</button>` : ''}
         ${!E && full ? `<span class="fstools">${toolMenu('opentool', 'Open a tool', TOOL_PAGES)}</span>` : ''}
         ${(() => { const pu = room.pu, o = (pu && pu.opts) || {}; if (!o.showQuestion || !o.question || (isCustom(type) && (b.hide || {}).board)) return '';
@@ -1006,7 +1018,7 @@ details.sec>summary .muted{font-weight:400}
       render(); if (editing) renderDrawer();
       Suite.undoToast(`Copied ${[res.plan && 'the plan', res.boards && 'the boards'].filter(Boolean).join(' and ')} from ${longDate(res.from)}`, res.snap); return;
     }
-    if (d === 'saveusual') { const cur = dayFor(viewDate, cid), u = usual(cid); Object.assign(u, clone({ lineup: cur.lineup, haveOut: cur.haveOut, boards: cur.boards })); commit(true); Suite.toast('Saved as the usual setup for ' + rowName(cid)); return; }
+    if (d === 'saveusual') { const cur = dayFor(viewDate, cid), u = usual(cid); Object.assign(u, clone({ lineup: cur.lineup, haveOut: cur.haveOut, haveOutFmt: cur.haveOutFmt || {}, boards: cur.boards })); commit(true); Suite.toast('Saved as the usual setup for ' + rowName(cid)); return; }
     if (d === 'reset') { const day = T.days[viewDate] || {}; delete day[scope === 'period' ? cid : rowKeyOf(cid)]; commit(true); Suite.toast('This day is back to the usual setup'); return; }
   });
   $('#drawer').addEventListener('input', e => {
@@ -1070,7 +1082,10 @@ details.sec>summary .muted{font-weight:400}
     const panel = k.startsWith('x:') ? ((lay.extras.find(x => 'x:' + x.id === k) || {}).panel || 'none') : (lay.panels[k] || 'none');
     const fmt = ((lay.styles || {}).date || {}).format || 'long';
     ftb.innerHTML = `<button data-x="bold" title="Bold (Ctrl+B)"><b>B</b></button><button data-x="italic" title="Italic (Ctrl+I)"><i>I</i></button><button data-x="underline" title="Underline (Ctrl+U)"><u>U</u></button><span class="sep"></span>
-      ${[['#27468a', 'Blue'], ['#c4281c', 'Red'], ['#3f7d2b', 'Green'], ['#1b1b1b', 'Black'], ['#6a3d9a', 'Purple'], ['#d2691e', 'Orange'], ['#ffffff', 'White']].map(([c, n]) => `<button class="cdot" data-x="color" data-v="${c}" style="background:${c}" title="${n}" aria-label="${n}"></button>`).join('')}<span class="sep"></span>
+      <span class="cpick"><button data-x="cmenu" title="Text color (select words first, or it colors the whole box)" aria-haspopup="true">Color ▾</button>
+        <span class="cmenu" hidden>${TEXT_COLORS.map(([g, cs]) => `<span class="crow"><span class="cg">${g}</span>${cs.map(([c, n]) => `<button class="cdot" data-x="color" data-v="${c}" style="background:${c}" title="${n}" aria-label="${n}"></button>`).join('')}</span>`).join('')}
+          ${(Suite.get('recentColors', []) || []).length ? `<span class="crow"><span class="cg">Recent</span>${(Suite.get('recentColors', []) || []).map(c => `<button class="cdot" data-x="color" data-v="${c}" style="background:${c}" title="${c}" aria-label="Recent color ${c}"></button>`).join('')}</span>` : ''}
+          <span class="crow"><button class="ccust" data-x="ccustom" title="Pick any color">Custom…</button><input type="color" class="ccol" aria-label="Custom color" value="#2f6fd0"></span></span></span><span class="sep"></span>
       <select data-x="font" aria-label="Font" title="Font (select words first, or it changes the whole box)"><option value="">Font</option><option value="Chelsea Market">Chelsea Market</option><option value="Architects Daughter">Architect's Daughter</option><option value="Georgia">Georgia</option></select>
       <button data-x="smaller" title="Smaller">A−</button><button data-x="bigger" title="Bigger">A+</button><span class="sep"></span>
       <button data-x="align" data-v="left" title="Align left" aria-label="Align left"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button><button data-x="align" data-v="center" title="Center" aria-label="Center"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="3.5" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="3.5" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button><button data-x="align" data-v="right" title="Align right" aria-label="Align right"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="6" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="6" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button>
@@ -1106,7 +1121,18 @@ details.sec>summary .muted{font-weight:400}
     save(); }
   const fontStack = f => f === 'Georgia' ? 'Georgia' : `"${f}"`;
   ftb.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
-  ftb.addEventListener('click', e => { const b = e.target.closest('button'); if (b && active) fmtCmd(b.dataset.x, b.dataset.v); });
+  const TEXT_COLORS = [['Deep',[['#1b1b1b','Black'],['#27468a','Navy blue'],['#1f6f8b','Teal'],['#3f7d2b','Forest green'],['#6a3d9a','Purple'],['#8b1e3f','Maroon'],['#7a4a1e','Brown'],['#4a5560','Slate']]],['Bright',[['#c4281c','Red'],['#e8590c','Orange'],['#f2b705','Gold'],['#2e9e4f','Green'],['#1e88e5','Blue'],['#00a0b0','Aqua'],['#d6338a','Pink'],['#7b5cd6','Violet']]],['Soft',[['#ffffff','White'],['#f7e7a8','Butter'],['#c9e8c4','Mint'],['#bcdcf5','Sky'],['#f6c6d6','Rose'],['#e2d4f5','Lavender'],['#fbd3a7','Peach'],['#d9d9d9','Light gray']]],['School',[['#1f7a3a','School green'],['#f5c400','School yellow'],['#ffffff','White']]]];
+  let savedRange = null;
+  ftb.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !active) return;
+    if (b.dataset.x === 'cmenu') { const m = ftb.querySelector('.cmenu'); m.hidden = !m.hidden; return; }
+    if (b.dataset.x === 'ccustom') { const sel = getSelection(); savedRange = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null; ftb.querySelector('.ccol').click(); return; }
+    if (b.dataset.x === 'color') { const m = ftb.querySelector('.cmenu'); if (m) m.hidden = true; }
+    fmtCmd(b.dataset.x, b.dataset.v); });
+  ftb.addEventListener('input', e => { if (!e.target.classList.contains('ccol')) return; e.target.dataset.v = e.target.value; });
+  ftb.addEventListener('change', e => { if (!e.target.classList.contains('ccol') || !active) return; const c = e.target.value;
+    if (savedRange) { const sel = getSelection(); sel.removeAllRanges(); sel.addRange(savedRange); savedRange = null; }
+    const rc = (Suite.get('recentColors', []) || []).filter(x => x !== c); rc.unshift(c); Suite.set('recentColors', rc.slice(0, 8));
+    const m = ftb.querySelector('.cmenu'); if (m) m.hidden = true; fmtCmd('color', c); });
   ftb.addEventListener('change', e => { const x = e.target.dataset.x; if (!active) return; if (x === 'font' && e.target.value) { fmtCmd('font', e.target.value); e.target.value = ''; } else if (x === 'panel' || x === 'datefmt') fmtCmd(x, e.target.value); });
   function fmtCmd(cmd, val){
     const el = active; if (!el) return;
@@ -1147,7 +1173,9 @@ details.sec>summary .muted{font-weight:400}
     if (f === 'x') { const lay = ownLayout($('#stage').dataset.look), x = lay.extras.find(y => y.id === el.dataset.x); if (x) x.html = clean(el.innerHTML); save(); return; }
     const r = editable(viewDate, cid);
     if (f === 'date') { const L = lookById($('#stage').dataset.look), auto = fmtDate(viewDate, ((L.styles || {}).date || {}).format), txt = el.textContent.trim(); if (!txt || (txt === auto && !/<(b|i|u|span)/.test(el.innerHTML))) delete r.dateText; else r.dateText = clean(el.innerHTML); }
-    else if (f === 'haveout') r.haveOut = [...el.querySelectorAll('li')].map(li => li.textContent.trim()).filter(Boolean);
+    else if (f === 'haveout') { const lis = [...el.querySelectorAll('li')].filter(li => li.textContent.trim());
+      r.haveOut = lis.map(li => li.textContent.trim()); r.haveOutFmt = {};
+      lis.forEach(li => { const h = clean(li.innerHTML); if (h !== esc(li.textContent.trim()) && /<(b|i|u|span)/.test(h)) r.haveOutFmt[li.textContent.trim()] = h; }); }
     else {
       const t = el.dataset.t; r.boards = r.boards || {}; const bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t));
       if (f === 'heading') bd.heading = clean(el.innerHTML);
