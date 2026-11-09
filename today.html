@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-06a">
-<script src="shared/core.js?v=2026-11-06a"></script>
-<script>window.PAGE_VERSION = '2026-11-06a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-09a">
+<script src="shared/core.js?v=2026-11-09a"></script>
+<script>window.PAGE_VERSION = '2026-11-09a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -221,6 +221,11 @@ body.full #fx{z-index:8}
 .cmenu .cdot{width:24px;height:24px;min-width:24px;border-radius:50%;border:1.5px solid rgba(0,0,0,.25);padding:0}
 .cmenu .ccust{font-size:13px}
 .cmenu .ccol{width:34px;height:26px;padding:0;border:0;background:none}
+.w-seat{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;gap:.6cqh}
+.w-seat .w-sh{font:800 min(8cqh,4.4cqw) var(--sans);color:#1f2a33;text-align:center}
+.w-seat .w-si{flex:1 1 auto;min-height:0;width:100%;position:relative}
+.w-seat .w-si img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+.xdel.tset{right:20px;background:#2f6fd0;font-size:14px}
 .bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
@@ -727,7 +732,7 @@ details.sec>summary .muted{font-weight:400}
         ${(() => { const pu = room.pu, o = (pu && pu.opts) || {}; if (!o.showQuestion || !o.question || (isCustom(type) && (b.hide || {}).board)) return '';
           return `<div class="region eqbox${E ? ' ed' : ''}" data-k="eq" style="${place(L.eq || NEUTRAL.eq)}"${E ? ' data-g="move"' : ''}><span class="eqk">Essential question</span> ${esc(o.question)}${handles('eq')}</div>`; })()}
         ${u.showEvents ? (() => { const ev = Suite.eventsOn(viewDate).filter(x => !x.mine); return ev.length || E ? `<div class="region evs${E ? ' ed' : ''}" data-k="events" style="${place(L.events || NEUTRAL.events)}"${E ? ' data-g="move"' : ''}>${ev.length ? ev.map(x => `<span class="evtag">${esc(x.title)}${x.note ? `<small>${esc(x.note)}</small>` : ''}</span>`).join('') : '<span class="evtag ph">School events from your Planner show here</span>'}${handles('events')}</div>` : ''; })() : ''}
-        ${(b.tools || []).map(w => `<div class="region tool tool-${w.kind}${E ? ' ed' : ''}" data-k="t:${esc(w.id)}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>${handles('t:' + w.id)}${E ? `<button class="xdel" data-g="tdel" data-x="${esc(w.id)}" aria-label="Remove this tool">×</button>` : ''}</div>`).join('')}
+        ${(b.tools || []).map(w => `<div class="region tool tool-${w.kind}${E ? ' ed' : ''}" data-k="t:${esc(w.id)}" style="${place(w.box)}"><div class="w-in">${widgetHtml(w.kind, w)}</div>${handles('t:' + w.id)}${E && w.kind === 'seating' ? `<button class="xdel tset" data-g="tset" data-id="${esc(w.id)}" aria-label="Seating chart settings" title="Heading and front of the room">⚙</button>` : ''}${E ? `<button class="xdel" data-g="tdel" data-x="${esc(w.id)}" aria-label="Remove this tool">×</button>` : ''}</div>`).join('')}
         ${(L.extras || []).map(x => `<div class="region xbox pn-${x.panel || 'none'}${(x.panel === 'dark' || ((x.panel || 'none') === 'none' && dark)) ? ' ink-light' : ''}${E ? ' ed' : ''}" data-k="x:${esc(x.id)}" style="${place(x.box)};${x.style || ''}"><div class="x-fit"${ce('x', ` data-x="${esc(x.id)}"`)}>${clean(x.html || '')}</div>${handles('x:' + x.id)}${E ? `<button class="xdel" data-g="xdel" data-x="${esc(x.id)}" aria-label="Remove this text box">×</button>` : ''}</div>`).join('')}`;
     }
     const B = bellCfg();
@@ -1204,7 +1209,7 @@ details.sec>summary .muted{font-weight:400}
   let drag = null;
   stageEl.addEventListener('pointerdown', e => {
     if (!editMode) return;
-    const h = e.target.closest('[data-g]'); if (!h || h.dataset.g === 'xdel' || h.dataset.g === 'tdel' || h.dataset.g === 'pdel') return;
+    const h = e.target.closest('[data-g]'); if (!h || h.dataset.g === 'xdel' || h.dataset.g === 'tdel' || h.dataset.g === 'pdel' || h.dataset.g === 'tset') return;
     if (e.target.closest('[data-f]')) return;
     const region = h.closest('.region'), k = h.dataset.k || region.dataset.k, r = stageEl.getBoundingClientRect(), look = stageEl.dataset.look, lay = ownLayout(look);
     if (e.shiftKey) { toggleAlign(k); e.preventDefault(); return; }   // Shift+click picks items to line up
@@ -1240,6 +1245,17 @@ details.sec>summary .muted{font-weight:400}
     else if (d.k === 'bm') { const id = roomFor(viewDate, activeId()).bitmoji, adj = bmAdj(id), base = getLayout(d.look).boxes.bm; lay.boxes.bm = [d.box[0] - adj.dx, d.box[1] - base[3] * (1 - adj.scale / 100) + (base[3] - d.box[3] * 100 / adj.scale) * (1 - adj.scale / 100) * 0, d.box[2], Math.round(d.box[3] * 100 / adj.scale)]; lay.boxes.bm[1] = Math.round(d.box[1] + d.box[3] - lay.boxes.bm[3]); }
     else lay.boxes[d.k] = d.box;
     save(); render();
+  });
+  stageEl.addEventListener('click', e => { const ts = e.target.closest('[data-g="tset"]'); if (!ts || !editMode) return;
+    const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)), w = (bd.tools || []).find(x => x.id === ts.dataset.id); if (!w) return;
+    const back = document.createElement('div'); back.className = 'suite-dialog-back';
+    back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>Seating chart</h2>
+      <label class="lb" for="sh-h">Heading <span class="muted small">(optional)</span></label><input class="field" id="sh-h" style="width:100%" value="${esc(w.heading || '')}" placeholder="New seats! Find your name">
+      <label class="rv" style="display:flex;gap:6px;margin-top:10px"><input type="checkbox" id="sh-f"${w.front === 'bottom' ? ' checked' : ''}> Front of the room at the bottom</label>
+      <div class="suite-dialog-actions"><button class="btn" data-r="no">Cancel</button><button class="btn primary" data-r="yes">Save</button></div></div>`;
+    document.body.appendChild(back);
+    back.addEventListener('click', ev => { if (ev.target === back || ev.target.closest('[data-r="no"]')) return back.remove(); if (!ev.target.closest('[data-r="yes"]')) return;
+      w.heading = back.querySelector('#sh-h').value.trim(); w.front = back.querySelector('#sh-f').checked ? 'bottom' : 'top'; back.remove(); save(); render(); });
   });
   stageEl.addEventListener('click', e => { const td = e.target.closest('[data-g="tdel"]'); if (td && editMode) { const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.tools = (bd.tools || []).filter(w => w.id !== td.dataset.x); save(); render(); return; } });
   stageEl.addEventListener('click', e => { const pd = e.target.closest('[data-g="pdel"]'); if (!pd || !editMode) return; const r = editable(viewDate, activeId()), t = stageEl.dataset.type, bd = r.boards[t] = r.boards[t] || clone(boardOf(r, t)); bd.pics = (bd.pics || []).filter(p2 => p2.id !== pd.dataset.p); save(); render(); });
@@ -1466,7 +1482,7 @@ details.sec>summary .muted{font-weight:400}
 
   /* ---------- suite tools: open one on top, or place one on a board ---------- */
   const TOOL_PAGES = { fxtoggle: ['Seasonal effects on / off', ''], timeleft: ['Time left (full screen)', ''], spinner: ['Name spinner', 'spinner.html'], groups: ['Partners and groups', 'activities.html', 'tool=groups'], noise: ['Noise meter', 'noise.html'], tally: ['Tally', 'activities.html', 'tool=tally'], points: ['Table points', 'tracker.html'], timer: ['Timer'] };
-  const WIDGETS = { duties: ['Clean-up duties', [1360, 300, 520, 360]], clock: ['Time left', [1440, 40, 440, 250]], winners: ["Week results", [1300, 200, 580, 620]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
+  const WIDGETS = { seating: ['Seating chart', [240, 170, 1440, 880]], duties: ['Clean-up duties', [1360, 300, 520, 360]], clock: ['Time left', [1440, 40, 440, 250]], winners: ["Week results", [1300, 200, 580, 620]], spinner: ['Name spinner', [1300, 250, 560, 620]], picker: ['Name picker', [1500, 760, 380, 240]], noise: ['Noise meter', [1440, 820, 440, 200]], points: ['Points standings', [1500, 640, 380, 380]], timer: ['Class timer', [1500, 820, 380, 200]] };
   // clean-up duties: set per class, rotating every Monday (plus any Rotate / Back adjustments)
   const mondayKey = k => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return Suite.dateKey(d); };
   function dutiesFor(cid, dateKey){
@@ -1661,7 +1677,7 @@ details.sec>summary .muted{font-weight:400}
   const everyMenu = cid => { const on = new Set((usual(cid).boardTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Place a tool once and show it on all of this class's boards">On every board ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="everytool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   /* ---------- widgets pinned on top of the lesson slides (per class, kept until removed) ---------- */
-  const LT_SIZE = { duties: [1360, 300, 520, 360], clock: [1440, 40, 440, 250], winners: [1300, 200, 580, 620], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
+  const LT_SIZE = { seating: [240, 170, 1440, 880], duties: [1360, 300, 520, 360], clock: [1440, 40, 440, 250], winners: [1300, 200, 580, 620], picker: [1480, 40, 400, 230], points: [1480, 300, 400, 420], timer: [1480, 760, 400, 220], noise: [40, 860, 460, 180], spinner: [1300, 250, 560, 620] };
   const pinMenu = cid => { const on = new Set((usual(cid).lessonTools || []).map(w => w.kind));
     return `<span class="tmenu"><button class="btn" data-a="tmenu" aria-haspopup="true" title="Keep a tool on top of your slides">Pin to slides ▾</button><span class="tmenu-list" hidden>${Object.entries(WIDGETS).map(([k, v]) => `<button data-a="pintool" data-id="${k}">${on.has(k) ? '✓ ' : ''}${esc(v[0])}</button>`).join('')}</span></span>`; };
   function drawLessonTools(cid){ drawPinned(cid, 'ltools', 'lessonTools'); drawPinned(cid, 'btools', 'boardTools'); }
@@ -1693,7 +1709,18 @@ details.sec>summary .muted{font-weight:400}
 
   // the widgets themselves
   const picked = {};   // names already picked this session, per class
+  // the class's seating chart, drawn like the printout (redrawn only when seats change)
+  const seatCache = {};
+  function seatImg(c, front){
+    const sig = JSON.stringify([c.tables, c.students.map(x => [x.name, x.tableId, x.seat]), front]);
+    if (seatCache[c.id] && seatCache[c.id].sig === sig) return seatCache[c.id].url;
+    const url = Suite.drawSeatingChart(c, { title: '', width: 2400, height: 1500, margin: 24, front }).toDataURL('image/png');
+    seatCache[c.id] = { sig, url }; return url;
+  }
   function widgetHtml(kind, w){
+    if (kind === 'seating') { const c = classes().find(x => x.id === activeId());
+      if (!c || !c.tables.length) return '<div class="w-pts"><div class="w-empty">Set up tables and seats on the Seating page first.</div></div>';
+      return `<div class="w-seat">${w && w.heading ? `<div class="w-sh">${esc(w.heading)}</div>` : ''}<div class="w-si"><img alt="Seating chart for ${esc(c.name)}" src="${seatImg(c, (w && w.front) || 'top')}"></div></div>`; }
     if (kind === 'duties') { const cid = activeId(), h = dutiesHtml(cid, 'w-du'); return `<div class="w-pts w-duw"><div class="w-ph">Clean-up duties</div>${h || '<div class="w-empty">Set up duties in Day settings → Clean-up duties.</div>'}</div>`; }
     if (kind === 'clock') { const I = timeLeftInfo(); return `<div class="w-clock"><div class="wc-left">${I.left != null ? mmssOf(I.left) + (I.pct > 0 ? ' left' : '') : ''}</div><div class="wc-now">${clockOf(I.now).replace(/\s?[AP]M$/i, '')}</div><div class="wc-lab">${esc(I.sub || '')}</div></div>`; }
     if (kind === 'spinner') return `<iframe class="w-spinner" title="Name spinner" src="spinner.html?embed&proj&mini#class=${encodeURIComponent(activeId() || '')}"></iframe>`;

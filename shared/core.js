@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-06a';   // bump with every build; pages check they match
+  const VERSION = '2026-11-09a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1099,10 +1099,9 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-06', items: [
-    'Editing boards: Enter now starts a new line in text boxes, and colors and other formatting in Have Out stay put.',
-    'More text colors: the Color menu has 24 colors, your school colors, a Custom… color picker, and your recent custom colors.',
-    'Roster sheets have a lined Notes box, with prompts and a typed note for the week.'] };
+  const NEWS = { id: '2026-11-09', items: [
+    'New tool for boards: Seating chart. It shows the class\'s current seats from the Seating page, live, with an optional heading (⚙ while editing).',
+    'Editing boards: Enter makes new lines in text boxes, Have Out keeps its colors, and the Color menu has many more colors.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
