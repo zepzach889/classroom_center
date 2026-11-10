@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-09a">
-<script src="shared/core.js?v=2026-11-09a"></script>
-<script>window.PAGE_VERSION = '2026-11-09a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
+<script src="shared/core.js?v=2026-11-10a"></script>
+<script>window.PAGE_VERSION = '2026-11-10a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -1095,7 +1095,7 @@ details.sec>summary .muted{font-weight:400}
       <button data-x="smaller" title="Smaller">A−</button><button data-x="bigger" title="Bigger">A+</button><span class="sep"></span>
       <button data-x="align" data-v="left" title="Align left" aria-label="Align left"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button><button data-x="align" data-v="center" title="Center" aria-label="Center"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="3.5" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="3.5" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button><button data-x="align" data-v="right" title="Align right" aria-label="Align right"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="6" y="6" width="9" height="2" rx="1" fill="currentColor"/><rect x="1" y="10" width="14" height="2" rx="1" fill="currentColor"/><rect x="6" y="14" width="9" height="2" rx="1" fill="currentColor"/></svg></button>
       ${f === 'lines' ? `<span class="sep"></span><button data-x="outdent" title="Less indented (Shift+Tab)">⇤</button><button data-x="indent" title="Sub-point (Tab)">⇥</button><button data-x="reveal" title="Keep this line hidden until you press Next">Hide until click</button>` : ''}
-      ${f === 'date' ? `<span class="sep"></span><select data-x="datefmt" aria-label="Date style">${Object.entries(DATE_FORMATS).map(([v, n]) => `<option value="${v}"${fmt === v ? ' selected' : ''}>${n}</option>`).join('')}</select><button data-x="autodate" title="Go back to the automatic date">Automatic date</button>` : ''}
+      ${f === 'date' ? `<span class="sep"></span><select data-x="datefmt" aria-label="Date style">${Object.entries(DATE_FORMATS).map(([v, n]) => `<option value="${v}"${fmt === v ? ' selected' : ''}>${n}</option>`).join('')}</select><button data-x="autodate" title="Go back to the automatic date">${(() => { const rr = dayFor(viewDate, activeId()); return rr && rr.dateText ? '<b>Typed date (won\'t change).</b> Use the automatic date' : 'Automatic date'; })()}</button>` : ''}
       <span class="sep"></span><select data-x="panel" aria-label="Box background">${PANELS.map(p => `<option value="${p}"${panel === p ? ' selected' : ''}>${PANEL_NAMES[p]}</option>`).join('')}</select>`;
     ftb.hidden = false; placeBar(); syncBar();
   }
@@ -1177,7 +1177,11 @@ details.sec>summary .muted{font-weight:400}
     const cid = activeId(), f = el.dataset.f; if (!f) return;
     if (f === 'x') { const lay = ownLayout($('#stage').dataset.look), x = lay.extras.find(y => y.id === el.dataset.x); if (x) x.html = clean(el.innerHTML); save(); return; }
     const r = editable(viewDate, cid);
-    if (f === 'date') { const L = lookById($('#stage').dataset.look), auto = fmtDate(viewDate, ((L.styles || {}).date || {}).format), txt = el.textContent.trim(); if (!txt || (txt === auto && !/<(b|i|u|span)/.test(el.innerHTML))) delete r.dateText; else r.dateText = clean(el.innerHTML); }
+    if (f === 'date') { const look = $('#stage').dataset.look, L = lookById(look), auto = fmtDate(viewDate, ((L.styles || {}).date || {}).format), txt = el.textContent.trim();
+      if (!txt || txt === auto) {   // the same date: keep it automatic, and keep any color or font as the date's style
+        delete r.dateText;
+        const sp = el.querySelector('span[style], font'); if (sp) { const col = safeColor(sp.getAttribute('color') || sp.style.color), face = safeFont(sp.getAttribute('face') || sp.style.fontFamily); const patch = {}; if (col) patch.color = col; if (face) patch.font = face; if (Object.keys(patch).length) { const lay = ownLayout(look); lay.styles.date = Object.assign({}, lay.styles.date || {}, patch); } }
+      } else r.dateText = clean(el.innerHTML); }
     else if (f === 'haveout') { const lis = [...el.querySelectorAll('li')].filter(li => li.textContent.trim());
       r.haveOut = lis.map(li => li.textContent.trim()); r.haveOutFmt = {};
       lis.forEach(li => { const h = clean(li.innerHTML); if (h !== esc(li.textContent.trim()) && /<(b|i|u|span)/.test(h)) r.haveOutFmt[li.textContent.trim()] = h; }); }
@@ -1893,6 +1897,17 @@ details.sec>summary .muted{font-weight:400}
       if (!STUDIO.cid || !studioLoad()) { STUDIO = null; Suite.toast("That board couldn't be found"); }
       else { viewDate = SBOX; screen = 0; scope = 'period'; document.body.classList.add('studio'); if (STUDIO.peek) document.body.classList.add('peek'); }
     } }
+  { let lastDay = Suite.dateKey(new Date());
+    setInterval(() => { const nowDay = Suite.dateKey(new Date()); if (nowDay === lastDay) return;
+      if (viewDate === lastDay && !STUDIO) { viewDate = nowDay; screen = 0; reveal = 0; lesson = false; render(); }
+      lastDay = nowDay; }, 30000); }
+  // one-time cleanup: a typed date that is really another day's date goes back to automatic
+  (() => { const looksLikeDate = t => /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)/i.test(t);
+    let fixed = 0;
+    Object.entries(T.days || {}).forEach(([d, day]) => Object.values(day).forEach(r => { if (!r || !r.dateText) return;
+      const plain = plainOf(r.dateText), ok = Object.keys(DATE_FORMATS).some(f => fmtDate(d, f) === plain);
+      if (!ok && looksLikeDate(plain)) { delete r.dateText; fixed++; } }));
+    if (fixed) save(); })();
   Suite.mountNav('today');
   resetTimer(activeId()); lastCid = activeId();
   render();

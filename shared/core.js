@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-09a';   // bump with every build; pages check they match
+  const VERSION = '2026-11-10a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -357,7 +357,7 @@
     const snap = S.snapshot(['agenda', 'today']);
     const plan = (A[from] || {})[key]; if (plan) S.saveAgenda(dateKey, [key], JSON.parse(JSON.stringify(plan)));
     const rec = (days[from] || {})[key];
-    if (rec) { const T2 = S.get('today', {}) || {}; T2.days = T2.days || {}; T2.days[dateKey] = T2.days[dateKey] || {}; T2.days[dateKey][key] = JSON.parse(JSON.stringify(rec)); S.set('today', T2); }
+    if (rec) { const T2 = S.get('today', {}) || {}; T2.days = T2.days || {}; T2.days[dateKey] = T2.days[dateKey] || {}; T2.days[dateKey][key] = JSON.parse(JSON.stringify(rec)); delete T2.days[dateKey][key].dateText; S.set('today', T2); }
     return { from, plan: !!plan, boards: !!rec, snap };
   };
   // Office mode: just the dashboard, bell schedule, events, countdowns, and timer (no classes)
@@ -1099,9 +1099,9 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-09', items: [
-    'New tool for boards: Seating chart. It shows the class\'s current seats from the Seating page, live, with an optional heading (⚙ while editing).',
-    'Editing boards: Enter makes new lines in text boxes, Have Out keeps its colors, and the Color menu has many more colors.'] };
+  const NEWS = { id: '2026-11-10', items: [
+    'Fixed: a board could keep showing yesterday\'s date. Coloring or formatting the date no longer freezes it, copying a day never copies a typed date, and Today moves to the new day if it\'s left open overnight.',
+    'New tool for boards: Seating chart, showing the class\'s current seats.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }

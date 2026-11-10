@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-09a">
-<script src="shared/core.js?v=2026-11-09a"></script>
-<script>window.PAGE_VERSION = '2026-11-09a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
+<script src="shared/core.js?v=2026-11-10a"></script>
+<script>window.PAGE_VERSION = '2026-11-10a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -513,7 +513,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       const src = (A[from] || {})[k]; if (!src) return;
       if (!replace && (A[to] || {})[k]) return;
       Suite.saveAgenda(to, [k], JSON.parse(JSON.stringify(src))); n++;
-      const tr = (T.days[from] || {})[k]; if (tr) { T.days[to] = T.days[to] || {}; if (replace || !T.days[to][k]) T.days[to][k] = JSON.parse(JSON.stringify(tr)); }
+      const tr = (T.days[from] || {})[k]; if (tr) { T.days[to] = T.days[to] || {}; if (replace || !T.days[to][k]) { T.days[to][k] = JSON.parse(JSON.stringify(tr)); delete T.days[to][k].dateText; } }
     });
     Suite.set('today', T); return n;
   }
