@@ -9,16 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
-<script src="shared/core.js?v=2026-11-10a"></script>
-<script>window.PAGE_VERSION = '2026-11-10a';</script>
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/version.js"></script>
+<script src="shared/core.js"></script>
 <style>
-.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
 .top h1{font-size:34px}
-.pills{display:flex;flex-wrap:wrap;gap:6px}
-.pills button{font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:4px 14px;cursor:pointer}
-.pills button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
 .grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:860px){.grid2{grid-template-columns:1fr}}
 .card{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:16px 18px}
@@ -101,13 +97,12 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
   const H = Object.assign({ out: [], log: [], warn: 8, keep: 30, sort: 'first', cur: null }, Suite.get('hallpass', {}));
   const save = () => Suite.set('hallpass', H);
   const DESTS = ['Restroom', 'Water', 'Office', 'Nurse', 'Locker', 'Counselor'];
-  const AUTO = Suite.autoClass('hallpass');
   let picked = null, logDate = Suite.dateKey(new Date()), logAll = false;
   // clear entries older than the keep window (student data stays only as long as needed)
   { const cut = Date.now() - H.keep * 86400000; const before = H.log.length; H.log = H.log.filter(x => x.end >= cut); if (H.log.length !== before) save(); }
   const classes = () => Suite.classes();
-  const curClass = () => { const list = classes(); if (AUTO.on) { const id = Suite.classNow(); const c = id && list.find(x => x.id === id); if (c) return c; } return list.find(c => c.id === H.cur) || list[0] || null; };
-  const lastName = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
+  const CP = Suite.classPicker({ page: 'hallpass', get: () => H.cur, set: id => { H.cur = id; save(); }, changed: () => { picked = null; render(); } });
+  const curClass = () => CP.current(classes());  const lastName = n => { const p = String(n).trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; };
   const mmss = ms => { const s = Math.max(0, Math.floor(ms / 1000)), m = Math.floor(s / 60); return m + ':' + String(s % 60).padStart(2, '0'); };
   const mins = ms => Math.max(1, Math.round(ms / 60000));
   const fmtT = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -130,8 +125,8 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
     const wk = {}; H.log.filter(x => (logAll || x.cid === c.id) && dayOf(x.start) >= wk0 && dayOf(x.start) <= wk4).forEach(x => { const k = x.sid; wk[k] = wk[k] || { name: x.name, n: 0, ms: 0 }; wk[k].n++; wk[k].ms += x.end - x.start; });
     const wkRows = Object.values(wk).sort((a, b) => b.n - a.n || b.ms - a.ms);
     $('#app').innerHTML = `
-      <div class="top"><div class="tt"><h1>Student log</h1>${tabsHtml()}</div>
-        <nav class="pills" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav></div>
+      ${CP.head(list, c)}
+      <div class="top"><div class="tt"><h1>Student log</h1>${tabsHtml()}</div></div>
       <div class="grid2">
         <section class="card">
           <div class="hd"><h2>${esc(c.name)}</h2><span class="bar small">Sort: <button class="btn quiet small" data-a="sort" data-v="first" aria-pressed="${H.sort !== 'last'}">First name</button><button class="btn quiet small" data-a="sort" data-v="last" aria-pressed="${H.sort === 'last'}">Last name</button></span></div>
@@ -184,8 +179,8 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
     const items = B.log.filter(e => e.cid === c.id && dk(e.at) >= since).map(e => Object.assign({ kind: 'b' }, e)).concat(B.contacts.filter(e => e.cid === c.id && dk(e.at) >= since).map(e => Object.assign({ kind: 'k' }, e))).sort((a, b) => b.at - a.at);
     const chip = t => `<button class="bchip ${t.kind === 'p' ? 'p' : 'c'}${bType === t.id ? ' on' : ''}" data-a="btype" data-id="${esc(t.id)}">${esc(t.name)}</button>`;
     $('#app').innerHTML = `
-      <div class="top"><div class="tt"><h1>Student log</h1>${tabsHtml()}</div>
-        <nav class="pills" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav></div>
+      ${CP.head(list, c)}
+      <div class="top"><div class="tt"><h1>Student log</h1>${tabsHtml()}</div></div>
       ${quarterNotice(B)}
       <div class="grid2">
         <section class="card">
@@ -327,14 +322,12 @@ table.log td.n{text-align:right;font-variant-numeric:tabular-nums}
 
   // live timers
   setInterval(() => { document.querySelectorAll('#outlist li').forEach(li => { const ms = Date.now() - +li.dataset.start, w = H.warn * 60000; li.querySelector('.t').textContent = mmss(ms); li.classList.toggle('warn', ms >= w && ms < w * 1.5); li.classList.toggle('long', ms >= w * 1.5); }); }, 1000);
-  setInterval(() => { if (AUTO.on) { const id = Suite.classNow(); if (id && id !== H.cur) render(); } }, 15000);
 
   document.addEventListener('click', async e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, c = curClass();
     if (c && (a === 'tab' || TAB === 'behavior') && await behaviorClick(a, el, c)) return;
-    if (a === 'pick') { if (el.dataset.id === 'auto') AUTO.set(true); else { AUTO.set(false); H.cur = el.dataset.id; save(); } picked = null; render(); }
-    else if (a === 'sort') { H.sort = el.dataset.v; save(); render(); }
+    if (a === 'sort') { H.sort = el.dataset.v; save(); render(); }
     else if (a === 'kid') {
       const out = H.out.find(o => o.sid === el.dataset.id);
       if (out) { if (await Suite.dialog({ title: `${out.name} is back?`, ok: 'Back' })) back(out.id); return; }

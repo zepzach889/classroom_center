@@ -9,18 +9,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
-<script src="shared/core.js?v=2026-11-10a"></script>
-<script>window.PAGE_VERSION = '2026-11-10a';</script>
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/version.js"></script>
+<script src="shared/core.js"></script>
 <style>
-.wrap{max-width:1000px;margin:0 auto;padding:18px 20px 60px}
+.wrap{max-width:1000px}
 .controls h1{font-size:32px;margin-bottom:4px}
 .cbox{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:14px 18px;margin-bottom:14px}
-.cbox>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.cbox>summary::-webkit-details-marker{display:none}
-.cbox>summary h2{font-size:22px}
-.cbox>summary .hintx{font-size:14px;font-weight:600;color:var(--ink-2)}
-.cbox[open]>summary{margin-bottom:10px}
 .crow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:start;margin-bottom:12px}
 .crow .lb{margin:6px 0 0}
 .daypick{display:flex;flex-wrap:wrap;gap:6px}
@@ -30,23 +25,8 @@
 .daypick .muted{font-size:12px}
 @media (max-width:700px){.crow{grid-template-columns:1fr}}
 .lb{display:block;font-weight:700;font-size:14px;margin:10px 0 4px}
-.cgrid .lb{margin-top:0}
 .classpick{display:flex;flex-wrap:wrap;gap:4px 14px}
-.classpick label,.helpers label{display:flex;gap:5px;align-items:center;font-size:15px}
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
-.helpers{display:flex;flex-wrap:wrap;gap:4px 14px;max-height:150px;overflow:auto;padding:2px}
-.classnote{border-top:1px solid var(--rule);padding-top:10px;margin-top:10px}
-.classnote:first-of-type{border-top:0;margin-top:0;padding-top:0}
-.classnote h3{font-size:19px;margin-bottom:4px}
-.mat{border:1.5px solid var(--rule);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:var(--paper)}
-.mat .mhead{display:flex;gap:8px;align-items:center}
-.mat .mhead .field{flex:1;min-width:0}
-.mat .kind{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);min-width:42px}
-.mat textarea,.mat .url{width:100%;margin-top:6px}
-.mat .file{margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px}
-.mat .for{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:14px;align-items:center}
-.mat .for label{display:flex;gap:4px;align-items:center}
-@media (max-width:760px){.cgrid,.two{grid-template-columns:1fr}}
+.classpick label{display:flex;gap:5px;align-items:center;font-size:15px}
 .sheet{background:#FFFFFF;color:#111;border:1px solid var(--rule);border-radius:6px;padding:28px 32px;margin-bottom:24px;font-size:15px}
 .sheet h2{font-size:28px;color:#111;margin-bottom:2px}
 .sheet .sub{color:#444;margin-bottom:14px}
@@ -59,14 +39,6 @@
 .sheet .mlist{margin:4px 0;padding-left:20px}
 .sheet .mlist li{margin-bottom:6px}
 .sheet .url{font-size:12px;color:#444;overflow-wrap:anywhere}
-.room{display:grid;gap:10px;margin-top:6px}
-.tbl{border:1.5px solid #111;border-radius:8px;overflow:hidden;break-inside:avoid}
-.tbl .tn{color:#111;border-bottom:1.5px solid #111;padding:4px 10px;font-weight:700;font-size:16px;display:flex;justify-content:space-between}
-.tbl .tn span{font-weight:400;font-size:12px;color:#444}
-.tbl ul{list-style:none;margin:0;padding:6px 10px}
-.tbl li{padding:1px 0}
-.tbl li.cap{font-weight:700}
-.tbl.off{border-style:dashed;opacity:.6}
 .noroster{color:#666;font-style:italic}
 .agenda ol{margin:4px 0;padding-left:22px}
 .k{font-weight:700}
@@ -74,8 +46,6 @@
   .sheet{padding:16px 14px;font-size:14px}
   .sheet table{font-size:13px;table-layout:fixed}
   .sheet th,.sheet td{overflow-wrap:anywhere}
-  .room{grid-template-columns:1fr!important}
-  .room .tbl{grid-row:auto!important;grid-column:auto!important}
 }
 @media print{
   @page{margin:.55in}
@@ -188,11 +158,9 @@
         ${outs[k] ? '<span class="tag">Sub day</span>' : ''}<span class="muted">${n ? n + ' sub note' + (n === 1 ? '' : 's') : plan ? 'plan only' : 'nothing planned yet'}</span></label>`; }).join('') || '<span class="muted">No school days in these dates.</span>';
   }
   const save = () => Suite.set('sub', S0);
-  const mats = () => (S0.materials[date] = S0.materials[date] || []);
   const urls = {};
 
   function parseDate(k){ const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d, 12); }
-  const size = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   const isImage = f => /^image\//.test(f.type || '');
   async function fileUrl(id){ if (urls[id]) return urls[id]; const r = await Suite.files.get(id); if (!r || !r.blob) return null; return (urls[id] = URL.createObjectURL(r.blob)); }
 
@@ -305,108 +273,12 @@
     $('#ptsbox').hidden = !pointsSetUp(); $('#spoints').checked = S0.points !== false; $('#ptsbox').lastChild.textContent = ' Include ' + Suite.word('team') + ' points in the sub plans';
   }
 
-  /* ---------- copy materials between days (for absences longer than a day) ---------- */
-  const fmtD = k => parseDate(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  const copyItems = (items, classIds, all) => items.map(m => { let cl = m.classes ? m.classes.filter(id => classIds.includes(id)) : (all ? null : classIds.slice()); if (cl && !cl.length) return null; return Object.assign(JSON.parse(JSON.stringify(m)), { id: Suite.uid(), classes: cl }); }).filter(Boolean);
-  function copyDialog(mode){
-    const list = Suite.classes(), days = Object.keys(S0.materials || {}).filter(k => k !== date && (S0.materials[k] || []).length).sort().reverse();
-    if (mode === 'from' && !days.length) { Suite.toast('No other days have materials yet'); return; }
-    if (mode === 'to' && !(S0.materials[date] || []).length) { Suite.toast('Add materials to this day first'); return; }
-    const back = document.createElement('div'); back.className = 'suite-dialog-back';
-    const next = (() => { const d = parseDate(date); d.setDate(d.getDate() + 1); return Suite.dateKey(d); })();
-    back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" aria-labelledby="cp-t" style="max-width:480px">
-      <h2 id="cp-t">${mode === 'from' ? 'Copy materials from another day' : 'Copy this day\'s materials to other days'}</h2>
-      ${mode === 'from' ? `<label class="lb" for="cp-day">Copy from</label><select id="cp-day" class="field">${days.map(k => `<option value="${k}">${fmtD(k)} (${S0.materials[k].length})</option>`).join('')}</select>`
-        : `<div class="two"><label class="lb">First day<input type="date" class="field" id="cp-a" value="${next}"></label><label class="lb">Last day<input type="date" class="field" id="cp-b" value="${next}"></label></div><p class="hint" style="margin:4px 0 0">Weekends and days off are skipped.</p>`}
-      <p class="lb" style="margin-top:12px">For these classes</p>
-      ${list.map(c => `<label class="rv"><input type="checkbox" class="cp-c" value="${esc(c.id)}" checked> ${esc(c.name)}</label>`).join('')}
-      <p class="hint">Materials for other classes are left out. Copies are added to what's already there.</p>
-      <div class="suite-dialog-actions"><button class="btn" data-c="cancel">Cancel</button><button class="btn primary" data-c="go">Copy</button></div></div>`;
-    document.body.appendChild(back);
-    const close = () => back.remove();
-    back.addEventListener('click', e => {
-      if (e.target === back) return close();
-      const b = e.target.closest('[data-c]'); if (!b) return;
-      if (b.dataset.c === 'cancel') return close();
-      const ids = [...back.querySelectorAll('.cp-c:checked')].map(x => x.value), all = ids.length === list.length;
-      if (!ids.length) { Suite.toast('Pick at least one class'); return; }
-      if (mode === 'from') {
-        const src = back.querySelector('#cp-day').value, add = copyItems(S0.materials[src] || [], ids, all);
-        mats().push(...add); save(); close(); renderMaterials(); render(); Suite.toast(`Copied ${add.length} item${add.length === 1 ? '' : 's'} from ${fmtD(src)}`);
-      } else {
-        let a = back.querySelector('#cp-a').value, z = back.querySelector('#cp-b').value || a; if (!a) return; if (z < a) [a, z] = [z, a];
-        const targets = []; for (let d = parseDate(a); Suite.dateKey(d) <= z; d.setDate(d.getDate() + 1)) { const k = Suite.dateKey(d); if (k !== date && Suite.scheduleFor(parseDate(k)).periods.length) targets.push(k); }
-        if (!targets.length) { Suite.toast('No school days in that range'); return; }
-        let n = 0; targets.forEach(k => { const add = copyItems(S0.materials[date] || [], ids, all); S0.materials[k] = (S0.materials[k] || []).concat(add); n = add.length; });
-        save(); close(); Suite.toast(`Copied ${n} item${n === 1 ? '' : 's'} to ${targets.length} day${targets.length === 1 ? '' : 's'}`);
-      }
-    });
-  }
-
-  function renderMaterials(){
-    if (!document.getElementById('materials')) return;
-    const list = Suite.classes(), M = mats();
-    $('#mdate').textContent = parseDate(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    $('#materials').innerHTML = M.map(m => {
-      const f = m.file || {};
-      const forWho = `<div class="for"><span class="muted">For:</span>${list.map(c => `<label><input type="checkbox" data-mfor="${esc(m.id)}" value="${esc(c.id)}"${!m.classes || m.classes.includes(c.id) ? ' checked' : ''}> ${esc(c.name)}</label>`).join('')}</div>`;
-      return `<div class="mat">
-        <div class="mhead"><span class="kind">${m.kind === 'file' ? 'File' : m.kind === 'link' ? 'Link' : 'Note'}</span>
-          <input class="field" data-m="${esc(m.id)}" data-k="title" value="${esc(m.title || '')}" placeholder="${m.kind === 'file' ? esc(f.name) : 'Title'}" aria-label="Title">
-          <button class="btn quiet danger" data-a="mdel" data-id="${esc(m.id)}" aria-label="Remove">×</button></div>
-        ${m.kind === 'note' ? `<textarea rows="3" data-m="${esc(m.id)}" data-k="text" placeholder="Directions, answer keys, anything to share">${esc(m.text || '')}</textarea>` : ''}
-        ${m.kind === 'link' ? `<input class="field url" data-m="${esc(m.id)}" data-k="url" value="${esc(m.url || '')}" placeholder="https://drive.google.com/..." aria-label="Link">` : ''}
-        ${m.kind === 'file' ? `<div class="file"><span>${esc(f.name)} <span class="muted small">(${size(f.size || 0)})</span></span><button class="btn quiet small" data-a="mopen" data-id="${esc(f.id)}">Open${isImage(f) ? '' : ' to print'}</button></div>` : ''}
-        ${list.length > 1 ? forWho : ''}
-      </div>`;
-    }).join('') || '<p class="muted small">Nothing added for this day yet.</p>';
-  }
-
-  document.addEventListener('change', async e => {
+  document.addEventListener('change', e => {
     const el = e.target;
     if (el.id === 'sdate' && el.value) { date = el.value; if (date2 < date) { date2 = date; $('#sdate2').value = date2; } picked = null; renderDayPick(); render(); }
     else if (el.id === 'sdate2' && el.value) { date2 = el.value; picked = null; renderDayPick(); render(); }
     else if (el.dataset && el.dataset.day) { if (el.checked) picked.add(el.dataset.day); else picked.delete(el.dataset.day); renderDayPick(); render(); }
     else if (el.closest('#classpick')) { const id = el.value; S0.skip = S0.skip.filter(x => x !== id); if (!el.checked) S0.skip.push(id); save(); render(); }
-    else if (el.dataset.help) { const cid = el.dataset.help, set = new Set(S0.helpers[cid] || []); if (el.checked) set.add(el.value); else set.delete(el.value); S0.helpers[cid] = [...set]; save(); render(); }
-    else if (el.dataset.mfor) {
-      const m = mats().find(x => x.id === el.dataset.mfor); if (!m) return;
-      const all = Suite.classes().map(c => c.id), cur = new Set(m.classes || all);
-      if (el.checked) cur.add(el.value); else cur.delete(el.value);
-      m.classes = cur.size === all.length ? null : [...cur]; save(); render();
-    }
-    else if (el.id === 'addfiles') {
-      const files = [...el.files]; el.value = '';
-      let added = 0;
-      for (const f of files) {
-        try { const meta = await Suite.files.put(f); mats().push({ id: Suite.uid(), kind: 'file', title: '', file: meta, classes: null }); added++; }
-        catch (err) { Suite.toast(err.message || ("Couldn't attach " + f.name)); }
-      }
-      if (added) { save(); renderMaterials(); render(); Suite.toast('Attached ' + added + ' file' + (added === 1 ? '' : 's')); }
-    }
-  });
-  document.addEventListener('input', e => {
-    const el = e.target;
-    if (el.dataset.t) { S0[el.dataset.t] = el.value; save(); render(); }
-    else if (el.dataset.cnote) { S0.classNotes[el.dataset.cnote] = el.value; save(); render(); }
-    else if (el.dataset.m) { const m = mats().find(x => x.id === el.dataset.m); if (m) { m[el.dataset.k] = el.value; save(); render(); } }
-  });
-  document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.cbox')) { const h = e.target.querySelector('.hintx'); if (h) h.textContent = e.target.open ? 'Hide' : 'Show'; } }, true);
-  document.addEventListener('click', async e => {
-    const el = e.target.closest('[data-a]'); if (!el) return;
-    const a = el.dataset.a;
-    if (a === 'copyfrom') { copyDialog('from'); return; }
-    if (a === 'copyto') { copyDialog('to'); return; }
-    if (a === 'addnote' || a === 'addlink') { mats().push({ id: Suite.uid(), kind: a === 'addnote' ? 'note' : 'link', title: '', text: '', url: '', classes: null }); save(); renderMaterials(); render(); const f = document.querySelector('.mat:last-child [data-k="title"]'); if (f) f.focus(); }
-    else if (a === 'mdel') {
-      const M = mats(), i = M.findIndex(x => x.id === el.dataset.id); if (i < 0) return;
-      const m = M[i];
-      if (m.kind === 'file' && !await Suite.dialog({ title: 'Remove ' + ((m.file && m.file.name) || 'this file') + '?', body: 'The attached file will be deleted from this browser.', ok: 'Remove', danger: true })) return;
-      M.splice(i, 1); save();
-      if (m.kind === 'file' && m.file && !Suite.fileInUse(m.file.id)) { Suite.files.del(m.file.id).catch(() => {}); if (urls[m.file.id]) { URL.revokeObjectURL(urls[m.file.id]); delete urls[m.file.id]; } }
-      save(); renderMaterials(); render();
-    }
-    else if (a === 'mopen') { const u = await fileUrl(el.dataset.id); if (u) window.open(u, '_blank'); else Suite.toast("Couldn't find that file. It may have been removed."); }
   });
   $('#print').addEventListener('click', () => window.print());
   window.addEventListener('suite:change', e => { if (e.detail && e.detail.external) { renderControls(); render(); } });

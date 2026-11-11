@@ -26,7 +26,8 @@ hallpass.html     Student log: hall pass and behavior notes (beta)
 grader.html       Easy grader
 rosters.html      Weekly roster sheets (attendance and points)
 
-shared/core.js    Shared data, schedule, timer, menus, and helpers
+shared/version.js The build's version, written in this one place
+shared/core.js    Shared data, schedule, timer, menus, the class picker, projector view, and other helpers
 shared/guide.js   First-visit setup guide and tour
 shared/style.css  Shared look
 shared/favicon.svg  Tab icon (favicon-32.png is the fallback)
@@ -44,4 +45,6 @@ Student names, points, plans, and notes are stored only in the browser that's be
 
 In the repository, go to Settings → Pages, choose "Deploy from a branch," pick `main` and `/ (root)`, and save. The site appears at `https://<your-username>.github.io/<repo-name>/`.
 
-To update: upload the whole folder (replacing the old files), then press Ctrl+Shift+R in the browser. Everyone using the link gets the update right away, so it's worth trying an update yourself before sharing it widely. A page that's out of date shows a banner asking for Ctrl+Shift+R.
+To update: upload the whole folder (replacing the old files). The next time the site is opened it notices the new build: it refreshes itself once, or shows an **Update now** button that brings every page up to date together. It can take up to ten minutes after an upload for GitHub to start serving the new files; Ctrl+Shift+R still forces the page you're on to reload right away.
+
+Each build has a version, written only in `shared/version.js`. Change it with every build, and add any new file to the `FILES` list near the top of `shared/core.js` so updates fetch it too.

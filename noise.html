@@ -9,20 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
-<script src="shared/core.js?v=2026-11-10a"></script>
-<script>window.PAGE_VERSION = '2026-11-10a';</script>
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/version.js"></script>
+<script src="shared/core.js"></script>
 <style>
-.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:6px 0 16px}
-.tooltitle{font-family:var(--serif);font-size:32px}
 .card{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:14px 18px}
-.empty{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:28px;max-width:680px}
-.empty h2{margin-bottom:8px}
-#exit-proj{display:none}
-body.proj #suite-nav,body.proj .ctl{display:none!important}
-body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
-body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
 body.proj .wrap{max-width:none;padding:24px 36px}
 /* ---------- noise meter ---------- */
 .nbox{--z:#5E806B;background:var(--sheet);border:2px solid var(--edge);border-radius:24px;padding:28px 30px;text-align:center}
@@ -44,18 +36,14 @@ body.proj .nmeter{height:90px}
 </head>
 <body>
 <header id="suite-nav"></header>
-<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
   const $ = q => document.querySelector(q);
   const esc = Suite.esc;
-  // Settings (and the calibration) used to live with the Activities page; carry them over once.
   let N = Suite.get('noise', null);
-  if (!N) { const old = (Suite.get('activities', {}) || {}).noise; N = Object.assign({ line: 60, sens: 5, base: null }, old || {}); Suite.set('noise', N); }
   N = Object.assign({ line: 60, sens: 5, base: null }, N);
   const saveN = () => Suite.set('noise', N);
-  let proj = false;
   /* ================= noise meter ================= */
   let mic = null, micErr = '';
   async function micStart(){
@@ -117,7 +105,7 @@ body.proj .nmeter{height:90px}
     const head = `<div class="toolbar ctl"><div class="tooltitle">Noise meter</div><div class="bar">${mic ? `<button class="btn${N.base == null ? ' primary' : ''}" data-a="ncal"${mic.cal ? ' disabled' : ''}>${N.base == null ? 'Calibrate' : 'Recalibrate'}</button><button class="btn" data-a="nstop">Stop listening</button>` : ''}<button class="btn" data-a="proj">Projector view</button></div></div>`;
     if (mic && mic.cal) return head + `<div class="nbox"><div class="nlabel" style="color:var(--ink)">Listening to the room…</div>
         <p style="margin:0 auto;font-size:20px">Keep the room quiet for 5 seconds, with the usual background noise (fans, heaters, a projector) going as it normally does.</p></div>`;
-    if (!mic) return head + `<div class="empty">
+    if (!mic) return head + `<div class="empty-note">
         <h2>${micErr === 'blocked' ? 'The microphone is blocked' : micErr ? "This computer can't use a microphone here" : 'Listen to the room'}</h2>
         <p>${micErr === 'blocked' ? 'The browser (or your school) has blocked microphone access for this site. You can allow it from the lock or camera icon in the address bar, if your school permits it.'
           : micErr ? 'No microphone was found, or this browser does not allow one on this page.'
@@ -139,14 +127,12 @@ body.proj .nmeter{height:90px}
 
 
   function render(){
-    document.body.classList.toggle('proj', proj);
     $('#app').innerHTML = noiseView();
   }
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a;
-    if (a === 'proj') { proj = !proj; render(); }
-    else if (a === 'nstart') micStart();
+    if (a === 'nstart') micStart();
     else if (a === 'nstop') { micStop(); render(); }
     else if (a === 'nreset' && mic) { mic.quiet = 0; }
     else if (a === 'ncal') startCalibration();
@@ -158,8 +144,8 @@ body.proj .nmeter{height:90px}
     else if (k === 'nsens') { N.sens = +e.target.value; saveN(); }
   });
   document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.c === 'nline') { N.line = +e.target.value; const l = document.querySelector('.nline'); if (l) l.style.left = e.target.value + '%'; } });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog') && !document.body.classList.contains('timer-open')) { proj = false; render(); } });
   window.addEventListener('pagehide', micStop);
+  Suite.projector(() => {}, { start: false });
   Suite.mountNav('noise');
   render();
 })();

@@ -9,15 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
-<script src="shared/core.js?v=2026-11-10a"></script>
-<script>window.PAGE_VERSION = '2026-11-10a';</script>
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/version.js"></script>
+<script src="shared/core.js"></script>
 <style>
-.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
-.classes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:2px}
-.classes button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:6px 18px;cursor:pointer;white-space:nowrap}
-.classes button:hover{background:var(--wash)}
-.classes button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
 .statusbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
 .when{font-family:var(--serif);font-size:30px}
 .more{position:relative;display:inline-flex}
@@ -99,13 +94,8 @@ table.plain td.n{text-align:right;font-variant-numeric:tabular-nums}
 .log div{padding:3px 0;border-top:1px solid var(--rule)}
 details.more{margin-top:28px;background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:10px 14px}
 details.more summary{cursor:pointer;font-weight:700}
-.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
-.empty h2{margin-bottom:8px}
-#exit-proj{display:none}
 /* projector view */
-body.proj #suite-nav,body.proj .classes,body.proj .statusbar,body.proj .panels,body.proj details.more,body.proj .awards,body.proj .cap select{display:none!important}
-body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.5;z-index:5}
-body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
+body.proj .statusbar,body.proj .panels,body.proj details.more,body.proj .awards,body.proj .cap select{display:none!important}
 body.proj .wrap{max-width:none;padding:28px 36px}
 body.proj .proj-title{display:block}
 .proj-title{display:none;font-family:var(--serif);font-size:44px;margin-bottom:22px}
@@ -148,7 +138,6 @@ body.proj .tag{font-size:18px;padding:2px 12px}
 </head>
 <body>
 <header id="suite-nav"></header>
-<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
 <div class="wrap" id="app"></div>
 
 <script>
@@ -172,11 +161,9 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   { const m = location.hash.match(/class=([\w-]+)/); if (m) T.cur = m[1]; }
 
   const classes = () => Suite.classes();
-  const AUTO = Suite.autoClass('tracker');
-  if (/class=/.test(location.hash)) AUTO.set(false);   // a link to a specific class turns Auto off for this window
-  const curClass = list => { if (AUTO.on) { const id = Suite.classNow(); const c = id && list.find(x => x.id === id); if (c) return c; } return list.find(c => c.id === T.cur) || list[0] || null; };
-  let lastAuto = null;
-  setInterval(() => { if (!AUTO.on) return; const id = Suite.classNow(); if (id && id !== lastAuto) { lastAuto = id; render(); } }, 15000);
+  const CP = Suite.classPicker({ page: 'tracker', get: () => T.cur, set: id => { T.cur = id; save(); }, changed: () => render() });
+  const curClass = list => CP.current(list);
+  Suite.projector(on => { proj = on; render(); });
   const pts = (cid, tid, w) => T.log.reduce((a, e) => a + (e.c === cid && e.t === tid && e.q === T.quarter && (w === undefined || e.w === w) ? e.d : 0), 0);
   const gkey = (tid, w) => tid + '|' + T.quarter + '|' + (w == null ? T.week : w);
   const leaders = rows => { if (!rows.length) return []; const top = Math.max(...rows.map(r => r[1])); return top > 0 ? rows.filter(r => r[1] === top).map(r => r[0]) : []; };
@@ -202,11 +189,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const useCaps = Suite.feature('captains'), useGoals = Suite.feature('goals');
     document.body.classList.toggle('nocaps', !useCaps);
     document.body.classList.toggle('nogoals', !useGoals);
-    document.body.classList.toggle('proj', proj);
     const list = classes();
     const c = curClass(list);
     if (!c) {
-      $('#app').innerHTML = `<div class="empty"><h2>Add your classes first</h2>
+      $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2>
         <p>The tracker uses the classes, tables, and rosters you set up once in Classes & settings.</p>
         <a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
       return;
@@ -292,13 +278,12 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const recent = T.log.filter(e => e.c === c.id).slice(-30).reverse();
 
     $('#app').innerHTML = `
-      <nav class="classes" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>
+      ${CP.head(list, c, { proj: true })}
       <div class="statusbar">
         <div class="when">Quarter ${T.quarter}, week ${T.week}</div>
         <div class="bar">
           ${T.double ? '<button class="btn double-on" data-a="double" aria-pressed="true" title="Turn double points off">Double points on</button>' : ''}
           <button class="btn" data-a="undo">Undo last</button>
-          <button class="btn" data-a="proj">Projector view</button>
           <span class="more"><button class="btn" data-a="more" aria-expanded="${moreOpen}" aria-haspopup="true">More<i class="caret" aria-hidden="true"></i></button>
             <span class="moremenu"${moreOpen ? '' : ' hidden'} role="menu">
               <button role="menuitem" data-a="double">${T.double ? 'Turn off double points' : 'Turn on double points'}</button>
@@ -311,7 +296,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       ${showKeys ? `<div class="keys hint">Press a ${esc(W('team'))}'s number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean +2, <kbd>M</kbd> mostly clean +1, <kbd>P</kbd> 3-point challenge. <kbd>U</kbd> undo, <kbd>D</kbd> double points, <kbd>Esc</kbd> deselect, <kbd>?</kbd> show or hide this.</div>` : ''}
       <div class="proj-title">${esc(c.name)}<span>Quarter ${T.quarter}, week ${T.week}${T.double ? ' · Double points!' : ''}</span></div>
       ${act.length ? `<div class="cards room-grid" style="--cols:${lay.cols}">${cards}</div>`
-        : `<div class="empty"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
+        : `<div class="empty-note"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
 
       <div class="panels">
         <section class="panel" aria-labelledby="h-prizes"><h2 id="h-prizes">Prizes</h2>
@@ -550,9 +535,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (el.dataset.a === 'keys') { showKeys = !showKeys; render(); return; }
     const a = el.dataset.a, id = el.dataset.id;
     const c = curClass(classes());
-    if (a === 'pick') { if (id === 'auto') AUTO.set(true); else { AUTO.set(false); T.cur = id; save(); } render(); }
-    else if (a === 'proj') { proj = !proj; render(); }
-    else if (!c) return;
+    if (!c) return;
     else if (a === 'aw') { award(c, id, +el.dataset.d, el.dataset.note || ''); }
     else if (a === 'double') { T.double = !T.double; save(); render(); }
     else if (a === 'undo') { undoLast(c); }
@@ -607,7 +590,6 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     save(); render();
   });
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog')) { proj = false; render(); } });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { load(); render(); } });
 
   function fitCards(){

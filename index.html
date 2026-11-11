@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
-<script src="shared/core.js?v=2026-11-10a"></script>
-<script>window.PAGE_VERSION = '2026-11-10a';</script>
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/version.js"></script>
+<script src="shared/core.js"></script>
 <style>
 .dash{max-width:1180px;margin:0 auto;padding:min(22px,2.4vh) 20px 16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:36px;align-items:stretch}
 @media (min-width:861px) and (min-height:700px){
@@ -63,14 +63,6 @@
 .evc span{font-weight:400;margin-left:6px;opacity:.9}
 .coming .evli .day{font-family:var(--sans);font-weight:700;font-size:17px}
 .agadd{margin-top:min(18px,2vh)}
-.ag-dialog{max-width:620px}
-.ag-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ag-grid label{display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:700}
-.ag-l{display:block;font-size:14px;font-weight:700;margin:12px 0 3px}
-.ag-dialog .field,.ag-dialog textarea,.ag-dialog select{width:100%}
-.ag-also{margin-top:12px}
-#ag-others{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px}
-#ag-others label{font-size:15px;display:flex;gap:5px;align-items:center}
 .classbox,.comingbox{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:12px 18px 14px}
 .classbox h2{font-size:22px;margin-bottom:6px}
 .stand{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
@@ -163,11 +155,6 @@
 
 
   /* ---------- agenda ---------- */
-  function currentClass(){
-    const now = new Date(), day = Suite.scheduleFor(now), st = Suite.periodStatus(day.periods, now);
-    const p = st.cur >= 0 && !Suite.isPassing(day.periods[st.cur]) ? day.periods[st.cur] : st.next >= 0 ? day.periods.slice(st.next).find(x => !Suite.isPassing(x) && !x.isBreak) : null;
-    return Suite.classForPeriod(p, Suite.classes());
-  }
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-file]'); if (!b) return;
     const r = await Suite.files.get(b.dataset.file);
@@ -226,7 +213,7 @@
     const fromEvents0 = Suite.events().filter(e => e.countdown).map(e => ({ id: 'ev-' + e.id, date: e.start, time: e.time || '', label: e.title, fromPlanner: true }))
       .concat(Suite.units().filter(u => (u.opts || {}).countdown && u.end).map(u => ({ id: 'un-' + u.id, date: u.end, label: u.name + ' ends', fromPlanner: true })));
     const fromEvents = (qn ? [qn] : []).concat(fromEvents0);
-    const all = Suite.countdowns().concat(fromEvents).filter(cd => Suite.countdownLive(cd, now)).sort((a, b) => Suite.countdownEnd(a) - Suite.countdownEnd(b));
+    const all = fromEvents.filter(cd => Suite.countdownLive(cd, now)).sort((a, b) => Suite.countdownEnd(a) - Suite.countdownEnd(b));
     const list = all.slice(0, soon.length ? 2 : 3), more = all.length - list.length;
     const dayName = k => { const [y, m, dd] = k.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: 'short' }); };
     const evHtml = soon.slice(0, 3).map(({ e, d }) => `<li class="evli"><span class="what">${esc(e.title)}${e.note ? `<span class="at">${esc(e.note)}</span>` : ''}</span><span class="when"><b class="day">${d.toLocaleDateString(undefined, { weekday: 'short' })}</b>${e.end && e.end !== e.start ? `<span>to ${esc(dayName(e.end))}</span>` : ''}</span></li>`).join('');

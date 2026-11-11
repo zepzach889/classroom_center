@@ -9,15 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
-<script src="shared/core.js?v=2026-11-10a"></script>
-<script>window.PAGE_VERSION = '2026-11-10a';</script>
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/version.js"></script>
+<script src="shared/core.js"></script>
 <style>
-.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:2px}
-.tabs button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:6px 18px;cursor:pointer;white-space:nowrap}
-.tabs button:hover{background:var(--wash)}
-.tabs button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.wrap{padding-bottom:40px}
 .topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
 .seg{display:inline-flex;border:2px solid var(--edge);border-radius:999px;overflow:hidden}
 .seg button{font:inherit;font-size:15px;font-weight:600;border:0;background:var(--sheet);color:var(--ink);padding:7px 14px;cursor:pointer}
@@ -52,15 +48,12 @@ canvas{display:block;max-width:100%}
 .plist li.away{opacity:.45}
 .plist label{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--ink-2)}
 .opt{display:flex;align-items:center;gap:6px;font-size:14px;margin-top:10px}
-.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
-.empty h2{margin-bottom:8px}
 @media (max-width:860px){.stage{grid-template-columns:1fr}}
 .sortby{display:flex;align-items:center;gap:4px;margin:2px 0 4px;font-size:13px;color:var(--ink-2);white-space:nowrap}
 .sortby .btn{white-space:nowrap;min-height:0;padding:3px 11px;font-size:13px}
 .sortby .btn[aria-pressed="true"]{background:var(--sea);color:var(--on-sea);border-radius:999px}
 .selall{margin:-2px 0 6px}
-#exit-proj{display:none}
-body.proj #suite-nav,body.proj .tabs,body.proj .topbar,body.proj .below{display:none!important}
+body.proj .topbar,body.proj .below{display:none!important}
 html.mini,html.mini body{background:transparent!important;overflow:hidden}
 html.mini #exit-proj,html.mini .panel,html.mini aside,html.mini .backup-banner,html.mini #suite-news{display:none!important}
 html.mini .wrap{padding:4px!important;max-width:none}
@@ -69,8 +62,6 @@ html.mini .result .who{font-size:clamp(18px,6.5vw,36px)!important;font-weight:70
 html.mini .result .sub{color:#3a4652!important;font-size:13px;font-weight:600;margin-top:2px}
 html.mini .spin{padding:6px 18px;font-size:16px;margin-top:2px}
 html.mini #wheel{cursor:pointer}
-body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
-body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
 body.proj .wrap{max-width:none;padding:16px 24px}
 body.proj .result .who{font-size:clamp(48px,7vw,96px)}
 .hist{margin-top:12px}.hist summary{cursor:pointer;font-weight:700}
@@ -80,7 +71,6 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
 </head>
 <body>
 <header id="suite-nav"></header>
-<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
@@ -100,7 +90,10 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
   { const m = location.hash.match(/class=([\w-]+)/); if (m && SP) { SP.cur = decodeURIComponent(m[1]); SP.mode = 'students'; } }
 
   const classes = () => Suite.classes();
-  const curClass = () => { const l = classes(); return l.find(c => c.id === SP.cur) || l[0] || null; };
+  const CP = Suite.classPicker({ page: 'spinner', get: () => SP.cur, set: id => { SP.cur = id; }, can: () => !spinning,
+    changed: () => { if (SP.mode === 'custom') SP.mode = 'students'; result = null; save(); render(); } });
+  const curClass = () => CP.current(classes());
+  Suite.projector(on => { proj = on; render(); }, { start: proj, can: () => !spinning });
   const poolKey = c => SP.mode === 'custom' ? 'custom' : c.id + ':' + SP.mode;
   function absentIds(c){
     const a = SP.absent[c.id];
@@ -206,10 +199,9 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
   /* ---------- page ---------- */
   function render(keepWheel){
     document.body.classList.toggle('nopanel', !!SP.hidePanel || proj);
-    document.body.classList.toggle('proj', proj);
     const list = classes(), c = curClass();
     if (!c && SP.mode !== 'custom') {
-      $('#app').innerHTML = `<div class="empty"><h2>Add your classes first</h2><p>The spinner uses the rosters from Classes & settings. You can also spin a custom list without any classes.</p>
+      $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>The spinner uses the rosters from Classes & settings. You can also spin a custom list without any classes.</p>
         <div class="bar"><a class="btn primary" href="settings.html">Go to Classes & settings</a><button class="btn" data-a="mode" data-m="custom">Use a custom list</button></div></div>`;
       return;
     }
@@ -249,12 +241,11 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
 
     const keep = ['.plist', '.panel'].map(q => { const el = document.querySelector(q); return [q, el ? el.scrollTop : 0]; }), winY = window.scrollY;
     $('#app').innerHTML = `
-      ${SP.mode !== 'custom' || list.length ? `<nav class="tabs" aria-label="Class periods">${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${c && k.id === c.id && SP.mode !== 'custom' ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>` : ''}
-      <div class="topbar">
+      ${CP.head(list, c, { none: SP.mode === 'custom', proj: true })}      <div class="topbar">
         <div class="seg" role="group" aria-label="What to spin">
           ${[['students', 'Students'], ['tables', 'Tables'], ['custom', 'Custom list']].map(([m, l]) => `<button data-a="mode" data-m="${m}" aria-pressed="${SP.mode === m}">${l}</button>`).join('')}
         </div>
-        <span class="bar"><button class="btn" data-a="panel">${SP.hidePanel ? 'Show list' : 'Hide list'}</button><button class="btn" data-a="proj">Projector view</button></span>
+        <span class="bar"><button class="btn" data-a="panel">${SP.hidePanel ? 'Show list' : 'Hide list'}</button></span>
       </div>
       <div class="stage">
         <div class="wheelcol">
@@ -277,10 +268,8 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-a]'); if (!el || spinning) return;
     const a = el.dataset.a, c = curClass();
-    if (a === 'pick') { SP.cur = el.dataset.id; if (SP.mode === 'custom') SP.mode = 'students'; result = null; save(); render(); }
-    else if (a === 'mode') { SP.mode = el.dataset.m; result = null; rot = 0; save(); render(); }
+    if (a === 'mode') { SP.mode = el.dataset.m; result = null; rot = 0; save(); render(); }
     else if (a === 'panel') { SP.hidePanel = !SP.hidePanel; save(); render(); }
-    else if (a === 'proj') { proj = !proj; render(); }
     else if (a === 'sort') { SP.sort = el.dataset.v; save(); render(); }
     else if ((a === 'allon' || a === 'alloff') && c) {
       SP.absent[c.id] = { date: Suite.dateKey(new Date()), ids: a === 'alloff' ? c.students.map(s => s.id) : [] };
@@ -309,7 +298,6 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
     }
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog') && !document.body.classList.contains('timer-open')) { proj = false; render(); return; }
     if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName) && !document.querySelector('.suite-dialog')) { e.preventDefault(); spin(); }
   });
   window.addEventListener('resize', () => { if (!spinning && curClass()) draw(spunList || available(curClass())); });

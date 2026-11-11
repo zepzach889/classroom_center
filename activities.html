@@ -9,28 +9,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-10a">
-<script src="shared/core.js?v=2026-11-10a"></script>
-<script>window.PAGE_VERSION = '2026-11-10a';</script>
+<link rel="stylesheet" href="shared/style.css">
+<script src="shared/version.js"></script>
+<script src="shared/core.js"></script>
 <style>
-.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
-.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.pills button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:6px 18px;cursor:pointer;white-space:nowrap}
-.pills button:hover{background:var(--wash)}
-.pills button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
+.pillrow{margin-bottom:12px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:6px 0 16px}
-.tooltitle{font-family:var(--serif);font-size:32px}
 .card{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:14px 18px}
-.empty{background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:28px;max-width:680px}
-.empty h2{margin-bottom:8px}
 details.edit{margin-top:26px;background:var(--sheet);border:2px solid var(--edge);border-radius:20px;padding:12px 18px}
 details.edit summary{cursor:pointer;font-weight:700}
 details.edit label.lb{display:block;font-weight:700;margin:12px 0 4px}
 .sp{height:10px}
-#exit-proj{display:none}
-body.proj #suite-nav,body.proj .ctl{display:none!important}
-body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.55;z-index:40}
-body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
 body.proj .wrap{max-width:none;padding:24px 36px}
 
 /* ---------- review game ---------- */
@@ -115,13 +104,10 @@ body.proj .tbar{height:60px}
 .outlist label{font-size:15px;display:flex;gap:5px;align-items:center}
 body.proj .group h3{font-size:28px}
 body.proj .group li{font-size:24px}
-.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-body.proj .toprow .btn{display:none}
 </style>
 </head>
 <body>
 <header id="suite-nav"></header>
-<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
@@ -153,7 +139,10 @@ body.proj .toprow .btn{display:none}
   if (!TOOLS.some(t => t[0] === A.tool)) A.tool = 'game';
 
   const classes = () => Suite.classes();
-  const curClass = () => { const l = classes(); return l.find(c => c.id === A.cur) || l[0] || null; };
+  const CP = Suite.classPicker({ page: 'activities', get: () => A.cur, set: id => { A.cur = id; }, can: () => !openQ, changed: () => { openQ = null; save(); render(); } });
+  const curClass = () => CP.current(classes());
+  // Esc closes an open question first; with none open, it leaves projector view.
+  Suite.projector(on => { proj = on; render(); }, { beforeExit: () => !openQ });
   function roomOrder(c){
     const lay = Suite.roomLayout(c.tables);
     return Suite.activeTables(c).slice().sort((a, b) => lay.at[a.id].row - lay.at[b.id].row || lay.at[a.id].col - lay.at[b.id].col);
@@ -185,8 +174,8 @@ body.proj .toprow .btn{display:none}
     const pickGame = A.games.length > 1 ? `<label class="visually-hidden" for="gsel">Game</label><select id="gsel" data-c="game">${A.games.map(x => `<option value="${esc(x.id)}"${g && x.id === g.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : '';
     const bar = `<div class="toolbar ctl"><div class="tooltitle">${g ? esc(g.name) : 'Review game'}</div>
       <div class="bar">${pickGame}<button class="btn" data-a="gnew">New game</button>${g ? '<button class="btn" data-a="greset">Reset this class\'s board</button>' : ''}</div></div>`;
-    if (!g) return bar + `<div class="empty"><h2>Make a review game</h2><p>A board of questions by category, worth 100 to 500 points. Your tables are the teams. One game works for every class, and each class keeps its own scores.</p><button class="btn primary" data-a="gnew">New game</button></div>`;
-    if (!c) return bar + `<div class="empty"><h2>Add a class first</h2><p>The tables in Classes & settings are the teams.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    if (!g) return bar + `<div class="empty-note"><h2>Make a review game</h2><p>A board of questions by category, worth 100 to 500 points. Your tables are the teams. One game works for every class, and each class keeps its own scores.</p><button class="btn primary" data-a="gnew">New game</button></div>`;
+    if (!c) return bar + `<div class="empty-note"><h2>Add a class first</h2><p>The tables in Classes & settings are the teams.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
     const teams = roomOrder(c), sc = scoreFor(g, c), used = usedFor(g, c);
     const rows = Math.max(0, ...g.cats.map(ct => ct.qs.length));
     const total = g.cats.reduce((a, ct) => a + ct.qs.length, 0);
@@ -244,7 +233,7 @@ body.proj .toprow .btn{display:none}
   function stationsView(c){
     const names = stationNames();
     const head = `<div class="toolbar ctl"><div class="tooltitle">Station rotations</div><div class="bar"></div></div>`;
-    if (!c) return head + `<div class="empty"><h2>Add a class first</h2><p>Stations rotate your tables from Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    if (!c) return head + `<div class="empty-note"><h2>Add a class first</h2><p>Stations rotate your tables from Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
     const teams = roomOrder(c), r = runFor(c);
     const place = round => { const at = names.map(() => []); if (names.length) teams.forEach((t, k) => at[(k + round - 1) % names.length].push(t)); return at; };
     const cards = round => `<div class="st-grid">${names.map((n, i) => `<div class="station"><h3>${esc(n)}<span>Station ${i + 1}</span></h3>
@@ -349,8 +338,8 @@ body.proj .toprow .btn{display:none}
   function groupsView(c){
     const G = A.groups;
     const head = `<div class="toolbar ctl"><div class="tooltitle">Partners and groups</div><div class="bar"></div></div>`;
-    if (!c) return head + `<div class="empty"><h2>Add a class first</h2><p>Groups are made from the rosters in Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
-    if (!c.students.length) return head + `<div class="empty"><h2>No students in ${esc(c.name)} yet</h2><a class="btn primary" href="settings.html#class=${esc(c.id)}">Add a roster</a></div>`;
+    if (!c) return head + `<div class="empty-note"><h2>Add a class first</h2><p>Groups are made from the rosters in Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    if (!c.students.length) return head + `<div class="empty-note"><h2>No students in ${esc(c.name)} yet</h2><a class="btn primary" href="settings.html#class=${esc(c.id)}">Add a roster</a></div>`;
     const skip = out[c.id] || new Set();
     const res = (G.last[c.id] || []).map(g => g.map(id => c.students.find(s => s.id === id)).filter(Boolean)).filter(g => g.length);
     const color = s => { const t = c.tables.find(x => x.id === s.tableId); return t ? t.color : '#8A9491'; };
@@ -379,12 +368,11 @@ body.proj .toprow .btn{display:none}
 
   /* ================= page ================= */
   function render(){
-    document.body.classList.toggle('proj', proj);
     const cl = classes(), c = curClass();
     if (c) A.cur = c.id;
     const needsClass = A.tool !== 'tally';
-    const top = `<div class="toprow ctl"><nav class="pills" aria-label="Activity">${TOOLS.map(([k, l]) => `<button data-a="tool" data-id="${k}"${A.tool === k ? ' aria-current="true"' : ''}>${l}</button>`).join('')}</nav><button class="btn" data-a="proj">Projector view</button></div>
-      ${needsClass && cl.length > 1 ? `<nav class="pills ctl" aria-label="Class periods">${cl.map(k => `<button data-a="pickc" data-id="${esc(k.id)}"${c && k.id === c.id ? ' aria-current="true"' : ''} style="font-size:14px;padding:4px 14px">${esc(k.name)}</button>`).join('')}</nav>` : ''}`;
+    const top = `${CP.head(needsClass ? cl : [], c, { proj: true })}
+      <nav class="pillrow ctl" aria-label="Activity">${TOOLS.map(([k, l]) => `<button data-a="tool" data-id="${k}"${A.tool === k ? ' aria-current="true"' : ''}>${l}</button>`).join('')}</nav>`;
     const body = A.tool === 'game' ? gameView(c) : A.tool === 'stations' ? stationsView(c) : A.tool === 'tally' ? tallyView() : groupsView(c);
     $('#app').innerHTML = top + body;
     history.replaceState(null, '', '#tool=' + A.tool);
@@ -395,8 +383,6 @@ body.proj .toprow .btn{display:none}
     const el = e.target.closest('[data-a]'); if (!el) return;
     const a = el.dataset.a, id = el.dataset.id, c = curClass(), g = curGame();
     if (a === 'tool') { A.tool = id; openQ = null; render(); save(); }
-    else if (a === 'pickc') { A.cur = id; openQ = null; save(); render(); }
-    else if (a === 'proj') { proj = !proj; render(); }
     // review game
     else if (a === 'gnew') {
       const name = await Suite.dialog({ title: 'Name the review game', input: 'Unit review', ok: 'Create game' });
@@ -471,7 +457,6 @@ body.proj .toprow .btn{display:none}
       return;
     }
     if (A.tool === 'tally' && /^[1-6]$/.test(e.key)) { const o = A.tally.options[+e.key - 1]; if (o) { o.n++; save(); render(); } return; }
-    if (e.key === 'Escape' && proj) { proj = false; render(); }
   });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*' || e.detail.key === 'classes')) { if (e.detail.external || e.detail.key === '*') load(); render(); } });
 
