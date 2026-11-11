@@ -193,8 +193,8 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const c = curClass(list);
     if (!c) {
       $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2>
-        <p>The tracker uses the classes, tables, and rosters you set up once in Classes & settings.</p>
-        <a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+        <p>The tracker uses the classes, tables, and rosters you set up once in Classes.</p>
+        <a class="btn primary" href="settings.html">Go to Classes</a></div>`;
       return;
     }
     T.cur = c.id;
@@ -296,7 +296,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       ${showKeys ? `<div class="keys hint">Press a ${esc(W('team'))}'s number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean +2, <kbd>M</kbd> mostly clean +1, <kbd>P</kbd> 3-point challenge. <kbd>U</kbd> undo, <kbd>D</kbd> double points, <kbd>Esc</kbd> deselect, <kbd>?</kbd> show or hide this.</div>` : ''}
       <div class="proj-title">${esc(c.name)}<span>Quarter ${T.quarter}, week ${T.week}${T.double ? ' · Double points!' : ''}</span></div>
       ${act.length ? `<div class="cards room-grid" style="--cols:${lay.cols}">${cards}</div>`
-        : `<div class="empty-note"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
+        : `<div class="empty-note"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
 
       <div class="panels">
         <section class="panel" aria-labelledby="h-prizes"><h2 id="h-prizes">Prizes</h2>

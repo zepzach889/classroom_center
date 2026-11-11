@@ -165,7 +165,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       ${mergeable() ? `<div class="banner noprint"><span><b>Some days still have a separate plan for each period</b>, saved before you set up courses. Combine the ones that match into the course plan? Periods with a different plan keep their own.</span><button class="btn primary" data-a="merge">Combine them</button></div>` : ''}
       ${!Suite.courses().length && Suite.classes().length > 1 ? `<div class="banner noprint"><span><b>Teach the same lesson to several periods?</b> Group them into a course, and you'll plan once for all of them.</span><button class="btn primary" data-a="courses">Set up courses</button></div>` : ''}
       ${R.length || Suite.isOffice() ? `<div class="gridwrap"><table class="plan"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>`
-        : '<div class="banner"><span>Add your classes in Classes and rosters first.</span><a class="btn primary" href="settings.html#classes">Classes and rosters</a></div>'}
+        : '<div class="banner"><span>Add your classes first.</span><a class="btn primary" href="settings.html#classes">Classes and rosters</a></div>'}
       <p class="hint noprint" style="margin-top:12px">Click any day to plan it. Plans show on the dashboard for the class in session and print on the substitute page. An <span class="own" style="display:inline-block">Own plan</span> tag means those periods have their own plan that day instead of the course plan; open the day to see it or switch them back.</p>`;
   }
 

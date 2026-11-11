@@ -110,7 +110,7 @@ body.proj .dot{width:20px;height:20px}
 
     if (!c) {
       $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>The topic picker keeps a separate sign-up for each class and uses your rosters to track who picked what.</p>
-        <a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+        <a class="btn primary" href="settings.html">Go to Classes</a></div>`;
       return;
     }
     const tabs = CP.head(cl, c);    if (!list) {
@@ -150,7 +150,7 @@ body.proj .dot{width:20px;height:20px}
       ${list.topics.length ? `<div class="board">${cards}</div>` : '<p class="muted">This list has no topics yet. Add them under "Edit this list" below.</p>'}
       <div class="panels">
         <section class="panel" aria-labelledby="h-need"><h2 id="h-need">Still choosing</h2>
-          ${!c.students.length ? `<p class="muted">Add a roster in <a href="settings.html#class=${esc(c.id)}">Classes & settings</a> to see who hasn't picked yet.</p>`
+          ${!c.students.length ? `<p class="muted">Add a roster in <a href="settings.html#class=${esc(c.id)}">Classes</a> to see who hasn't picked yet.</p>`
             : need.length ? `<div class="need">${need.map(s => `<span>${esc(s.name)}</span>`).join('')}</div>` : '<p>Everyone in ' + esc(c.name) + ' has a topic.</p>'}
         </section>
         <section class="panel edit" aria-labelledby="h-edit"><h2 id="h-edit">Edit this list</h2>

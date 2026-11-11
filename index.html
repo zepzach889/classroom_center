@@ -232,7 +232,7 @@
       }
       const at = cd.time ? `<span class="at">${cd.date === today ? '' : end.toLocaleDateString(undefined, { weekday: 'short' }) + ' '}${Suite.fmt12(cd.time)}</span>` : '';
       return `<li><span class="what">${esc(cd.label)}${at}</span><span class="when">${when}</span></li>`; }).join('')}</ul>
-      ${more ? `<a class="small more" href="settings.html#countdowns">+${more} more</a>` : ''}</div>` : '';
+      ${more ? `<a class="small more" href="planner.html">+${more} more</a>` : ''}</div>` : '';
     $('#coming').hidden = !$('#coming').innerHTML;
   }
   // live hours:minutes:seconds for timed countdowns in their last day
@@ -328,7 +328,7 @@
     tickCountdowns();
   }
 
-  const DAY_KEYS = ['schedule', 'classes', 'agenda', 'events', 'units', 'courses', 'decks', 'today', 'sub', 'prefs', 'countdowns', '*'];
+  const DAY_KEYS = ['schedule', 'classes', 'agenda', 'events', 'units', 'courses', 'decks', 'today', 'sub', 'prefs', '*'];
   window.addEventListener('suite:change', e => {
     const k = e.detail && e.detail.key;
     if (k === 'tracker') { renderPoints(); return; }

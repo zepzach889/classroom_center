@@ -201,8 +201,8 @@ body.proj .result .who{font-size:clamp(48px,7vw,96px)}
     document.body.classList.toggle('nopanel', !!SP.hidePanel || proj);
     const list = classes(), c = curClass();
     if (!c && SP.mode !== 'custom') {
-      $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>The spinner uses the rosters from Classes & settings. You can also spin a custom list without any classes.</p>
-        <div class="bar"><a class="btn primary" href="settings.html">Go to Classes & settings</a><button class="btn" data-a="mode" data-m="custom">Use a custom list</button></div></div>`;
+      $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>The spinner uses the rosters from Classes. You can also spin a custom list without any classes.</p>
+        <div class="bar"><a class="btn primary" href="settings.html">Go to Classes</a><button class="btn" data-a="mode" data-m="custom">Use a custom list</button></div></div>`;
       return;
     }
     if (c) SP.cur = c.id;

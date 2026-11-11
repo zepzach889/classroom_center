@@ -4,7 +4,7 @@
   'use strict';
   const S = window.Suite, esc = S.esc;
   const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink', 'Gray', 'Brown', 'Navy', 'Gold'];
-  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['hallpass', 'Student log (hall pass and behavior)'], ['rosters', 'Weekly roster sheets'], ['present', 'Present (Google Slides)']];
+  const TOOLS = [['points', 'Team points and weekly prizes'], ['captains', 'Captains or leaders'], ['goals', 'Weekly team goals'], ['spinner', 'Name spinner'], ['topics', 'Topic picker'], ['game', 'Review game'], ['stations', 'Stations'], ['tally', 'Tally'], ['groups', 'Partners and groups'], ['noise', 'Noise meter'], ['grader', 'Easy grader'], ['hallpass', 'Student log (hall pass and behavior)'], ['rosters', 'Attendance sheets']];
 
   const G = {
     step: 0,
@@ -100,7 +100,7 @@
     else if (step === 'rosters') {
       const names = classNames();
       h = `${dots()}<h2 id="g-title">Student names <span class="muted small">(optional)</span></h2>
-        <p>Paste each class's names, one per line, or skip this and add them later in Classes and rosters.</p>
+        <p>Paste each class's names, one per line, or skip this and add them later under the gear, in Classes.</p>
         <div class="g-rosters">${names.map((n, i) => `<details${i === 0 ? ' open' : ''}><summary>${esc(n)}<span class="muted small">${(G.rosters[i] || '').split('\n').filter(x => x.trim()).length || ''}</span></summary><textarea rows="6" data-r="${i}" placeholder="One name per line">${esc(G.rosters[i] || '')}</textarea></details>`).join('')}</div>
         ${G.room === 'tables' ? `<label class="g-check"><input type="checkbox" data-k="spread"${G.spread ? ' checked' : ''}> Spread students across the ${esc(G.team)}s at random (you can rearrange later)</label>` : ''}
         ${nav('Finish setup')}`;
@@ -212,7 +212,7 @@
       ['[data-dd="tools"]', 'Tools', 'Name spinner, topic picker, review game, stations, tally, partners and groups, the noise meter, an easy grader.'],
       ['#st-pill', 'Timer', 'A big countdown for the whole class. It keeps running while you move between pages and chimes when time is up.'],
       ['[data-dd="pop"]', 'Pop out', 'A small window with the timer, points, or a name picker that floats on top of Google Slides (in Chrome or Edge).'],
-      ['[data-dd="gear"]', 'Setup', 'Classes and rosters, the substitute page, bell schedule, countdowns, appearance, backups, and this tour.']
+      ['[data-dd="gear"]', 'Setup', 'Your classes, the bell schedule, the look of the site, backups, and this tour.']
     ].filter(([sel]) => document.querySelector(sel));
     if (!steps.length) return;
     let i = 0;

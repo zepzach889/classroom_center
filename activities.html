@@ -175,7 +175,7 @@ body.proj .group li{font-size:24px}
     const bar = `<div class="toolbar ctl"><div class="tooltitle">${g ? esc(g.name) : 'Review game'}</div>
       <div class="bar">${pickGame}<button class="btn" data-a="gnew">New game</button>${g ? '<button class="btn" data-a="greset">Reset this class\'s board</button>' : ''}</div></div>`;
     if (!g) return bar + `<div class="empty-note"><h2>Make a review game</h2><p>A board of questions by category, worth 100 to 500 points. Your tables are the teams. One game works for every class, and each class keeps its own scores.</p><button class="btn primary" data-a="gnew">New game</button></div>`;
-    if (!c) return bar + `<div class="empty-note"><h2>Add a class first</h2><p>The tables in Classes & settings are the teams.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    if (!c) return bar + `<div class="empty-note"><h2>Add a class first</h2><p>The tables in Classes are the teams.</p><a class="btn primary" href="settings.html">Go to Classes</a></div>`;
     const teams = roomOrder(c), sc = scoreFor(g, c), used = usedFor(g, c);
     const rows = Math.max(0, ...g.cats.map(ct => ct.qs.length));
     const total = g.cats.reduce((a, ct) => a + ct.qs.length, 0);
@@ -233,7 +233,7 @@ body.proj .group li{font-size:24px}
   function stationsView(c){
     const names = stationNames();
     const head = `<div class="toolbar ctl"><div class="tooltitle">Station rotations</div><div class="bar"></div></div>`;
-    if (!c) return head + `<div class="empty-note"><h2>Add a class first</h2><p>Stations rotate your tables from Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    if (!c) return head + `<div class="empty-note"><h2>Add a class first</h2><p>Stations rotate your tables from Classes.</p><a class="btn primary" href="settings.html">Go to Classes</a></div>`;
     const teams = roomOrder(c), r = runFor(c);
     const place = round => { const at = names.map(() => []); if (names.length) teams.forEach((t, k) => at[(k + round - 1) % names.length].push(t)); return at; };
     const cards = round => `<div class="st-grid">${names.map((n, i) => `<div class="station"><h3>${esc(n)}<span>Station ${i + 1}</span></h3>
@@ -338,7 +338,7 @@ body.proj .group li{font-size:24px}
   function groupsView(c){
     const G = A.groups;
     const head = `<div class="toolbar ctl"><div class="tooltitle">Partners and groups</div><div class="bar"></div></div>`;
-    if (!c) return head + `<div class="empty-note"><h2>Add a class first</h2><p>Groups are made from the rosters in Classes & settings.</p><a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
+    if (!c) return head + `<div class="empty-note"><h2>Add a class first</h2><p>Groups are made from the rosters in Classes.</p><a class="btn primary" href="settings.html">Go to Classes</a></div>`;
     if (!c.students.length) return head + `<div class="empty-note"><h2>No students in ${esc(c.name)} yet</h2><a class="btn primary" href="settings.html#class=${esc(c.id)}">Add a roster</a></div>`;
     const skip = out[c.id] || new Set();
     const res = (G.last[c.id] || []).map(g => g.map(id => c.students.find(s => s.id === id)).filter(Boolean)).filter(g => g.length);

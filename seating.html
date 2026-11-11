@@ -135,7 +135,7 @@ body.proj .tbl h2{font-size:28px}
 
   function render(){
     const list = classes(), c = curClass(list);
-    if (!c) { $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>Seating charts use your classes and rosters.</p><a class="btn primary" href="settings.html#classes">Go to Classes and rosters</a></div>`; return; }
+    if (!c) { $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2><p>Seating charts use your classes and rosters.</p><a class="btn primary" href="settings.html#classes">Go to Classes</a></div>`; return; }
     UI.cur = c.id;
     if (UI.mode === 'room' && !proj) { renderRoom(c, list); return; }
     const T = Suite.get('tracker', {}) || {}, caps = (T.captains || {})[c.id] || {};

@@ -7,6 +7,7 @@
   const PALETTE = ['#24405E', '#C99A3E', '#B84A32', '#5E806B', '#6A5577', '#3F7F8A', '#8A6A3E', '#4A5663'];
   const DEFAULT_TABLE_COUNT = 5, DEFAULT_SEATS = 6;
   // Menu: a few everyday links, a Tools menu, and setup under the gear.
+  // Two pages have no menu entry of their own: Sub plans opens from the Planner and the Dashboard, and Boards from Today.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
     { id: 'today', label: 'Today', href: 'today.html' },
@@ -27,14 +28,12 @@
       { id: 'hallpass', label: 'Student log', href: 'hallpass.html', feature: 'hallpass', beta: true },
       { group: 'Grading and records' },
       { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
-      { id: 'rosters', label: 'Weekly roster sheets', href: 'rosters.html', feature: 'rosters' }
+      { id: 'rosters', label: 'Attendance sheets', href: 'rosters.html', feature: 'rosters' }
     ] }
   ];
   const GEAR_MENU = [
-    { id: 'settings', label: 'Classes and rosters', href: 'settings.html#classes' },
-    { id: 'sub', label: 'Print sub plans', href: 'sub.html' },
+    { id: 'settings', label: 'Classes', href: 'settings.html#classes' },
     { id: 'general', label: 'Settings', href: 'settings.html#schedule' },
-    { id: 'boards', label: 'Boards', href: 'boards.html' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
   const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader', 'hallpass', 'rosters'];
@@ -47,7 +46,8 @@
   // Every file of the site, so an update can fetch a fresh copy of all of them at once. Add new files here.
   const FILES = ['index.html', 'today.html', 'planner.html', 'tracker.html', 'seating.html', 'settings.html', 'sub.html', 'boards.html', 'help.html',
     'spinner.html', 'topics.html', 'activities.html', 'noise.html', 'hallpass.html', 'grader.html', 'rosters.html',
-    'shared/version.js', 'shared/core.js', 'shared/guide.js', 'shared/style.css'];
+    'shared/version.js', 'shared/core.js', 'shared/guide.js', 'shared/style.css',
+    'today/today.css', 'today/boards.js', 'today/drawer.js', 'today/editor.js', 'today/tools.js', 'today/effects.js', 'today/widgets.js', 'today/main.js'];
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1147,10 +1147,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-11', items: [
-    'Every class tool now has the same top row: Auto and your classes on the left, Projector view on the right. Auto is new on the Spinner, Topic picker, and Activities.',
-    'Updates are simpler: after a new build is uploaded, the site refreshes itself or shows an Update now button.',
-    'Behind the scenes: a cleanup of old, unused code. Nothing about your data changed.'] };
+  const NEWS = { id: '2026-11-11b', items: [
+    'A simpler gear menu: Classes, Settings, and Help.',
+    'Sub plans open from the Planner (Print sub plans) or the Dashboard. All your boards open from Today (All boards).',
+    '"Weekly roster sheets" is now called Attendance sheets, in the Tools menu.',
+    'Every class tool has the same top row: Auto and your classes on the left, Projector view on the right.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
@@ -1172,7 +1173,8 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     const draw = () => {
       const b = S.backupStatus();
       const actTool = current === 'activities' ? 'act-' + ((location.hash.match(/tool=(\w+)/) || [])[1] || 'game') : null;
-      const isHere = id => id === current || id === actTool;
+      const here = current === 'sub' ? 'planner' : current === 'boards' ? 'today' : current;   // pages that belong to another page's part of the menu
+      const isHere = id => id === here || id === actTool;
       const office = S.isOffice();
       const on = n => (!office || !['today', 'tracker', 'seating'].includes(n.id)) && (!n.feature || S.feature(n.feature));
       const label = n => n.id === 'tracker' ? S.word('team', { cap: true }) + ' points' : n.id === 'planner' && office ? 'Events' : n.label;
@@ -1189,10 +1191,10 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
         ${current === 'dashboard' ? '' : '<a class="pclock" id="st-pclock" href="index.html" title="Time left in this period (opens the dashboard)" hidden></a>'}
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
         <button class="gear" data-dd="pop" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false" aria-haspopup="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
-        <button class="gear${current === 'settings' || current === 'sub' || current === 'help' || current === 'boards' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
+        <button class="gear${current === 'settings' || current === 'help' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, settings, and help" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
         ${menu('tools', toolItems, 'Tools')}
         ${menu('pop', [{ pop: 'timer', label: 'Timer' }].concat(S.feature('points') && !office ? [{ pop: 'points', label: S.word('team', { cap: true }) + ' points' }] : [], office ? [] : [{ pop: 'name', label: 'Name picker' }]), 'Pop out a mini window')}
-        ${menu('gear', office ? GEAR_MENU.filter(n => !['settings', 'sub', 'boards'].includes(n.id)) : GEAR_MENU, 'Setup')}
+        ${menu('gear', office ? GEAR_MENU.filter(n => n.id !== 'settings') : GEAR_MENU, 'Setup')}
       </div>${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw(); timerDraw();

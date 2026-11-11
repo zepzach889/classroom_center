@@ -169,6 +169,10 @@ button.gear{background:none;cursor:pointer;font:inherit}
 /* ---------- page layout shared by every page ---------- */
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
 .tooltitle{font-family:var(--serif);font-size:32px}
+/* a small "back to where you came from" link above a page's title */
+.backlink{margin:0 0 6px;font-size:14px;font-weight:600}
+.backlink a{text-decoration:none}
+.backlink a:hover{text-decoration:underline}
 /* a boxed note for a page with nothing to show yet */
 .empty-note{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
 .empty-note h2{margin-bottom:8px}

@@ -9,12 +9,13 @@ Everything runs in the browser from these files. There is no server, no account,
 ```
 index.html        Dashboard: clock, bell schedule, period countdown, what's coming up
 today.html        Today: class boards, lesson slides, tools, and the bell countdown on the projector
+                  (its styles and code are the files in today/, listed below)
 planner.html      Planner: weekly plans, units, events and days off, printable week
 tracker.html      Table points: points, captains, weekly prizes, projector view
 seating.html      Seating charts and room setup; print one class or all
-settings.html     Settings: classes and rosters, schedule, Today screen, sub plans, look, backup
-sub.html          Printable substitute packet
-boards.html       Boards: every custom board, where it's used, rename and edit words
+settings.html     Settings: classes, schedule, Today screen, sub plans, look, backup
+sub.html          Printable substitute packet (opens from the Planner and the Dashboard)
+boards.html       Boards: every custom board, where it's used, rename and edit words (opens from Today)
 help.html         Help, Getting started, and the menu tour
 
 Tools menu
@@ -24,13 +25,22 @@ activities.html   Review game, station rotations, tally, partners and groups
 noise.html        Noise meter
 hallpass.html     Student log: hall pass and behavior notes (beta)
 grader.html       Easy grader
-rosters.html      Weekly roster sheets (attendance and points)
+rosters.html      Attendance sheets (weekly attendance and points)
 
 shared/version.js The build's version, written in this one place
 shared/core.js    Shared data, schedule, timer, menus, the class picker, projector view, and other helpers
 shared/guide.js   First-visit setup guide and tour
 shared/style.css  Shared look
 shared/favicon.svg  Tab icon (favicon-32.png is the fallback)
+
+today/today.css   Styles for the Today page
+today/boards.js   The boards: saved data, which class and day are showing, drawing, lesson deck, control rail
+today/drawer.js   The Day settings panel
+today/editor.js   Edit on screen, and the one-board editor opened from the Boards page
+today/tools.js    Bell reminder, and tools opened on top of a board
+today/effects.js  Seasonal looks and falling effects
+today/widgets.js  Widgets pinned on top of the lesson slides
+today/main.js     Buttons and keys, then the first draw (loads last)
 ```
 
 ## Where the data lives

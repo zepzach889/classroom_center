@@ -124,7 +124,7 @@
   function render(){
     const T = TS(), all = collect(T);
     const lib = all.filter(x => x.kind === 'lib'), rows = all.filter(x => x.kind === 'row'), days = all.filter(x => x.kind === 'day');
-    $('#app').innerHTML = `<h1>Boards</h1>
+    $('#app').innerHTML = `<p class="backlink noprint"><a href="today.html">‹ Back to Today</a></p><h1>Boards</h1>
       <p class="intro">Every custom board you've made, and where each one shows. <b>Edit board</b> opens just that board, so you can type, move boxes, and add pictures or tools. Changes go to that board only.</p>
       <section class="group"><h2>My boards</h2><p class="gh">Saved boards you can reuse. A linked board is one board shared by several classes or days: change it once and it changes everywhere.</p>${lib.map(x => card(x, T)).join('') || '<p class="empty">None yet. In Today, use Day settings → "Use in other classes…" or "Save to My boards".</p>'}</section>
       <section class="group"><h2>Class boards</h2><p class="gh">Custom boards in a class's or course's usual setup, shown every day.</p>${rows.map(x => card(x, T)).join('') || '<p class="empty">None yet.</p>'}</section>

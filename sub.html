@@ -106,6 +106,7 @@
 <header id="suite-nav"></header>
 <div class="wrap">
   <div class="controls">
+    <p class="backlink"><a href="planner.html">‹ Back to the Planner</a></p>
     <h1>Print sub plans</h1>
     <p class="hint">A packet for a substitute: the day's schedule, your notes, and a page for each class with its plan, materials, helpers, and seating. Everything here saves automatically.</p>
     <div class="cbox">
@@ -169,7 +170,7 @@
     days.forEach(d => { date = d; html += renderOne(); }); date = keep;
     const P0 = PR();
     $('#packet').classList.toggle('flow', !P0.newPage);
-    $('#packet').innerHTML = !list0.length ? '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes & settings</a> first.</p></div>'
+    $('#packet').innerHTML = !list0.length ? '<div class="sheet"><p>Add your classes in <a href="settings.html">Classes</a> first.</p></div>'
       : days.length ? html : `<div class="sheet"><p>${rangeDays().length ? 'Check at least one day above to print.' : 'There are no school days in those dates.'}</p></div>`;
     document.querySelectorAll('img[data-fid]').forEach(async img => { const u = await fileUrl(img.dataset.fid); if (u) img.src = u; });
   }
