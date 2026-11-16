@@ -9,13 +9,12 @@ Everything runs in the browser from these files. There is no server, no account,
 ```
 index.html        Dashboard: clock, bell schedule, period countdown, what's coming up
 today.html        Today: class boards, lesson slides, tools, and the bell countdown on the projector
-                  (its styles and code are the files in today/, listed below)
 planner.html      Planner: weekly plans, units, events and days off, printable week
 tracker.html      Table points: points, captains, weekly prizes, projector view
 seating.html      Seating charts and room setup; print one class or all
-settings.html     Settings: classes, schedule, Today screen, sub plans, look, backup
-sub.html          Printable substitute packet (opens from the Planner and the Dashboard)
-boards.html       Boards: every custom board, where it's used, rename and edit words (opens from Today)
+settings.html     Settings: classes and rosters, schedule, Today screen, sub plans, look, backup
+sub.html          Printable substitute packet
+boards.html       Boards: every custom board, where it's used, rename and edit words
 help.html         Help, Getting started, and the menu tour
 
 Tools menu
@@ -25,22 +24,12 @@ activities.html   Review game, station rotations, tally, partners and groups
 noise.html        Noise meter
 hallpass.html     Student log: hall pass and behavior notes (beta)
 grader.html       Easy grader
-rosters.html      Attendance sheets (weekly attendance and points)
+rosters.html      Weekly roster sheets (attendance and points)
 
-shared/version.js The build's version, written in this one place
-shared/core.js    Shared data, schedule, timer, menus, the class picker, projector view, and other helpers
+shared/core.js    Shared data, schedule, timer, menus, and helpers
 shared/guide.js   First-visit setup guide and tour
 shared/style.css  Shared look
 shared/favicon.svg  Tab icon (favicon-32.png is the fallback)
-
-today/today.css   Styles for the Today page
-today/boards.js   The boards: saved data, which class and day are showing, drawing, lesson deck, control rail
-today/drawer.js   The Day settings panel
-today/editor.js   Edit on screen, and the one-board editor opened from the Boards page
-today/tools.js    Bell reminder, and tools opened on top of a board
-today/effects.js  Seasonal looks and falling effects
-today/widgets.js  Widgets pinned on top of the lesson slides
-today/main.js     Buttons and keys, then the first draw (loads last)
 ```
 
 ## Where the data lives
@@ -55,6 +44,4 @@ Student names, points, plans, and notes are stored only in the browser that's be
 
 In the repository, go to Settings → Pages, choose "Deploy from a branch," pick `main` and `/ (root)`, and save. The site appears at `https://<your-username>.github.io/<repo-name>/`.
 
-To update: upload the whole folder (replacing the old files). The next time the site is opened it notices the new build: it refreshes itself once, or shows an **Update now** button that brings every page up to date together. It can take up to ten minutes after an upload for GitHub to start serving the new files; Ctrl+Shift+R still forces the page you're on to reload right away.
-
-Each build has a version, written only in `shared/version.js`. Change it with every build, and add any new file to the `FILES` list near the top of `shared/core.js` so updates fetch it too.
+To update: upload the whole folder (replacing the old files), then press Ctrl+Shift+R in the browser. Everyone using the link gets the update right away, so it's worth trying an update yourself before sharing it widely. A page that's out of date shows a banner asking for Ctrl+Shift+R.

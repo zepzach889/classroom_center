@@ -5,9 +5,10 @@
   'use strict';
   const PREFIX = 'suite:';
   const PALETTE = ['#24405E', '#C99A3E', '#B84A32', '#5E806B', '#6A5577', '#3F7F8A', '#8A6A3E', '#4A5663'];
+  const OLD_PALETTE = ['#2E6378', '#B7924A', '#6B7F3A', '#7A2E4F', '#4F5D8A', '#A0643A', '#3F7F74', '#8A5A83'];
   const DEFAULT_TABLE_COUNT = 5, DEFAULT_SEATS = 6;
+  // Flip "soon" to false as each page is added to the site.
   // Menu: a few everyday links, a Tools menu, and setup under the gear.
-  // Two pages have no menu entry of their own: Sub plans opens from the Planner and the Dashboard, and Boards from Today.
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', href: 'index.html' },
     { id: 'today', label: 'Today', href: 'today.html' },
@@ -28,12 +29,14 @@
       { id: 'hallpass', label: 'Student log', href: 'hallpass.html', feature: 'hallpass', beta: true },
       { group: 'Grading and records' },
       { id: 'grader', label: 'Easy grader', href: 'grader.html', feature: 'grader' },
-      { id: 'rosters', label: 'Attendance sheets', href: 'rosters.html', feature: 'rosters' }
+      { id: 'rosters', label: 'Weekly roster sheets', href: 'rosters.html', feature: 'rosters' }
     ] }
   ];
   const GEAR_MENU = [
-    { id: 'settings', label: 'Classes', href: 'settings.html#classes' },
+    { id: 'settings', label: 'Classes and rosters', href: 'settings.html#classes' },
+    { id: 'sub', label: 'Print sub plans', href: 'sub.html' },
     { id: 'general', label: 'Settings', href: 'settings.html#schedule' },
+    { id: 'boards', label: 'Boards', href: 'boards.html' },
     { id: 'help', label: 'Help and tour', href: 'help.html' }
   ];
   const TOOL_PAGES = ['spinner', 'topics', 'activities', 'noise', 'grader', 'hallpass', 'rosters'];
@@ -41,13 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  // The build's version lives in one place, shared/version.js, which every page loads just before this file.
-  const VERSION = window.SUITE_VERSION || 'dev';
-  // Every file of the site, so an update can fetch a fresh copy of all of them at once. Add new files here.
-  const FILES = ['index.html', 'today.html', 'planner.html', 'tracker.html', 'seating.html', 'settings.html', 'sub.html', 'boards.html', 'help.html',
-    'spinner.html', 'topics.html', 'activities.html', 'noise.html', 'hallpass.html', 'grader.html', 'rosters.html',
-    'shared/version.js', 'shared/core.js', 'shared/guide.js', 'shared/style.css',
-    'today/today.css', 'today/boards.js', 'today/drawer.js', 'today/editor.js', 'today/tools.js', 'today/effects.js', 'today/widgets.js', 'today/main.js'];
+  const VERSION = '2026-11-16a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -74,7 +71,7 @@
 
 
   /* ---------- this user's words and tools ---------- */
-  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, grader: true, hallpass: true, rosters: true };
+  const FEATURE_DEFAULTS = { points: true, captains: true, goals: true, seating: true, spinner: true, topics: true, game: true, stations: true, tally: true, groups: true, noise: true, present: true, grader: true, hallpass: true, rosters: true };
   S.prefs = () => { const p = S.get('prefs', {}); return { words: Object.assign({ team: 'table', lead: 'captain' }, p.words || {}), features: Object.assign({}, FEATURE_DEFAULTS, p.features || {}) }; };
   S.feature = f => S.prefs().features[f] !== false;
   // S.word('team') -> "table"; S.word('team', { plural: true, cap: true }) -> "Tables"
@@ -308,6 +305,27 @@
     const keys = [classOrKey].concat(co ? [S.courseKey(co.id)] : []);
     return S.units().filter(u => keys.includes(u.key) && u.start <= dateKey && (!u.end || dateKey <= u.end)).sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key) || (a.start < b.start ? 1 : -1))[0] || null;
   };
+  // Older "unit changes" from Today's Day settings become Planner units (once, on whichever page opens first).
+  (function migrateUnitChanges(){
+    try {
+      const T = S.get('today', {}) || {}; if (T.unitsMoved || !T.rows) return; const add = [];
+      Object.entries(T.rows).forEach(([key, row]) => { const sc = (row.schedule || []).filter(x => x.from).sort((a, b) => a.from < b.from ? -1 : 1);
+        sc.forEach((x, i) => { const nx = sc[i + 1]; let end = ''; if (nx) { const d = new Date(nx.from + 'T12:00'); d.setDate(d.getDate() - 1); end = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+          add.push({ id: S.uid(), key, name: 'Unit from ' + new Date(x.from + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), start: x.from, end, color: '#6a8caf', look: x.look || '', bitmoji: x.bitmoji || '', opts: {} }); });
+        row.schedule = []; });
+      if (add.length) S.saveUnits(S.units().concat(add));
+      T.unitsMoved = true; S.set('today', T);
+    } catch (e) {}
+  })();
+  // Countdowns now live in the Planner as events ("count down to it", "just for me"), once.
+  (function moveCountdowns(){
+    try {
+      const cds = S.get('countdowns', []) || []; if (!cds.length || S.get('countdownsMoved')) return;
+      const ev = S.get('events', []) || [];
+      cds.forEach(cd => { if (cd.date) ev.push({ id: 'cd-' + (cd.id || S.uid()), title: cd.label || 'Countdown', start: cd.date, end: cd.date, note: '', countdown: true, mine: true, time: cd.time || '' }); });
+      S.set('events', ev); S.set('countdowns', []); S.set('countdownsMoved', true);
+    } catch (e) {}
+  })();
   // Grading quarters: end dates set in Settings → Schedule. A quarter runs from the day after the previous end.
   S.quarterEnds = () => (S.get('quarters', []) || []).filter(Boolean).sort();
   S.quarterFor = dateKey => { const ends = S.quarterEnds(); for (let i = 0; i < ends.length; i++) if (dateKey <= ends[i]) { let start = null; if (i) { const d = new Date(ends[i - 1] + 'T12:00'); d.setDate(d.getDate() + 1); start = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); } return { n: i + 1, start, end: ends[i] }; } return null; };
@@ -468,7 +486,7 @@
     const sp = s.special.find(x => x.date === S.dateKey(date));
     const wd = date.getDay();
     const id = sp ? sp.scheduleId : (wd === 0 || wd === 6 ? 'none' : (s.weekdays[wd] || 'none'));
-    const why = sp ? 'Special day' : wd === 0 || wd === 6 ? '' : 'Set for ' + DAY_NAMES[wd];
+    const why = sp ? 'Special day' + (sp.label ? '' : '') : wd === 0 || wd === 6 ? '' : 'Set for ' + DAY_NAMES[wd];
     if (id === 'none') return { periods: [], label: sp ? (sp.label || 'No school') : (wd === 0 || wd === 6 ? 'Weekend' : 'No school'), special: !!sp, why };
     const sc = s.schedules.find(x => x.id === id) || s.schedules[0];
     if (!sc) return { periods: [], label: 'No schedule set up', special: false, why: '' };
@@ -496,6 +514,7 @@
   const FILE_DB = 'classroom-suite-files', MAX_FILE = 10 * 1024 * 1024;
   function idb(){ return new Promise((res, rej) => { const r = indexedDB.open(FILE_DB, 1); r.onupgradeneeded = () => r.result.createObjectStore('files', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
   async function fstore(mode, fn){ const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('files', mode), st = t.objectStore('files'); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); }
+  S.MAX_FILE = MAX_FILE;
   S.files = {
     put: async file => {
       if (file.size > MAX_FILE) throw new Error(file.name + ' is larger than 10 MB.');
@@ -537,13 +556,23 @@
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     const m = S.get('meta', {}); m.lastBackup = Date.now(); rawSet('meta', m); emit({ key: 'meta' });
   };
-  // Reads a Classroom Suite backup file.
+  // Accepts a Classroom Suite backup, or a backup copied from the earlier single-page tracker.
   S.parseBackup = text => {
     let d;
     try { d = JSON.parse(text); } catch (e) { throw new Error("That file isn't a backup file."); }
     if (d && d.app === 'classroom-suite' && d.data) return { data: d.data, exported: d.exported || null, files: d.files || [] };
+    if (d && Array.isArray(d.classes) && d.classes.some(c => Array.isArray(c.tables))) return { data: fromTracker(d), exported: null };
     throw new Error("That file isn't a Classroom Suite backup.");
   };
+  function fromTracker(d) {
+    const tracker = { quarter: d.quarter || 1, week: d.week || 1, menu: d.menu || '', log: Array.isArray(d.log) ? d.log : [], goals: {}, streaks: {}, captains: {} };
+    const classes = d.classes.filter(c => Array.isArray(c.tables)).map(c => {
+      tracker.goals[c.id] = c.goals || {}; tracker.streaks[c.id] = c.streaks || {}; tracker.captains[c.id] = {};
+      const tables = c.tables.map((t, i) => { tracker.captains[c.id][t.id] = t.cap || ''; return { id: t.id, name: t.name, seats: t.seats || 6, open: t.open !== false, color: PALETTE[i % PALETTE.length] }; });
+      return { id: c.id, name: c.name, tables, students: (c.students || []).map(s => ({ id: s.id || S.uid(), name: s.name, tableId: s.t || '' })) };
+    });
+    return { classes, tracker };
+  }
   S.restoreFiles = async files => {
     try {
       await S.files.clear();
@@ -612,6 +641,14 @@
     S.toast('Restored'); setTimeout(() => location.reload(), 500);
   } });
 
+  (function paletteV2(){
+    try {
+      const m = S.get('meta', {}); if (m.palette2) return;
+      const list = S.get('classes', null);
+      if (list) { list.forEach(c => (c.tables || []).forEach(t => { const i = OLD_PALETTE.indexOf(String(t.color).toUpperCase()); if (i > -1) t.color = PALETTE[i]; })); rawSet('classes', list); }
+      m.palette2 = true; rawSet('meta', m);
+    } catch (e) {}
+  })();
 
 
   /* ---------- timer: floats over every page and keeps running between pages ---------- */
@@ -816,6 +853,7 @@
     S.set('agenda', A);
     return merged;
   };
+  S.unmergedDays = () => { const A = S.agendaAll(), cos = S.courses(); return Object.keys(A).filter(d => cos.some(co => (co.classIds || []).some(id => A[d][id]))).length; };
   // true when a period has its own plan on that day, different from its course
   S.agendaIsOwn = (dateKey, classId) => !!((S.agendaAll()[dateKey] || {})[classId]) && !!S.courseOf(classId);
   // Move a row's plans (a course with its sections' own plans, or one class) forward by n school days, from a date on.
@@ -830,6 +868,11 @@
     Object.keys(a).forEach(d => { if (!Object.keys(a[d]).length) delete a[d]; });
     S.set('agenda', a);
     return moved.length;
+  };
+  // Most recent plan for a class before a date, to start from when a lesson runs several days.
+  S.lastAgenda = (dateKey, classId) => {
+    const a = S.agendaAll(); const days = Object.keys(a).filter(k => k < dateKey && a[k][classId]).sort();
+    return days.length ? a[days[days.length - 1]][classId] : null;
   };
   S.saveAgenda = (dateKey, classIds, entry) => {
     const a = S.agendaAll(), day = a[dateKey] = a[dateKey] || {};
@@ -947,6 +990,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   };
 
   /* ---------- countdowns ---------- */
+  S.countdowns = () => S.get('countdowns', []);
   // Days from today to dateStr. schoolOnly counts only days with bells (skips weekends and "No school" days).
   // The moment a countdown ends: its time on that date, or the start of the day if no time was set.
   S.countdownEnd = cd => {
@@ -982,6 +1026,14 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   S.DISPLAY_FONTS = { 'Limelight': 'Deco (Limelight)', 'Playfair Display': 'Classic serif (Playfair)', 'Poppins': 'Modern (Poppins)', 'Jost': 'Clean (Jost)' };
   S.BODY_FONTS = { 'Jost': 'Jost', 'Atkinson Hyperlegible': 'Atkinson Hyperlegible (extra readable)', 'system': "This computer's default" };
   S.appearance = () => Object.assign({ theme: 'emerald', main: '', accent: '', display: '', body: '', name: '' }, S.get('appearance', {}));
+  (function keepExistingLook(){
+    // runs once: anyone already set up before Emerald became the default keeps Streamline
+    try {
+      if (localStorage.getItem('suite:look2')) return;
+      if (!localStorage.getItem('suite:appearance') && localStorage.getItem('suite:classes')) localStorage.setItem('suite:appearance', JSON.stringify({ theme: 'streamline' }));
+      localStorage.setItem('suite:look2', '1');
+    } catch (e) {}
+  })();
   S.suiteName = () => S.appearance().name.trim() || 'Classroom Suite';
   const lumOf = hex => { const h = String(hex).replace('#', ''); if (h.length !== 6) return 0; return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4)).reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0); };
   S.applyAppearance = (doc) => {
@@ -1017,106 +1069,6 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     try { parent.postMessage({ suite: 'close' }, location.origin); } catch (x) {}
   }, true);
 
-  /* ---------- class picker (the same on every page) ---------- */
-  // const CP = Suite.classPicker({ page: 'tracker', get: () => T.cur, set: id => { T.cur = id; save(); }, changed: render });
-  //   CP.current(list)        the class to show: the one in session while Auto is on, otherwise the one you picked
-  //   CP.head(list, c, opts)  the row at the top of the page: Auto and a button per class on the left, and on the right
-  //                           the Projector view button (opts.proj) after any buttons of the page's own (opts.actions).
-  //                           opts.none: no class is marked as chosen (the spinner's custom list, say).
-  // o.can (optional) returns false while the page can't switch classes (mid-spin, say).
-  S.classPicker = o => {
-    const A = S.autoClass(o.page), ok = () => !o.can || o.can() !== false;
-    if (/class=/.test(location.hash)) A.set(false);   // a link to a specific class turns Auto off for this window
-    const CP = {
-      get auto(){ return A.on; },
-      current(list){
-        list = list || S.classes();
-        if (A.on) { const id = S.classNow(), c = id && list.find(x => x.id === id); if (c) return c; }
-        return list.find(c => c.id === o.get()) || list[0] || null;
-      },
-      buttons(list, cur, opts){
-        opts = opts || {};
-        if (list.length < 2) return '';
-        const auto = A.on && !opts.none;
-        return `<nav class="classnav" data-classpick="${S.esc(o.page)}" aria-label="Class periods"><button type="button" data-pick="auto"${auto ? ' aria-current="true"' : ''} title="Follows the bell schedule: shows the class that's in session">Auto</button>${list.map(k =>
-          `<button type="button" data-pick="${S.esc(k.id)}"${opts.none || !cur || k.id !== cur.id ? '' : auto ? ' class="shown" title="Showing now"' : ' aria-current="true"'}>${S.esc(k.name)}</button>`).join('')}</nav>`;
-      },
-      head(list, cur, opts){
-        opts = opts || {};
-        const pick = CP.buttons(list, cur, opts), acts = (opts.actions || '') + (opts.proj ? '<button type="button" class="btn" data-a="proj">Projector view</button>' : '');
-        return pick || acts ? `<div class="pagehead">${pick || '<span></span>'}${acts ? `<span class="pagehead-acts">${acts}</span>` : ''}</div>` : '';
-      }
-    };
-    document.addEventListener('click', e => {
-      const b = e.target.closest('[data-pick]'), nav = b && b.closest('[data-classpick]');
-      if (!nav || nav.dataset.classpick !== o.page || !ok()) return;
-      const id = b.dataset.pick;
-      if (id === 'auto') A.set(true); else { A.set(false); o.set(id); }
-      last = S.classNow();
-      if (o.changed) o.changed(id);
-    });
-    // follow the bells: when the class in session changes, the page redraws
-    let last = S.classNow();
-    setInterval(() => { if (!A.on || !ok()) return; const id = S.classNow(); if (id && id !== last) { last = id; if (o.changed) o.changed('auto'); } }, 15000);
-    return CP;
-  };
-
-  /* ---------- projector view (the same on every page) ---------- */
-  // const PV = Suite.projector(on => { proj = on; render(); });
-  // Any button with data-a="proj" switches it. While it's on, the page has body.proj, an Exit button sits in the corner, and Esc leaves.
-  // opts.start: begin in projector view (default: only when the page was opened with ?proj).
-  // opts.beforeExit: return false to keep Esc from leaving (the page is using Esc for something else right now).
-  // opts.can: return false while the view can't be switched (mid-spin, say).
-  S.projector = (changed, opts) => {
-    opts = opts || {};
-    let on = opts.start === undefined ? S.startInProjector : !!opts.start;
-    const exit = document.createElement('button');
-    exit.type = 'button'; exit.className = 'btn'; exit.id = 'exit-proj'; exit.dataset.a = 'proj'; exit.textContent = 'Exit projector view';
-    document.body.appendChild(exit);
-    const set = v => { on = !!v; document.body.classList.toggle('proj', on); changed(on); };
-    const busy = () => opts.can && opts.can() === false;
-    document.addEventListener('click', e => { if (e.target.closest('[data-a="proj"]') && !busy()) set(!on); });
-    document.addEventListener('keydown', e => {
-      if (e.key !== 'Escape' || !on || busy() || document.querySelector('.suite-dialog') || document.body.classList.contains('timer-open')) return;
-      if (opts.beforeExit && opts.beforeExit() === false) return;
-      set(false);
-    });
-    document.body.classList.toggle('proj', on);
-    return { get on(){ return on; }, set };
-  };
-
-  /* ---------- updates ---------- */
-  // After new files are uploaded, a browser can hold a mix of old and new pages for a few minutes.
-  // Two things keep everything in step:
-  //  1. the first time a new build runs here, it fetches a fresh copy of every file and reloads once;
-  //  2. each page quietly checks the site for a newer build and offers "Update now" when there is one.
-  S.updateNow = async () => {
-    await Promise.all(FILES.map(f => fetch(f, { cache: 'reload' }).catch(() => {})));
-    try { sessionStorage.setItem('classroom-suite-fresh', VERSION); } catch (e) {}
-    location.reload();
-  };
-  (function keepInStep(){
-    if (S.embedded || !/^https?:$/.test(location.protocol) || VERSION === 'dev') return;
-    const KEY = 'classroom-suite-version';   // outside the "suite:" keys, so it isn't part of a backup
-    let seen = null, fresh = null;
-    try { seen = localStorage.getItem(KEY); fresh = sessionStorage.getItem('classroom-suite-fresh'); localStorage.setItem(KEY, VERSION); } catch (e) { return; }
-    const used = seen || localStorage.getItem(PREFIX + 'classes');   // someone who already uses the suite here
-    if (seen !== VERSION && used && fresh !== VERSION) { S.updateNow(); return; }
-    fetch('shared/version.js', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
-      const m = t.match(/SUITE_VERSION\s*=\s*['"]([^'"]+)['"]/);
-      if (!m || m[1] === VERSION) return;
-      const show = () => {
-        if (document.getElementById('suite-update')) return;
-        const el = document.createElement('div'); el.id = 'suite-update'; el.className = 'backup-banner'; el.setAttribute('role', 'alert');
-        el.innerHTML = '<b>A newer version of the suite is ready.</b> <button type="button" class="btn primary small">Update now</button>';
-        el.querySelector('button').addEventListener('click', e => { e.target.disabled = true; e.target.textContent = 'Updating…'; S.updateNow(); });
-        const nav = document.getElementById('suite-nav');
-        if (nav && nav.parentNode) nav.parentNode.insertBefore(el, nav.nextSibling); else document.body.insertBefore(el, document.body.firstChild);
-      };
-      if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);
-    }).catch(() => {});
-  })();
-
   /* ---------- theme ---------- */
   const THEMES = ['auto', 'light', 'dark'];
   function applyTheme() { const t = S.get('theme', 'auto'); if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
@@ -1128,7 +1080,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     if (window.SuiteGuide) return res(window.SuiteGuide);
     const sc = document.createElement('script');
     const me = [...document.scripts].find(x => /shared\/core\.js/.test(x.src));
-    sc.src = me ? me.src.replace(/core\.js/, 'guide.js') : 'shared/guide.js';
+    sc.src = me ? me.src.replace(/core\.js/, 'guide.js') : 'shared/guide.js?v=' + VERSION;
     sc.onload = () => res(window.SuiteGuide || null); sc.onerror = () => res(null);
     document.head.appendChild(sc);
   });
@@ -1147,11 +1099,9 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-11b', items: [
-    'A simpler gear menu: Classes, Settings, and Help.',
-    'Sub plans open from the Planner (Print sub plans) or the Dashboard. All your boards open from Today (All boards).',
-    '"Weekly roster sheets" is now called Attendance sheets, in the Tools menu.',
-    'Every class tool has the same top row: Auto and your classes on the left, Projector view on the right.'] };
+  const NEWS = { id: '2026-11-16', items: [
+    'New: Table Shop. Turn it on for a class in Table points (More → Table Shop). Tables spend points on privileges, pool points for Group Charters, and the shop has its own projector view.',
+    'Earned (the quarter total) is unchanged by spending, so rankings and prizes stay the same. Each card also shows what\'s Available to spend.'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
@@ -1173,8 +1123,7 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
     const draw = () => {
       const b = S.backupStatus();
       const actTool = current === 'activities' ? 'act-' + ((location.hash.match(/tool=(\w+)/) || [])[1] || 'game') : null;
-      const here = current === 'sub' ? 'planner' : current === 'boards' ? 'today' : current;   // pages that belong to another page's part of the menu
-      const isHere = id => id === here || id === actTool;
+      const isHere = id => id === current || id === actTool;
       const office = S.isOffice();
       const on = n => (!office || !['today', 'tracker', 'seating'].includes(n.id)) && (!n.feature || S.feature(n.feature));
       const label = n => n.id === 'tracker' ? S.word('team', { cap: true }) + ' points' : n.id === 'planner' && office ? 'Events' : n.label;
@@ -1191,11 +1140,11 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
         ${current === 'dashboard' ? '' : '<a class="pclock" id="st-pclock" href="index.html" title="Time left in this period (opens the dashboard)" hidden></a>'}
         <button class="btn timer-pill" data-suite="timer" id="st-pill">Timer</button>
         <button class="gear" data-dd="pop" aria-label="Pop out a mini window" title="Pop out a mini window that floats over your slides" aria-expanded="false" aria-haspopup="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></svg></button>
-        <button class="gear${current === 'settings' || current === 'help' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, settings, and help" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
+        <button class="gear${current === 'settings' || current === 'sub' || current === 'help' || current === 'boards' ? ' on' : ''}" data-dd="gear" aria-label="Setup: classes, substitute page, and settings" title="Setup" aria-expanded="false" aria-haspopup="true">${GEAR}</button>
         ${menu('tools', toolItems, 'Tools')}
         ${menu('pop', [{ pop: 'timer', label: 'Timer' }].concat(S.feature('points') && !office ? [{ pop: 'points', label: S.word('team', { cap: true }) + ' points' }] : [], office ? [] : [{ pop: 'name', label: 'Name picker' }]), 'Pop out a mini window')}
-        ${menu('gear', office ? GEAR_MENU.filter(n => n.id !== 'settings') : GEAR_MENU, 'Setup')}
-      </div>${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
+        ${menu('gear', office ? GEAR_MENU.filter(n => !['settings', 'sub', 'boards'].includes(n.id)) : GEAR_MENU, 'Setup')}
+      </div>${window.PAGE_VERSION !== VERSION ? `<div class="backup-banner" role="alert"><b>This page is out of date.</b> Press Ctrl+Shift+R (Cmd+Shift+R on a Mac) to load the newest version.</div>` : ''}${b.due && current !== 'settings' ? `<div class="backup-banner">You haven't backed up ${b.last ? 'in ' + b.days + ' days' : 'yet'}. <a href="settings.html#backup">Back up now</a></div>` : ''}`;
     };
     draw(); timerDraw();
     // First visit in this browser (no classes yet): open the welcome and setup guide.

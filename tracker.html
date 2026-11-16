@@ -9,10 +9,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css">
-<script src="shared/version.js"></script>
-<script src="shared/core.js"></script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-16a">
+<script src="shared/core.js?v=2026-11-16a"></script>
+<script>window.PAGE_VERSION = '2026-11-16a';</script>
 <style>
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.classes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:2px}
+.classes button{font:inherit;font-size:15px;font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--edge);border-radius:999px;padding:6px 18px;cursor:pointer;white-space:nowrap}
+.classes button:hover{background:var(--wash)}
+.classes button[aria-current="true"]{background:var(--sea);border-color:var(--sea);color:var(--on-sea)}
 .statusbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
 .when{font-family:var(--serif);font-size:30px}
 .more{position:relative;display:inline-flex}
@@ -94,8 +99,13 @@ table.plain td.n{text-align:right;font-variant-numeric:tabular-nums}
 .log div{padding:3px 0;border-top:1px solid var(--rule)}
 details.more{margin-top:28px;background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:10px 14px}
 details.more summary{cursor:pointer;font-weight:700}
+.empty{background:var(--sheet);border:1px solid var(--rule);border-radius:20px;padding:28px;max-width:640px}
+.empty h2{margin-bottom:8px}
+#exit-proj{display:none}
 /* projector view */
-body.proj .statusbar,body.proj .panels,body.proj details.more,body.proj .awards,body.proj .cap select{display:none!important}
+body.proj #suite-nav,body.proj .classes,body.proj .statusbar,body.proj .panels,body.proj details.more,body.proj .awards,body.proj .cap select{display:none!important}
+body.proj #exit-proj{display:block;position:fixed;top:12px;right:12px;opacity:.5;z-index:5}
+body.proj #exit-proj:hover,body.proj #exit-proj:focus{opacity:1}
 body.proj .wrap{max-width:none;padding:28px 36px}
 body.proj .proj-title{display:block}
 .proj-title{display:none;font-family:var(--serif);font-size:44px;margin-bottom:22px}
@@ -134,10 +144,41 @@ body.proj .tag{font-size:18px;padding:2px 12px}
 .wrec .wb{font-size:15px;min-height:18px}
 .wrec td.now{background:var(--wash)}.wrec td.now .wt{opacity:.75}
 .wlegend{font-size:13px;color:var(--ink-2);margin:8px 0 0}
+.avail{font:700 13px var(--sans);color:var(--ink-2);text-align:right;margin:-2px 0 2px}.avail b{font-size:16px;color:var(--ink)}.avail.neg b{color:#c4281c}
+.shoppanel{grid-column:1/-1}
+.sh-top{flex-wrap:wrap;gap:8px 12px;align-items:center}.sh-sp{flex:1}
+.sh-bal{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.sh-b{display:grid;grid-template-columns:auto 1fr;gap:0 8px;align-items:center;border:1.5px solid var(--rule);border-radius:10px;padding:6px 10px;min-width:150px}
+.sh-b .sw{grid-row:span 3;width:14px;height:14px;border-radius:50%;background:var(--tc)}.sh-b .neg{color:#c4281c;font-weight:700}
+.sh-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.sh-tier h3{font:700 13px var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin:0 0 6px}
+.sh-item{border:1.5px solid var(--rule);border-radius:10px;padding:8px 10px;margin-bottom:6px;display:grid;gap:6px}
+.sh-n{font-weight:600}.sh-c{font-weight:800;color:var(--land);white-space:nowrap}
+.sh-bar{height:12px;border-radius:999px;background:var(--wash);overflow:hidden}.sh-bar span{display:block;height:100%;background:var(--land);border-radius:999px}.sh-bar.ok span{background:#3f8a55}
+.sh-bar.big{height:18px}
+.sh-bt{font-size:12px;color:var(--ink-2)}.sh-done{font-weight:800;color:#3f8a55}
+.sh-hist{margin-top:12px}.sh-hist summary{cursor:pointer;font-weight:700}.sh-ht td,.sh-ht th{font-size:14px}
+.sh-pick,.sh-pool{display:grid;gap:6px;margin:8px 0}.sh-pick .no{opacity:.55}
+.sh-pr{display:flex;align-items:center;justify-content:space-between;gap:10px}.sh-pr input{width:80px}
+.sh-tot{font-size:16px;margin:4px 0 8px}
+.sh-er{display:flex;gap:6px;align-items:center;margin:4px 0}
+body.shopproj #suite-nav,body.shopproj .backup-banner{display:none}
+.shp{padding:24px 32px;position:relative}
+#shp-exit{position:fixed;top:12px;right:12px;opacity:.5;z-index:5}#shp-exit:hover{opacity:1}
+.shp h1{font-size:44px;margin:0 0 16px}.shp-open{font:800 18px var(--sans);background:#3f8a55;color:#fff;border-radius:999px;padding:4px 14px;vertical-align:8px}
+.shp-bal{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:22px}
+.shp-card{flex:1 1 150px;background:var(--tc);color:var(--tx);border-radius:18px;padding:12px 16px;text-align:center}
+.shp-tn{font:700 20px var(--sans)}.shp-av{font:400 64px/1 var(--serif)}.shp-av.neg{font-style:italic}.shp-l{font:700 13px var(--sans);text-transform:uppercase;letter-spacing:.06em;opacity:.85}.shp-e{font-size:14px;opacity:.8}
+.shp-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.shp-tier h2{font-size:26px;margin:0 0 8px}
+.shp-it{background:var(--sheet);border:2px solid var(--edge);border-radius:14px;padding:10px 14px;margin-bottom:8px}
+.shp-row{display:flex;justify-content:space-between;gap:12px;font-size:19px;font-weight:600}.shp-row b{color:var(--land);font-size:22px}
+.shp-bt{font-size:14px;color:var(--ink-2);margin-top:4px}.shp-done{font:800 18px var(--sans);color:#3f8a55;margin-top:4px}
 </style>
 </head>
 <body>
 <header id="suite-nav"></header>
+<button class="btn" id="exit-proj" data-a="proj">Exit projector view</button>
 <div class="wrap" id="app"></div>
 
 <script>
@@ -153,7 +194,26 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     'Zero reminders needed to transition between activities'
   ].join('\n');
   const DEF = { quarter: 1, week: 1, menu: MENU, log: [], goals: {}, streaks: {}, captains: {}, double: false, cur: null, rotateEvery: 1, captainLog: [], prizes: [] };
-  let T, proj = Suite.startInProjector, picked = null, bump = null, moreOpen = false, showKeys = false;
+  let T, proj = Suite.startInProjector, picked = null, bump = null, moreOpen = false, showKeys = false, shopProj = false, histQ = null;
+  /* ---------- Table Shop (per class): Earned = the quarter total; Available = Earned minus what's been spent this quarter ---------- */
+  const SHOP_MENU = () => [
+    { id: 'm1', tier: 'Economy', name: 'Skip-two-questions cards (one per table member)', cost: 5 },
+    { id: 'm2', tier: 'Economy', name: 'Cold-call immunity cards (one per table member)', cost: 5 },
+    { id: 'm3', tier: 'Economy', name: 'Drawing on the board (Friday)', cost: 5 },
+    { id: 'm4', tier: 'Economy', name: 'Geography games (Friday)', cost: 5 },
+    { id: 'm5', tier: 'Business', name: 'Free time in the pod (Friday)', cost: 10 },
+    { id: 'm6', tier: 'Business', name: 'Write the next warm-up question', cost: 10 },
+    { id: 'm7', tier: 'First Class', name: 'Assignment pass cards (one per table member)', cost: 20 },
+    { id: 'm8', tier: 'First Class', name: 'Sit with a friend anywhere for one day', cost: 20 },
+    { id: 'c1', tier: 'Group Charters', name: 'Game period', cost: 50 },
+    { id: 'c2', tier: 'Group Charters', name: 'Unit deep dive (class picks the topic)', cost: 75 },
+    { id: 'c3', tier: 'Group Charters', name: 'Wild card day (any history topic from a list)', cost: 100 }];
+  const TIERS = ['Economy', 'Business', 'First Class', 'Group Charters'];
+  const shopOf = cid => { T.shop = T.shop || {}; return T.shop[cid] || null; };
+  const shopOn = cid => !!(shopOf(cid) && shopOf(cid).on);
+  const isCharter = it => it.tier === 'Group Charters';
+  const spent = (cid, tid, q) => ((shopOf(cid) || {}).buys || []).filter(b => b.q === (q || T.quarter)).reduce((n, b) => n + (b.parts || []).filter(x => x.t === tid).reduce((m, x) => m + x.amt, 0), 0);
+  const avail = (cid, tid) => pts(cid, tid) - spent(cid, tid);
 
   function load(){ T = Object.assign({}, DEF, Suite.get('tracker', {})); ['goals','streaks','captains'].forEach(k => { T[k] = T[k] || {}; }); T.log = T.log || []; T.captainLog = T.captainLog || []; T.prizes = T.prizes || []; if (T.rotateEvery == null) T.rotateEvery = 1; }
   function save(){ Suite.set('tracker', T); }
@@ -161,9 +221,11 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   { const m = location.hash.match(/class=([\w-]+)/); if (m) T.cur = m[1]; }
 
   const classes = () => Suite.classes();
-  const CP = Suite.classPicker({ page: 'tracker', get: () => T.cur, set: id => { T.cur = id; save(); }, changed: () => render() });
-  const curClass = list => CP.current(list);
-  Suite.projector(on => { proj = on; render(); });
+  const AUTO = Suite.autoClass('tracker');
+  if (/class=/.test(location.hash)) AUTO.set(false);   // a link to a specific class turns Auto off for this window
+  const curClass = list => { if (AUTO.on) { const id = Suite.classNow(); const c = id && list.find(x => x.id === id); if (c) return c; } return list.find(c => c.id === T.cur) || list[0] || null; };
+  let lastAuto = null;
+  setInterval(() => { if (!AUTO.on) return; const id = Suite.classNow(); if (id && id !== lastAuto) { lastAuto = id; render(); } }, 15000);
   const pts = (cid, tid, w) => T.log.reduce((a, e) => a + (e.c === cid && e.t === tid && e.q === T.quarter && (w === undefined || e.w === w) ? e.d : 0), 0);
   const gkey = (tid, w) => tid + '|' + T.quarter + '|' + (w == null ? T.week : w);
   const leaders = rows => { if (!rows.length) return []; const top = Math.max(...rows.map(r => r[1])); return top > 0 ? rows.filter(r => r[1] === top).map(r => r[0]) : []; };
@@ -185,16 +247,55 @@ body.proj .tag{font-size:18px;padding:2px 12px}
   const names = (c, ids) => ids && ids.length ? ids.map(i => esc(tname(c, i))).join(', ') : '<span class="muted">None yet</span>';
 
   const W = (k, o) => Suite.word(k, o);
+
+  function shopPanel(c){
+    const S = shopOf(c.id), act = Suite.activeTables(c), q = T.quarter, buys = (S.buys || []).filter(b => b.q === q);
+    const charterDone = id => buys.some(b => b.itemId === id && b.kind === 'charter');
+    const pooled = act.reduce((n, t) => n + Math.max(0, avail(c.id, t.id)), 0);
+    const tierRows = TIERS.map(tier => { const items = (S.menu || []).filter(it => it.tier === tier); if (!items.length) return '';
+      return `<div class="sh-tier"><h3>${esc(tier)}</h3>${items.map(it => isCharter(it) ? (() => { const done = charterDone(it.id), pct = Math.min(100, Math.round(pooled / it.cost * 100));
+          return `<div class="sh-item ch"><div class="sh-n">${esc(it.name)} <span class="sh-c">${it.cost} pts</span></div>
+            ${done ? '<div class="sh-done">Purchased!</div>' : `<div class="sh-bar${pooled >= it.cost ? ' ok' : ''}"><span style="width:${pct}%"></span></div><div class="sh-bt">${Math.min(pooled, it.cost)} / ${it.cost} if every ${esc(W('team'))} pooled</div>`}
+            ${done ? '' : `<button class="btn small" data-a="shbuyc" data-id="${esc(it.id)}"${S.open ? '' : ' disabled title="The shop is closed"'}>Buy with pooled points…</button>`}</div>`; })()
+        : `<div class="sh-item"><div class="sh-n">${esc(it.name)} <span class="sh-c">${it.cost} pts</span></div><button class="btn small" data-a="shbuy" data-id="${esc(it.id)}"${S.open ? '' : ' disabled title="The shop is closed"'}>Buy…</button></div>`).join('')}</div>`; }).join('');
+    const qs = [...new Set((S.buys || []).map(b => b.q).concat([q]))].sort((a, b) => b - a), hq = histQ && qs.includes(histQ) ? histQ : q;
+    const hist = (S.buys || []).filter(b => b.q === hq).slice().reverse();
+    const tn = id => (c.tables.find(t => t.id === id) || { name: 'Removed' }).name;
+    return `<section class="panel shoppanel" aria-labelledby="h-shop"><h2 id="h-shop">Table Shop</h2>
+      <div class="bar sh-top"><label class="sh-open"><input type="checkbox" data-c="shopopen"${S.open ? ' checked' : ''}> <b>Shop open</b></label><span class="muted small">${S.open ? 'Buying is on.' : 'Turn on for the Friday shop window to allow buying.'}</span>
+        <span class="sh-sp"></span><button class="btn small" data-a="shproj">Shop projector view</button><button class="btn small quiet" data-a="shedit">Edit menu</button></div>
+      <div class="sh-bal">${act.map(t => { const a = avail(c.id, t.id); return `<div class="sh-b" style="--tc:${esc(t.color)}"><span class="sw"></span><b>${esc(t.name)}</b><span class="${a < 0 ? 'neg' : ''}">${a} available</span><span class="muted small">${pts(c.id, t.id)} earned</span></div>`; }).join('')}</div>
+      <div class="sh-menu">${tierRows}</div>
+      <details class="sh-hist"${hist.length ? '' : ''}><summary>Purchase history <span class="muted small">(${hist.length} this ${hq === q ? 'quarter' : 'Q' + hq})</span></summary>
+        <div class="bar" style="margin:6px 0">${qs.length > 1 ? `<select data-c="shq">${qs.map(x => `<option value="${x}"${x === hq ? ' selected' : ''}>Quarter ${x}${x === q ? ' (now)' : ''}</option>`).join('')}</select>` : ''}${hq === q && buys.length ? '<button class="btn small quiet danger" data-a="shundo">Undo last purchase</button>' : ''}</div>
+        ${hist.length ? `<table class="plain sh-ht"><thead><tr><th>When</th><th>Item</th><th>${esc(W('team', { cap: true }))}</th><th>Cost</th><th>Note</th></tr></thead><tbody>${hist.map(b => `<tr><td>${new Date(b.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td>${esc(b.name)}${b.kind === 'charter' ? ' <span class="muted small">(charter)</span>' : ''}</td><td>${b.parts.map(x => esc(tn(x.t)) + (b.parts.length > 1 ? ' ' + x.amt : '')).join(', ')}</td><td>${b.cost}</td><td>${esc(b.note || '')}</td></tr>`).join('')}</tbody></table>` : '<p class="muted small">No purchases yet.</p>'}
+      </details></section>`;
+  }
+  function shopProjHtml(c){
+    const S = shopOf(c.id), act = Suite.activeTables(c), q = T.quarter, buys = (S.buys || []).filter(b => b.q === q);
+    const pooled = act.reduce((n, t) => n + Math.max(0, avail(c.id, t.id)), 0);
+    return `<div class="shp"><button class="btn" data-a="shproj" id="shp-exit">Exit shop view</button>
+      <h1>Table Shop${S.open ? ' <span class="shp-open">OPEN</span>' : ''}</h1>
+      <div class="shp-bal">${act.slice().sort((a, b) => avail(c.id, b.id) - avail(c.id, a.id)).map(t => { const a = avail(c.id, t.id); return `<div class="shp-card" style="--tc:${esc(t.color)};--tx:${Suite.textOn(t.color)}"><div class="shp-tn">${esc(t.name)}</div><div class="shp-av${a < 0 ? ' neg' : ''}">${a}</div><div class="shp-l">available</div><div class="shp-e">${pts(c.id, t.id)} earned</div></div>`; }).join('')}</div>
+      <div class="shp-menu">${TIERS.map(tier => { const items = (S.menu || []).filter(it => it.tier === tier); if (!items.length) return '';
+        return `<div class="shp-tier"><h2>${esc(tier)}</h2>${items.map(it => isCharter(it) ? (() => { const done = buys.some(b => b.itemId === it.id && b.kind === 'charter'), pct = Math.min(100, Math.round(pooled / it.cost * 100));
+            return `<div class="shp-it ch"><div class="shp-row"><span>${esc(it.name)}</span><b>${it.cost}</b></div>${done ? '<div class="shp-done">Purchased!</div>' : `<div class="sh-bar big${pooled >= it.cost ? ' ok' : ''}"><span style="width:${pct}%"></span></div><div class="shp-bt">${Math.min(pooled, it.cost)} / ${it.cost} if everyone pooled</div>`}</div>`; })()
+          : `<div class="shp-it"><div class="shp-row"><span>${esc(it.name)}</span><b>${it.cost}</b></div></div>`).join('')}</div>`; }).join('')}</div></div>`;
+  }
+
   function render(){
     const useCaps = Suite.feature('captains'), useGoals = Suite.feature('goals');
     document.body.classList.toggle('nocaps', !useCaps);
     document.body.classList.toggle('nogoals', !useGoals);
+    document.body.classList.toggle('proj', proj);
     const list = classes();
     const c = curClass(list);
+    document.body.classList.toggle('shopproj', !!(shopProj && c && shopOn(c.id)));
+    if (shopProj && c && shopOn(c.id)) { $('#app').innerHTML = shopProjHtml(c); return; }
     if (!c) {
-      $('#app').innerHTML = `<div class="empty-note"><h2>Add your classes first</h2>
-        <p>The tracker uses the classes, tables, and rosters you set up once in Classes.</p>
-        <a class="btn primary" href="settings.html">Go to Classes</a></div>`;
+      $('#app').innerHTML = `<div class="empty"><h2>Add your classes first</h2>
+        <p>The tracker uses the classes, tables, and rosters you set up once in Classes & settings.</p>
+        <a class="btn primary" href="settings.html">Go to Classes & settings</a></div>`;
       return;
     }
     T.cur = c.id;
@@ -232,6 +333,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
                   ${capName && !members.some(s => s.name === capName) ? `<option selected>${esc(capName)}</option>` : ''}
                 </select>${members.length > 1 ? `<button class="btn quiet nextcap" data-a="nextcap" data-id="${esc(t.id)}" title="Pick the next captain for ${esc(t.name)}">Next</button>` : ''}</div>
             </div>
+            ${shopOn(c.id) ? (() => { const a = avail(c.id, t.id); return `<div class="avail${a < 0 ? ' neg' : ''}" title="Earned this quarter minus what's been spent in the Table Shop">Available <b>${a}</b></div>`; })() : ''}
             <div class="score" aria-label="${pts(c.id, t.id)} points this quarter, ${wk} this week"><div class="wkbox"><b>${wk}</b><span>this week</span></div><div class="qbig"><span class="qn">${pts(c.id, t.id)}</span><span class="ql">quarter</span></div></div>
           </div>
           <div class="tags">${tags}</div>
@@ -278,12 +380,13 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     const recent = T.log.filter(e => e.c === c.id).slice(-30).reverse();
 
     $('#app').innerHTML = `
-      ${CP.head(list, c, { proj: true })}
+      <nav class="classes" aria-label="Class periods"><button data-a="pick" data-id="auto"${AUTO.on ? ' aria-current="true"' : ''} title="Follows the bell schedule">Auto</button>${list.map(k => `<button data-a="pick" data-id="${esc(k.id)}"${!AUTO.on && k.id === c.id ? ' aria-current="true"' : ''}>${esc(k.name)}</button>`).join('')}</nav>
       <div class="statusbar">
         <div class="when">Quarter ${T.quarter}, week ${T.week}</div>
         <div class="bar">
           ${T.double ? '<button class="btn double-on" data-a="double" aria-pressed="true" title="Turn double points off">Double points on</button>' : ''}
           <button class="btn" data-a="undo">Undo last</button>
+          <button class="btn" data-a="proj">Projector view</button>
           <span class="more"><button class="btn" data-a="more" aria-expanded="${moreOpen}" aria-haspopup="true">More<i class="caret" aria-hidden="true"></i></button>
             <span class="moremenu"${moreOpen ? '' : ' hidden'} role="menu">
               <button role="menuitem" data-a="double">${T.double ? 'Turn off double points' : 'Turn on double points'}</button>
@@ -296,9 +399,10 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       ${showKeys ? `<div class="keys hint">Press a ${esc(W('team'))}'s number, then <kbd>+</kbd> or <kbd>−</kbd>, <kbd>C</kbd> clean +2, <kbd>M</kbd> mostly clean +1, <kbd>P</kbd> 3-point challenge. <kbd>U</kbd> undo, <kbd>D</kbd> double points, <kbd>Esc</kbd> deselect, <kbd>?</kbd> show or hide this.</div>` : ''}
       <div class="proj-title">${esc(c.name)}<span>Quarter ${T.quarter}, week ${T.week}${T.double ? ' · Double points!' : ''}</span></div>
       ${act.length ? `<div class="cards room-grid" style="--cols:${lay.cols}">${cards}</div>`
-        : `<div class="empty-note"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
+        : `<div class="empty"><h2>No tables are in use for ${esc(c.name)}</h2><p>Turn tables on in Classes & settings.</p><a class="btn primary" href="settings.html#class=${esc(c.id)}">Open settings</a></div>`}
 
       <div class="panels">
+        ${shopOn(c.id) ? shopPanel(c) : ''}
         <section class="panel" aria-labelledby="h-prizes"><h2 id="h-prizes">Prizes</h2>
           <div class="scroll"><table class="plain">
             <thead><tr><th>Award</th><th>This week so far</th><th>${prev >= 1 ? 'Week ' + prev + ' final' : 'Last week'}</th></tr></thead>
@@ -366,6 +470,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
             <option value="fair"${T.capOrder !== 'seat' ? ' selected' : ''}>Next: whoever has had the fewest turns</option>
             <option value="seat"${T.capOrder === 'seat' ? ' selected' : ''}>Next: the next seat at each table</option>
           </select>
+          <label class="rv" style="display:flex;gap:8px;margin-top:16px"><input type="checkbox" data-c="shopon"${shopOn(c.id) ? ' checked' : ''}> <span><b>Table Shop for ${esc(c.name)}</b><br><span class="hint" style="margin:0">Tables spend points on privileges. Only this class; others are unchanged.</span></span></label>
           <label style="display:block;margin-top:16px"><b>Top table each week goes to</b>
             <select data-c="topby" style="display:block;margin-top:4px"><option value="quarter"${byQuarter() ? ' selected' : ''}>The highest quarter total so far</option><option value="week"${byQuarter() ? '' : ' selected'}>The most points that week</option></select></label>
           <p class="hint" style="margin-top:2px">Most improved is always the biggest jump from one week to the next. Weeks you've already ended keep their winners.</p>
@@ -535,7 +640,54 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (el.dataset.a === 'keys') { showKeys = !showKeys; render(); return; }
     const a = el.dataset.a, id = el.dataset.id;
     const c = curClass(classes());
-    if (!c) return;
+    if (a === 'pick') { if (id === 'auto') AUTO.set(true); else { AUTO.set(false); T.cur = id; save(); } render(); }
+    else if (a === 'proj') { proj = !proj; render(); }
+    else if (a === 'shproj') { shopProj = !shopProj; render(); }
+    else if (a === 'shundo') { const c = curClass(classes()), S = shopOf(c.id), q = T.quarter, i = (S.buys || []).map(b => b.q).lastIndexOf(q); if (i < 0) return; const b = S.buys[i];
+      if (!await Suite.dialog({ title: 'Undo the last purchase?', body: `${b.name} (${b.cost} pts) goes back to the ${W('team', { plural: true })} that paid.`, ok: 'Undo it' })) return; S.buys.splice(i, 1); save(); render(); Suite.toast('Purchase undone'); }
+    else if (a === 'shbuy') { const c = curClass(classes()), S = shopOf(c.id), it = S.menu.find(x => x.id === el.dataset.id); if (!it || !S.open) return;
+      const act = Suite.activeTables(c), back = document.createElement('div'); back.className = 'suite-dialog-back';
+      back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>Buy: ${esc(it.name)}</h2><p>${it.cost} points. Which ${esc(W('team'))} is buying?</p>
+        <div class="sh-pick">${act.map(t => { const av = avail(c.id, t.id), ok = av >= it.cost; return `<label class="rv${ok ? '' : ' no'}"><input type="radio" name="shb" value="${esc(t.id)}"${ok ? '' : ' disabled'}> ${esc(t.name)} <span class="muted small">(${av} available${ok ? '' : ': not enough'})</span></label>`; }).join('')}</div>
+        <label class="lb" for="shn">Note <span class="muted small">(optional)</span></label><input class="field" id="shn" style="width:100%">
+        <div class="suite-dialog-actions"><button class="btn" data-r="no">Cancel</button><button class="btn primary" data-r="yes">Buy it</button></div></div>`;
+      document.body.appendChild(back);
+      back.addEventListener('click', ev => { if (ev.target === back || ev.target.closest('[data-r="no"]')) return back.remove(); if (!ev.target.closest('[data-r="yes"]')) return;
+        const r = back.querySelector('input[name="shb"]:checked'); if (!r) { Suite.toast('Pick a ' + W('team') + ' that can afford it'); return; }
+        if (avail(c.id, r.value) < it.cost) { Suite.toast('Not enough points available'); return; }
+        S.buys = S.buys || []; S.buys.push({ id: Suite.uid(), q: T.quarter, at: Date.now(), kind: 'item', itemId: it.id, name: it.name, cost: it.cost, note: back.querySelector('#shn').value.trim(), parts: [{ t: r.value, amt: it.cost }] });
+        back.remove(); save(); render(); Suite.toast(`${(c.tables.find(t => t.id === r.value) || {}).name} bought ${it.name}`); }); }
+    else if (a === 'shbuyc') { const c = curClass(classes()), S = shopOf(c.id), it = S.menu.find(x => x.id === el.dataset.id); if (!it || !S.open) return;
+      const act = Suite.activeTables(c), back = document.createElement('div'); back.className = 'suite-dialog-back';
+      back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>Group Charter: ${esc(it.name)}</h2><p>Price: <b>${it.cost}</b> points. Enter how much each ${esc(W('team'))} puts in; the total must equal the price.</p>
+        <div class="sh-pool">${act.map(t => { const av = Math.max(0, avail(c.id, t.id)); return `<label class="sh-pr"><span>${esc(t.name)} <span class="muted small">(${avail(c.id, t.id)} available)</span></span><input class="field num" type="number" min="0" max="${av}" step="1" value="0" data-pt="${esc(t.id)}" data-max="${av}"${av ? '' : ' disabled'}></label>`; }).join('')}</div>
+        <div class="sh-tot">Total: <b id="sh-sum">0</b> / ${it.cost}</div>
+        <label class="lb" for="shn">Note <span class="muted small">(optional)</span></label><input class="field" id="shn" style="width:100%">
+        <div class="suite-dialog-actions"><button class="btn" data-r="no">Cancel</button><button class="btn primary" data-r="yes" disabled>Buy the charter</button></div></div>`;
+      document.body.appendChild(back);
+      const upd = () => { const inputs = [...back.querySelectorAll('[data-pt]')], sum = inputs.reduce((n, x) => n + (Math.max(0, Math.min(+x.dataset.max, parseInt(x.value, 10) || 0))), 0); back.querySelector('#sh-sum').textContent = sum; back.querySelector('[data-r="yes"]').disabled = sum !== it.cost; };
+      back.addEventListener('input', upd);
+      back.addEventListener('click', ev => { if (ev.target === back || ev.target.closest('[data-r="no"]')) return back.remove(); if (!ev.target.closest('[data-r="yes"]')) return;
+        const parts = [...back.querySelectorAll('[data-pt]')].map(x => ({ t: x.dataset.pt, amt: parseInt(x.value, 10) || 0 })).filter(x => x.amt > 0);
+        if (parts.some(x => x.amt > avail(c.id, x.t))) { Suite.toast('A ' + W('team') + ' is putting in more than it has'); return; }
+        if (parts.reduce((n, x) => n + x.amt, 0) !== it.cost) { Suite.toast('The amounts must add up to ' + it.cost); return; }
+        S.buys = S.buys || []; S.buys.push({ id: Suite.uid(), q: T.quarter, at: Date.now(), kind: 'charter', itemId: it.id, name: it.name, cost: it.cost, note: back.querySelector('#shn').value.trim(), parts });
+        back.remove(); save(); render(); Suite.toast('Charter purchased: ' + it.name); }); }
+    else if (a === 'shedit') { const c = curClass(classes()), S = shopOf(c.id), back = document.createElement('div'); back.className = 'suite-dialog-back';
+      const draw = () => { back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true" style="max-width:640px"><h2>Edit the shop menu</h2>
+        ${S.menu.map((it, i) => `<div class="sh-er"><select data-mi="${i}" data-mf="tier">${TIERS.map(t => `<option${t === it.tier ? ' selected' : ''}>${t}</option>`).join('')}</select><input class="field" data-mi="${i}" data-mf="name" value="${esc(it.name)}" style="flex:1;min-width:0"><input class="field num" type="number" min="1" data-mi="${i}" data-mf="cost" value="${it.cost}" style="width:70px"><button class="btn quiet danger small" data-mrm="${i}" aria-label="Remove">×</button></div>`).join('')}
+        <div class="bar" style="margin-top:8px"><button class="btn small" data-madd="1">Add an item</button><button class="btn small quiet" data-mreset="1">Reset to the original menu</button></div>
+        <p class="hint">Past purchases keep the name and price they had when bought.</p>
+        <div class="suite-dialog-actions"><button class="btn primary" data-mdone="1">Done</button></div></div>`; };
+      document.body.appendChild(back); draw();
+      back.addEventListener('change', ev => { const i = ev.target.dataset.mi; if (i === undefined) return; const it = S.menu[+i], f = ev.target.dataset.mf; if (f === 'cost') it.cost = Math.max(1, parseInt(ev.target.value, 10) || 1); else it[f] = ev.target.value.trim() || it[f]; save(); });
+      back.addEventListener('click', async ev => { const t = ev.target;
+        if (t === back || t.closest('[data-mdone]')) { back.remove(); render(); return; }
+        if (t.closest('[data-madd]')) { S.menu.push({ id: 'm' + Suite.uid(), tier: 'Economy', name: 'New item', cost: 5 }); save(); draw(); }
+        else if (t.closest('[data-mrm]')) { S.menu.splice(+t.closest('[data-mrm]').dataset.mrm, 1); save(); draw(); }
+        else if (t.closest('[data-mreset]')) { S.menu = SHOP_MENU(); save(); draw(); } }); }
+
+    else if (!c) return;
     else if (a === 'aw') { award(c, id, +el.dataset.d, el.dataset.note || ''); }
     else if (a === 'double') { T.double = !T.double; save(); render(); }
     else if (a === 'undo') { undoLast(c); }
@@ -560,7 +712,7 @@ body.proj .tag{font-size:18px;padding:2px 12px}
       Suite.toast('Week ' + T.week + ' started' + (rotate ? '. New captains are up.' : ''));
     }
     else if (a === 'newq') {
-      if (!await Suite.dialog({ title: 'Start quarter ' + (T.quarter + 1) + '?', body: 'Every class goes back to week 1 with zero points, and streaks reset. Download a backup first if you want a record of this quarter.', ok: 'Start new quarter', danger: true })) return;
+      if (!await Suite.dialog({ title: 'Start quarter ' + (T.quarter + 1) + '?', body: 'Every class goes back to week 1 with zero points, and streaks reset. Table Shop balances start fresh too; this quarter\'s purchase history is kept. Download a backup first if you want a record of this quarter.', ok: 'Start new quarter', danger: true })) return;
       classes().forEach(k => recordPrizes(k, 'quarter', leaders(Suite.activeTables(k).map(t => [t.id, pts(k.id, t.id)])), T.week));
       T.quarter++; T.week = 1; T.streaks = {}; T.double = false; save(); render();
     }
@@ -577,6 +729,9 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     if (!c || !k) return;
     if (k === 'rot') { T.rotateEvery = +el.value; save(); render(); return; }
     if (k === 'caporder') { T.capOrder = el.value; save(); render(); return; }
+    if (k === 'shopon') { const c = curClass(classes()); T.shop = T.shop || {}; T.shop[c.id] = Object.assign({ on: false, open: false, menu: SHOP_MENU(), buys: [] }, T.shop[c.id] || {}); T.shop[c.id].on = el.checked; save(); render(); Suite.toast(el.checked ? 'Table Shop on for ' + c.name : 'Table Shop off (its history is kept)'); return; }
+    if (k === 'shopopen') { const c = curClass(classes()); shopOf(c.id).open = el.checked; save(); render(); Suite.toast(el.checked ? 'Shop open' : 'Shop closed'); return; }
+    if (k === 'shq') { histQ = +el.value; render(); return; }
     if (k === 'topby') { T.topBy = el.value; rescore(); save(); render(); Suite.toast(el.value === 'week' ? 'Top table: most points that week' : 'Top table: highest quarter total'); return; }
     if (k === 'given') { const x = T.prizes.find(p => p.id === id); if (x) { x.given = el.checked; save(); render(); } return; }
     if (k === 'cap') { (T.captains[c.id] = T.captains[c.id] || {})[id] = el.value; }
@@ -590,6 +745,8 @@ body.proj .tag{font-size:18px;padding:2px 12px}
     save(); render();
   });
 
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && shopProj && !document.querySelector('.suite-dialog')) { shopProj = false; render(); return; } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && proj && !document.querySelector('.suite-dialog')) { proj = false; render(); } });
   window.addEventListener('suite:change', e => { if (e.detail && (e.detail.external || e.detail.key === '*')) { load(); render(); } });
 
   function fitCards(){
