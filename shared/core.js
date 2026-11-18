@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-16a';   // bump with every build; pages check they match
+  const VERSION = '2026-11-18a';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -350,13 +350,13 @@
     });
   };
   // Copy a class's (or course's) whole day from the most recent earlier day that has anything: the plan AND what students see on Today.
-  S.copyPrevDay = (key, dateKey) => {
+  S.copyPrevDay = (key, dateKey, opts = {}) => {
     const A = S.agendaAll(), T = S.get('today', {}) || {}, days = T.days || {};
     const from = [...new Set(Object.keys(A).filter(d => d < dateKey && A[d][key]).concat(Object.keys(days).filter(d => d < dateKey && days[d][key])))].sort().pop();
     if (!from) return null;
     const snap = S.snapshot(['agenda', 'today']);
     const plan = (A[from] || {})[key]; if (plan) S.saveAgenda(dateKey, [key], JSON.parse(JSON.stringify(plan)));
-    const rec = (days[from] || {})[key];
+    const rec = opts.boards === false ? null : (days[from] || {})[key];
     if (rec) { const T2 = S.get('today', {}) || {}; T2.days = T2.days || {}; T2.days[dateKey] = T2.days[dateKey] || {}; T2.days[dateKey][key] = JSON.parse(JSON.stringify(rec)); delete T2.days[dateKey][key].dateText; S.set('today', T2); }
     return { from, plan: !!plan, boards: !!rec, snap };
   };
@@ -1099,9 +1099,10 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-16', items: [
-    'New: Table Shop. Turn it on for a class in Table points (More → Table Shop). Tables spend points on privileges, pool points for Group Charters, and the shop has its own projector view.',
-    'Earned (the quarter total) is unchanged by spending, so rankings and prizes stay the same. Each card also shows what\'s Available to spend.'] };
+  const NEWS = { id: '2026-11-18', items: [
+    'Planner: Copy from the day before asks whether to copy the plan only, or the plan and the boards. Copy week and Repeat weekly have the same choice.',
+    'Planner: each day\'s editor shows the boards students will see, with checkboxes to show or hide them and Reset to usual boards. Days with changed boards get a "Boards changed" tag.',
+    'Table Shop: tables spend points on privileges (turn it on per class in Table points → More).'] };
   function showNews(){
     if (S.get('newsSeen') === NEWS.id || document.getElementById('suite-news')) return;
     if (!S.classes().length) { S.set('newsSeen', NEWS.id); return; }
