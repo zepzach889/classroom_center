@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-19a';   // bump with every build; pages check they match
+  const VERSION = '2026-11-19b';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -353,8 +353,9 @@
   // ---- Today boards carry forward: each day starts from the day before (minus just-this-day and repeating boards) ----
   S.mergeDay = (under, rec) => Object.assign({}, under, rec, { boards: Object.assign({}, (under || {}).boards || {}, rec.boards || {}),
     lineup: rec.lineup || (under || {}).lineup, haveOut: rec.haveOut || (under || {}).haveOut, haveOutFmt: rec.haveOutFmt || (under || {}).haveOutFmt });
-  S.carryOf = r => { const once = r.once || [], skip = t => once.includes(t) || /^c-rep-/.test(t), boards = {};
-    Object.keys(r.boards || {}).forEach(t => { if (!skip(t)) boards[t] = r.boards[t]; });
+  S.BUILT_IN_BOARDS = ['welcome', 'warmup', 'agenda', 'due', 'returned'];
+  S.carryOf = r => { const once = r.once || [], skip = t => once.includes(t) || /^c-rep-/.test(t), boards = {}, keep = new Set((r.lineup || []).concat(S.BUILT_IN_BOARDS));
+    Object.keys(r.boards || {}).forEach(t => { if (!skip(t) && keep.has(t)) boards[t] = r.boards[t]; });
     const out = Object.assign({}, r, { lineup: (r.lineup || []).filter(t => !skip(t)), boards, slideLink: '' }); delete out.once; delete out.dateText; return out; };
   S.dayState = (T, date, keys, usual) => {
     const days = (T && T.days) || {}, pick = d => keys.map(k => (days[d] || {})[k]).find(Boolean);
@@ -1112,7 +1113,8 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   }
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
-  const NEWS = { id: '2026-11-19', items: [
+  const NEWS = { id: '2026-11-19b', items: [
+    'Fixed: saving in the Planner could turn old boards back on. If any days were affected, the Planner shows a notice with a Fix them button.',
     'Today boards now carry forward: each day starts with the day before\'s boards and wording, so small changes stick without copying. Mark a board "Just this day" to keep it from carrying over.',
     'Planner: each day has a Boards section below the plan. Add saved boards, the class\'s other boards, built-in boards, or a new board; reorder, edit, or remove them; or Match the day before.',
     'Copy from the day before now copies just the plan, since boards carry over on their own.'] };

@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-19a">
-<script src="shared/core.js?v=2026-11-19a"></script>
-<script>window.PAGE_VERSION = '2026-11-19a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-19b">
+<script src="shared/core.js?v=2026-11-19b"></script>
+<script>window.PAGE_VERSION = '2026-11-19b';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -110,6 +110,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
 .bdlist{margin:0 0 8px;padding-left:1.4em;display:grid;gap:3px}
 .bdlist li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}.bdlist .bn{flex:1;min-width:140px;font-weight:600}
 .bdlist .once{display:inline-flex;gap:3px;align-items:center;font-size:12px;color:var(--ink-2)}
+.bugfix{background:#fde7e2;color:#5a1c10;border:2px solid #c4513a;border-radius:12px;padding:10px 14px;margin:10px 0;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
 </style>
 </head>
 <body>
@@ -167,7 +168,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
             return `<span class="ubar" style="--uc:${esc(un.color || '#6a8caf')}" title="${esc(un.name)}">${first ? esc(un.name) : ''}</span>`; })()}
           ${e ? summary(e) : own.length || boardHasText(todayRec(k, r.key)) ? '' : '+ Plan'}${(() => { const L = lineupInfo(k, r.key); return L.changed ? '<span class="bdtag" title="This day\'s boards changed from the day before">Boards changed</span>' : ''; })()}${boardHasText(todayRec(k, r.key)) ? '<span class="tday" title="Student boards are ready for the Today screen">Today ready</span>' : ''}${own.length ? `<span class="own" title="These periods have their own plan this day instead of the course plan">Own plan: ${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))}</span>` : ''}</button></td>`;
       }).join('')}</tr>`).join('');
+    const BUG = Suite.isOffice() ? [] : bugDays();
     $('#app').innerHTML = `
+      ${BUG.length ? `<div class="bugfix noprint"><b>Some days picked up extra boards because of a bug</b> (it's fixed now): ${[...new Set(BUG.map(x => parse(x.d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })))].slice(0, 8).join(', ')}${BUG.length > 8 ? '…' : ''}. <button class="btn small primary" data-a="bugfix">Fix them</button> <span class="small">This removes the boards that came back by mistake. Anything else on those days stays.</span></div>` : ''}
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
         ${Suite.isOffice() ? '<div class="bar"><button class="btn" data-a="daysoff">Days off</button><button class="btn primary" data-a="print">Print this week</button></div>' : ''}<div class="bar"${Suite.isOffice() ? ' hidden' : ''}><button class="btn" data-a="copyweek" title="Copy this week's plans to another week">Copy week…</button><button class="btn" data-a="units">Units</button><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
@@ -197,8 +200,22 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   }
   function ensureRec(L, date, key){
     L.TS.days = L.TS.days || {}; L.TS.days[date] = L.TS.days[date] || {};
-    if (!L.TS.days[date][key]) L.TS.days[date][key] = JSON.parse(JSON.stringify({ lineup: L.cur, haveOut: L.state.haveOut || [], haveOutFmt: L.state.haveOutFmt || {}, boards: L.boardsAll, slideLink: '' }));
-    const r = L.TS.days[date][key]; if (!r.lineup) r.lineup = L.cur.slice(); r.boards = Object.assign({}, L.boardsAll, r.boards || {}); return r;
+    const pick = ids => { const o = {}; ids.forEach(t => { if (L.boardsAll[t]) o[t] = L.boardsAll[t]; }); return o; };
+    if (!L.TS.days[date][key]) L.TS.days[date][key] = JSON.parse(JSON.stringify({ lineup: L.cur, haveOut: L.state.haveOut || [], haveOutFmt: L.state.haveOutFmt || {}, boards: pick(L.cur.concat(Suite.BUILT_IN_BOARDS)), slideLink: '' }));
+    const r = L.TS.days[date][key]; if (!r.lineup) r.lineup = L.cur.slice(); r.boards = Object.assign(pick(r.lineup.concat(Suite.BUILT_IN_BOARDS)), r.boards || {}); return r;
+  }
+  // days whose lineup picked up old custom boards (boards that already existed on an earlier day but weren't showing the day before)
+  function bugDays(){
+    const TS = todayStore(), days = TS.days || {}, out = [];
+    Object.keys(days).sort().forEach(d => Object.keys(days[d] || {}).forEach(key => {
+      const rec = days[d][key]; if (!rec || !rec.lineup) return;
+      const co = Suite.courseOf(key), u = (TS.rows || {})[key] || (co ? (TS.rows || {})['course:' + co.id] : null) || {};
+      const before = Suite.dayState(TS, d, [key], u).carried.lineup || [];
+      const earlier = id => Object.keys(days).some(d2 => d2 < d && (days[d2][key] || {}).boards && days[d2][key].boards[id]) || (u.boards || {})[id];
+      const extra = rec.lineup.filter(id => /^c-/.test(id) && !/^c-rep-/.test(id) && !before.includes(id) && earlier(id));
+      if (extra.length >= 2) out.push({ d, key, extra });
+    }));
+    return out;
   }
   function bdHtml(date, key, firstCid){
     const L = lineupInfo(date, key), fromLbl = L.from ? parse(L.from).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : '';
@@ -231,14 +248,15 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   function saveStudents(date, key, values, extra){
     const T = todayStore(); T.days = T.days || {}; const day = T.days[date] = T.days[date] || {};
     const rec = day[key] = day[key] || {}; rec.boards = rec.boards || {};
-    let changed = false;
+    let changed = false; const touched = new Set();
     values.forEach(([id, heading, txt, custom]) => {
       const cur = rec.boards[id], before = linesToText(cur && cur.lines);
-      if (custom && !cur) { rec.boards[id] = { heading, lines: textToLines(txt, []) }; changed = true; return; }   // a new custom board counts, even before it has lines
+      if (custom && !cur && !lineupInfo(date, key).boardsAll[id]) { rec.boards[id] = { heading, lines: textToLines(txt, []) }; changed = true; touched.add(id); return; }   // a brand-new board from "Add a board"
+      if (custom && !cur) return;   // a new custom board counts, even before it has lines
       if (custom && cur && cur.heading !== heading) { cur.heading = heading; changed = true; }
       if (txt.trim() === before.trim() && !(custom && !cur && txt.trim())) return;
       if (!cur && !txt.trim()) return;
-      rec.boards[id] = Object.assign({ heading }, cur || {}, { lines: textToLines(txt, cur && cur.lines) }); changed = true;
+      rec.boards[id] = Object.assign({ heading }, cur || {}, { lines: textToLines(txt, cur && cur.lines) }); changed = true; if (!cur || !before.trim()) touched.add(id);
     });
     if (extra) {
       const have = extra.haveOut.split(',').map(x => x.trim()).filter(Boolean), had = rec.haveOut || [];
@@ -248,9 +266,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     }
     if (!changed) { if (!Object.keys(rec.boards).length && Object.keys(rec).length === 1) { delete day[key]; Suite.set('today', T); } return; }
     // make sure boards with something on them are in the day's lineup
-    const base = rec.lineup || ((T.rows || {})[key] || {}).lineup || ['welcome', 'agenda'];
+    const base = rec.lineup || lineupInfo(date, key).cur || ['welcome', 'agenda'];
     const lineup = base.slice();
-    values.forEach(([id, , , custom]) => { if (rec.boards[id] && ((rec.boards[id].lines || []).length || custom) && !lineup.includes(id)) { const at = Math.max(lineup.indexOf('welcome') + 1, 0); lineup.splice(at + (id === 'returned' && lineup.includes('warmup') ? 1 : 0), 0, id); } });
+    values.forEach(([id, , , custom]) => { if (touched.has(id) && rec.boards[id] && ((rec.boards[id].lines || []).length || custom) && !lineup.includes(id)) { const at = Math.max(lineup.indexOf('welcome') + 1, 0); lineup.splice(at + (id === 'returned' && lineup.includes('warmup') ? 1 : 0), 0, id); } });
     rec.lineup = lineup;
     Suite.set('today', T);
   }
@@ -297,7 +315,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
             <textarea id="st-${id}" rows="3" data-sb="${id}" ${custom ? '' : 'hidden'} placeholder="What students should see">${esc(custom ? linesToText(bd.lines) : '')}</textarea>`; }).join('')}
         <label class="lb" for="st-have">Have out <span class="muted small">(comma between items; empty keeps the day before\'s list)</span></label>
         <input class="field" id="st-have" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).haveOut || []).join(', '))}" placeholder="Pen or pencil, Notebook">
-        <div id="st-custom">${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id)).map(([id, bd]) => `<div class="stc"><input class="field" data-hh="${id}" value="${esc(String(bd.heading || '').replace(/<[^>]+>/g, ''))}" placeholder="Board heading" aria-label="Board heading"><textarea rows="3" data-sb="${id}">${esc(linesToText(bd.lines))}</textarea></div>`).join('')}</div>
+        <div id="st-custom">${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id) && !/^c-rep-/.test(id) && lineupInfo(dateKey, target).cur.includes(id)).map(([id, bd]) => `<div class="stc"><input class="field" data-hh="${id}" value="${esc(String(bd.heading || '').replace(/<[^>]+>/g, ''))}" placeholder="Board heading" aria-label="Board heading"><textarea rows="3" data-sb="${id}">${esc(linesToText(bd.lines))}</textarea></div>`).join('')}</div>
         <div class="bar" style="margin-top:6px"><button class="btn small" data-e="stadd" type="button">Add a board</button><a class="btn small" href="today.html#date=${dateKey}&class=${encodeURIComponent((r.classes[0] || {}).id || '')}" title="See this day's Today screen">Open in Today</a></div>
       </details>
       <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
@@ -746,6 +764,9 @@ const res = Suite.copyPrevDay(target, dateKey, { boards: false });   // boards c
     else if (a === 'edit') openEditor(el.dataset.row, el.dataset.date, null);
     else if (a === 'courses') openCourses();
     else if (a === 'daysoff') openDaysOff();
+    else if (a === 'bugfix') { const snap = Suite.snapshot(['today']), TS = Suite.get('today', {}) || {}; let n = 0;
+      bugDays().forEach(x => { const r = TS.days[x.d][x.key]; r.lineup = r.lineup.filter(id => !x.extra.includes(id)); n += x.extra.length; });
+      Suite.set('today', TS); render(); Suite.undoToast(`Removed ${n} board${n === 1 ? '' : 's'} that came back by mistake`, snap); }
     else if (a === 'sched') pickSchedule(el.dataset.date);
     else if (a === 'units') openUnits();
     else if (a === 'copyweek') openCopyWeek();
