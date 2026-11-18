@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&family=Bungee&family=EB+Garamond:wght@700&family=Architects+Daughter&family=Chelsea+Market&family=Courier+Prime:ital,wght@1,700&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-18a">
-<script src="shared/core.js?v=2026-11-18a"></script>
-<script>window.PAGE_VERSION = '2026-11-18a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-19a">
+<script src="shared/core.js?v=2026-11-19a"></script>
+<script>window.PAGE_VERSION = '2026-11-19a';</script>
 <style>
 :root{--ink-blue:#27468a;--ink-red:#c4281c;--ink-green:#3f7d2b;--ink-date:#b8433b}
 html,body{height:100%}
@@ -226,6 +226,8 @@ body.full #fx{z-index:8}
 .w-seat .w-si{flex:1 1 auto;min-height:0;width:100%;position:relative}
 .w-seat .w-si img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 .xdel.tset{right:20px;background:#2f6fd0;font-size:14px}
+.later{background:#fff1d6;color:#4a3500;border-radius:10px;padding:6px 10px;font-size:13px;margin:4px 0 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lineup .once{display:inline-flex;gap:3px;align-items:center;font-size:12px;color:var(--ink-2);margin:0 4px}
 .bomrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
 .betanote{background:var(--wash);border-left:4px solid var(--land);border-radius:10px;padding:8px 12px;font-size:14px;margin:0 0 10px}
 .cboard{border:1.5px solid var(--rule);border-radius:12px;padding:8px 10px;margin-bottom:8px}
@@ -491,12 +493,19 @@ details.sec>summary .muted{font-weight:400}
     return T.rows[key];
   }
   // the day's setup for a class: its own (one period), else its course's, else the usual
-  function dayFor(date, cid){
-    const d = T.days[date] || {}, own = d[cid], co = d[rowKeyOf(cid)];
-    const u = usual(cid), rec = own || co;
-    const base = !rec ? { lineup: u.lineup, haveOut: u.haveOut, haveOutFmt: u.haveOutFmt, boards: u.boards, slideLink: '' }
-      : Object.assign({}, { lineup: u.lineup, haveOut: u.haveOut, haveOutFmt: u.haveOutFmt, slideLink: '' }, rec, { boards: Object.assign({}, u.boards, rec.boards || {}) });
-    return date === SBOX ? base : withLinked(withRepeats(base, date, cid));
+  function dayFor(date, cid){   // the day's own changes on top of the day before (boards carry forward)
+    const u = usual(cid);
+    if (date === SBOX) { const r = (T.days[SBOX] || {})[cid] || {}; return Object.assign({ slideLink: '' }, r, { boards: Object.assign({}, r.boards || {}) }); }
+    const st = Suite.dayState(T, date, [cid, rowKeyOf(cid)], u).state;
+    const base = Object.assign({ slideLink: '' }, st, { boards: Object.assign({}, u.boards, st.boards || {}) });
+    return withLinked(withRepeats(base, date, cid));
+  }
+  // later days that already have their own boards (they don't follow changes made here)
+  const laterSetUp = (date, cid) => Object.keys(T.days || {}).filter(d => d > date && d !== SBOX && [cid, rowKeyOf(cid)].some(k => (T.days[d] || {})[k])).sort();
+  function pushForward(cid){
+    const key = scope === 'period' ? cid : rowKeyOf(cid), cur = Suite.carryOf(clone(editable(viewDate, cid))), later = laterSetUp(viewDate, cid);
+    later.forEach(d => { const k2 = (T.days[d] || {})[key] ? key : [cid, rowKeyOf(cid)].find(k => (T.days[d] || {})[k]); const old = T.days[d][k2]; T.days[d][k2] = Object.assign(clone(cur), { slideLink: old.slideLink || '' }); if (old.dateText) T.days[d][k2].dateText = old.dateText; });
+    save(); render(); if (editing) renderDrawer(); Suite.toast(`Updated ${later.length} later day${later.length === 1 ? '' : 's'} to match`);
   }
   function withLinked(rec){
     if (!(rec.lineup || []).some(t => t.startsWith('L-'))) return rec;
@@ -897,8 +906,11 @@ details.sec>summary .muted{font-weight:400}
         <div class="dtabs" role="tablist" aria-label="Day settings">${''}${[['boards', 'Boards'], ['look', 'Look'], ['routines', 'Routines'], ['events', 'Events']].map(([k, n]) => `<button role="tab" data-d="dtab" data-v="${k}" aria-selected="${dTab === k}">${n}</button>`).join('')}</div>
         <p class="hintline bdlink" style="margin:0 0 6px"><a href="boards.html">See all your boards</a>: rename them, edit their words, and see where each one is used.</p>
         <details class="sec" data-dt="boards" open><summary>Boards and order <span class="muted small">${lineup.length} boards</span></summary>
+          <p class="hintline" style="margin-top:0">Boards carry forward: tomorrow starts with today's boards and wording. Check "Just this day" for a board that shouldn't carry over.</p>
+          ${(() => { const L = laterSetUp(viewDate, cid); return L.length ? `<div class="later">Later days already set up: ${L.slice(0, 4).map(d => new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })).join(', ')}${L.length > 4 ? ' and more' : ''}. They keep their own boards. <button class="btn small" data-d="pushfwd">Update them to match this day</button></div>` : ''; })()}
           <ul class="lineup">${all.map(t => { const on = lineup.includes(t); return `<li>
             <input type="checkbox" data-d="lineup" data-t="${esc(t)}"${on ? ' checked' : ''} aria-label="Show ${esc(boardLabel(rec, t))}"><span>${esc(boardLabel(rec, t))}${t.startsWith('L-') ? ' <span class="muted small">(linked)</span>' : isCustom(t) ? ' <span class="muted small">(custom)</span>' : ''}</span>
+            ${on && !/^c-rep-/.test(t) ? `<label class="once small" title="Leave this board off tomorrow and after"><input type="checkbox" data-d="once" data-t="${esc(t)}"${((T.days[viewDate] || {})[scope === 'period' ? cid : rowKeyOf(cid)] || {}).once && T.days[viewDate][scope === 'period' ? cid : rowKeyOf(cid)].once.includes(t) ? ' checked' : ''}> Just this day</label>` : ''}
             ${on ? `<button class="btn quiet" data-d="up" data-t="${esc(t)}" aria-label="Move up">↑</button><button class="btn quiet" data-d="down" data-t="${esc(t)}" aria-label="Move down">↓</button>` : ''}${isCustom(t) ? `<button class="btn quiet small" data-d="cren" data-t="${esc(t)}" title="Rename this board (the name in lists, not what students see)">Rename</button>` : ''}<button class="btn quiet small" data-d="cdup" data-t="${esc(t)}" title="Make a copy of this board (same look and layout)">Duplicate</button>${isCustom(t) ? `<button class="btn quiet danger" data-d="crm" data-t="${esc(t)}" aria-label="Delete this board">×</button>` : ''}</li>`; }).join('')}</ul>
           <div class="bar" style="margin-top:6px"><button class="btn small" data-d="cadd">Add a custom board</button>${(T.library || []).length ? `<select data-d="libadd" aria-label="Add a saved board"><option value="">Add a copy of a saved board…</option>${T.library.map((x, i) => `<option value="${i}">${esc(x.name)}</option>`).join('')}</select><select data-d="liblink" aria-label="Add a linked board"><option value="">Add a linked board…</option>${T.library.map(x => `<option value="${esc(x.id || '')}">${esc(x.name)}</option>`).join('')}</select>` : ''}</div>
           <p class="hintline">Empty boards are skipped in class. Custom boards can have a picture and their own background, and any line can stay hidden until you click (in Edit on screen, use "Hide until click").</p></details>
@@ -965,7 +977,7 @@ details.sec>summary .muted{font-weight:400}
           ${lookById(room.look).timer ? '' : '<p class="note warn">This background has no spot for the timer yet, so it won\'t show.</p><button class="btn small" data-d="taddspot">Add a timer spot</button>'}
           <p class="hintline">The timer shows on the Welcome board and can start on its own at the bell, in Auto or when you've picked this class. Move it with Edit on screen.</p></details>
       </div>
-      <div class="dfoot"><button class="btn small" data-d="copyprev">Copy previous day</button><button class="btn small" data-d="saveusual">Save as usual</button><button class="btn quiet small" data-d="reset">Reset to usual</button></div>`;
+      <div class="dfoot"><button class="btn small" data-d="reset" title="Undo this day's changes; it shows the same boards as the day before">Match the day before</button><button class="btn quiet small" data-d="saveusual" title="The boards a brand-new class, or a day with nothing before it, starts from">Save as starting setup</button></div>`;
   }
   const commit = (redrawer) => { save(); render(); if (redrawer) { const top = $('.dbody') ? $('.dbody').scrollTop : 0, open = [...document.querySelectorAll('details.sec')].map(d => d.open); renderDrawer(); const b = $('.dbody'); if (b) b.scrollTop = top; document.querySelectorAll('details.sec').forEach((d, i) => { if (open[i] != null) d.open = open[i]; }); } };
   function boardRec(type){ const r = editable(viewDate, activeId()); r.boards = r.boards || {}; r.boards[type] = r.boards[type] || clone(boardOf(r, type)); r.boards[type].lines = r.boards[type].lines || []; return r.boards[type]; }
@@ -1024,7 +1036,8 @@ details.sec>summary .muted{font-weight:400}
       Suite.undoToast(`Copied ${[res.plan && 'the plan', res.boards && 'the boards'].filter(Boolean).join(' and ')} from ${longDate(res.from)}`, res.snap); return;
     }
     if (d === 'saveusual') { const cur = dayFor(viewDate, cid), u = usual(cid); Object.assign(u, clone({ lineup: cur.lineup, haveOut: cur.haveOut, haveOutFmt: cur.haveOutFmt || {}, boards: cur.boards })); commit(true); Suite.toast('Saved as the usual setup for ' + rowName(cid)); return; }
-    if (d === 'reset') { const day = T.days[viewDate] || {}; delete day[scope === 'period' ? cid : rowKeyOf(cid)]; commit(true); Suite.toast('This day is back to the usual setup'); return; }
+    if (d === 'reset') { const snap = Suite.snapshot(['today']), day = T.days[viewDate] || {}; delete day[scope === 'period' ? cid : rowKeyOf(cid)]; delete day[cid]; commit(true); Suite.undoToast('This day now matches the day before', snap); return; }
+    if (d === 'pushfwd') { pushForward(cid); return; }
   });
   $('#drawer').addEventListener('input', e => {
     const el = e.target, row = el.closest('.lrow'), cid = activeId();
@@ -1045,6 +1058,7 @@ details.sec>summary .muted{font-weight:400}
       if (el.value === 'custom' && !(b.lines || []).some(l => l.text)) { const plan = Suite.agendaFor(viewDate, cid) || {}; b.lines = (el.dataset.src === 'agenda' ? plan.items || [] : (plan.homework || '').split('\n')).filter(x => x && x.trim()).map(t => ({ text: t, color: 'blue', level: 0 })); }
       commit(true); return; }
     if (d === 'look') { usual(cid).look = el.value; commit(true); return; }
+    if (d === 'once') { const r = editable(viewDate, cid); r.once = (r.once || []).filter(x => x !== el.dataset.t); if (el.checked) r.once.push(el.dataset.t); commit(true); Suite.toast(el.checked ? 'Just this day: it won\'t carry over' : 'It will carry over to the next days'); return; }
     if (['fxmode', 'fxeff', 'fxwhere', 'fxamt', 'fxsize', 'fxslides', 'fxlook', 'fxbm'].includes(d)) { const u = usual(cid), f = u.fx = Object.assign({ mode: 'auto', effect: 'snow', where: 'all', amount: 'medium' }, u.fx || {});
       if (d === 'fxmode') f.mode = el.value; else if (d === 'fxeff') f.effect = el.value; else if (d === 'fxamt') f.amount = el.value; else if (d === 'fxsize') f.size = el.value; else if (d === 'fxslides') f.overSlides = el.checked; else if (d === 'fxlook') f.look = el.value; else if (d === 'fxbm') f.bitmoji = el.value;
       else if (d === 'fxwhere') { if (el.value === 'all') { f.where = 'all'; delete f.board; } else { f.where = 'board'; f.board = el.value.slice(2); } }
@@ -1348,7 +1362,7 @@ details.sec>summary .muted{font-weight:400}
   let edOpts = false, edTips = !Suite.get('edtipsSeen', false);
   function edFloat(cid, S){
     if (!editMode) return '';
-    const t = S[screen] || '', notice = STUDIO ? '' : sharedNotice(cid, t);
+    const t = S[screen] || '', later = STUDIO ? [] : laterSetUp(viewDate, cid), notice = (STUDIO ? '' : sharedNotice(cid, t)) + (later.length ? `<div class="later">Later days you've already set up (${later.slice(0, 3).map(d => new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' })).join(', ')}${later.length > 3 ? '…' : ''}) keep their own boards. <button class="btn small" data-a="pushfwd">Update them to match</button></div>` : '');
     const opts = cid && t ? (() => { const bd = boardOf(dayFor(viewDate, cid), t), h = bd.hide || {};
       const items = boardItems(cid, t);
       return `<div class="edopt"><button class="btn small quiet" data-a="edopts" aria-expanded="${edOpts}">Board options ${edOpts ? '▾' : '▴'}</button>${edOpts ? `${isCustom(t) ? `<div class="pieces" role="group" aria-label="Pieces on this board"><span class="small muted">Show:</span>${[['date', 'Date'], ['board', 'Main board'], ['cork', 'Have out'], ['bm', 'Bitmoji'], ['pic', 'Picture']].map(([k, n]) => `<label><input type="checkbox" data-a="piece" data-k="${k}"${h[k] ? '' : ' checked'}> ${n}</label>`).join('')}</div>` : ''}
@@ -1816,6 +1830,7 @@ details.sec>summary .muted{font-weight:400}
       src.name = (src.name || plainOf(src.heading) || 'Board') + ' (this day)'; r.boards = r.boards || {}; r.boards[id] = src; r.lineup = r.lineup.map(x => x === t ? id : x); delete r.boards[t];
       save(); render(); Suite.toast('Now a separate copy, just for this day. The linked board is unchanged.'); return; }
     else if (a === 'edundo') { undo(); return; }
+    else if (a === 'pushfwd') { pushForward(activeId()); return; }
     else if (a === 'itemdel') { removeItem(el.dataset.kind, el.dataset.id); return; }
     else if (a === 'edopts') { edOpts = !edOpts; renderRail(activeId()); return; }
     else if (a === 'edtips') { edTips = !edTips; renderRail(activeId()); return; }

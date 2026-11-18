@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-18a">
-<script src="shared/core.js?v=2026-11-18a"></script>
-<script>window.PAGE_VERSION = '2026-11-18a';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-19a">
+<script src="shared/core.js?v=2026-11-19a"></script>
+<script>window.PAGE_VERSION = '2026-11-19a';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -105,6 +105,11 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
 .lu-tag{font-size:12px;font-weight:700;color:var(--ink-2);background:var(--wash);border-radius:999px;padding:2px 9px}.lu-tag.ch{background:#fff1d6;color:#6b4b00}
 .lu-list{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:6px}
 .bdtag{display:inline-block;font-size:10.5px;font-weight:700;color:#6b4b00;background:#fff1d6;border-radius:999px;padding:1px 7px;margin-top:3px}
+.bdsec{border:1.5px solid var(--rule);border-radius:12px;padding:10px 12px;margin:10px 0}
+.bd-h{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:6px}
+.bdlist{margin:0 0 8px;padding-left:1.4em;display:grid;gap:3px}
+.bdlist li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}.bdlist .bn{flex:1;min-width:140px;font-weight:600}
+.bdlist .once{display:inline-flex;gap:3px;align-items:center;font-size:12px;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -160,7 +165,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         return `<td class="cell${k === today ? ' today' : ''}"><button class="cellbtn${e || own.length ? '' : ' empty'}" data-a="edit" data-row="${esc(r.key)}" data-date="${k}" aria-label="Plan for ${esc(r.name)} on ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">
           ${(() => { const un = Suite.unitFor(r.key, k); if (!un) return ''; const prev = new Date(d); prev.setDate(prev.getDate() - 1); const first = k === un.start || d.getDay() === 1 || !Suite.unitFor(r.key, keyOf(prev)) || Suite.unitFor(r.key, keyOf(prev)).id !== un.id;
             return `<span class="ubar" style="--uc:${esc(un.color || '#6a8caf')}" title="${esc(un.name)}">${first ? esc(un.name) : ''}</span>`; })()}
-          ${e ? summary(e) : own.length || boardHasText(todayRec(k, r.key)) ? '' : '+ Plan'}${(() => { const L = lineupInfo(k, r.key); return L.rec && JSON.stringify(L.cur) !== JSON.stringify(L.u.lineup || ['welcome', 'agenda']) ? '<span class="bdtag" title="This day\'s boards are different from your usual setup">Boards changed</span>' : ''; })()}${boardHasText(todayRec(k, r.key)) ? '<span class="tday" title="Student boards are ready for the Today screen">Today ready</span>' : ''}${own.length ? `<span class="own" title="These periods have their own plan this day instead of the course plan">Own plan: ${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))}</span>` : ''}</button></td>`;
+          ${e ? summary(e) : own.length || boardHasText(todayRec(k, r.key)) ? '' : '+ Plan'}${(() => { const L = lineupInfo(k, r.key); return L.changed ? '<span class="bdtag" title="This day\'s boards changed from the day before">Boards changed</span>' : ''; })()}${boardHasText(todayRec(k, r.key)) ? '<span class="tday" title="Student boards are ready for the Today screen">Today ready</span>' : ''}${own.length ? `<span class="own" title="These periods have their own plan this day instead of the course plan">Own plan: ${esc(own.map(c => c.name.replace(/^Period\s*/i, 'P')).join(', '))}</span>` : ''}</button></td>`;
       }).join('')}</tr>`).join('');
     $('#app').innerHTML = `
       <div class="toolbar noprint"><h1>Planner</h1>
@@ -181,11 +186,37 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
   const todayRec = (date, key) => ((todayStore().days || {})[date] || {})[key] || null;
   const BOARD_NAMES = { welcome: 'Welcome', warmup: 'Warm-up', agenda: 'Agenda', due: 'Due', returned: 'Returned work', lesson: 'Lesson slides' };
   function lineupInfo(date, key){
-    const TS = todayStore(), u = (TS.rows || {})[key] || {}, rec = todayRec(date, key), base = u.lineup || ['welcome', 'agenda'];
-    const cur = rec && rec.lineup ? rec.lineup : base, all = [...new Set(base.concat(cur))];
+    const TS = todayStore(), co = Suite.courseOf(key), keys = [key].concat(co && key !== 'course:' + co.id ? ['course:' + co.id] : []);
+    const u = (TS.rows || {})[key] || (co ? (TS.rows || {})['course:' + co.id] : null) || {};
+    const st = Suite.dayState(TS, date, keys, u), rec = ((TS.days || {})[date] || {})[key] || null;
+    const cur = st.state.lineup || [], boardsAll = Object.assign({}, u.boards || {}, st.state.boards || {}), once = (rec || {}).once || [];
     const name = id => { if (BOARD_NAMES[id]) return BOARD_NAMES[id]; if (/^L-/.test(id)) { const it = (TS.library || []).find(x => 'L-' + x.id === id); return it ? it.name : 'Saved board'; }
-      const bd = ((rec || {}).boards || {})[id] || (u.boards || {})[id]; return bd ? (bd.name || (bd.heading || '').replace(/<[^>]*>/g, '').trim() || 'Board') : 'Board'; };
-    return { TS, u, rec, cur, all, name };
+      const bd = boardsAll[id]; return bd ? (bd.name || (bd.heading || '').replace(/<[^>]*>/g, '').trim() || 'Board') : 'Board'; };
+    const changed = !!rec && (JSON.stringify(cur) !== JSON.stringify(st.carried.lineup || []) || Object.keys(rec.boards || {}).some(id => JSON.stringify(rec.boards[id]) !== JSON.stringify((st.carried.boards || {})[id])) || (rec.haveOut && JSON.stringify(rec.haveOut) !== JSON.stringify(st.carried.haveOut || [])));
+    return { TS, u, rec, cur, once, boardsAll, name, from: st.from, state: st.state, changed };
+  }
+  function ensureRec(L, date, key){
+    L.TS.days = L.TS.days || {}; L.TS.days[date] = L.TS.days[date] || {};
+    if (!L.TS.days[date][key]) L.TS.days[date][key] = JSON.parse(JSON.stringify({ lineup: L.cur, haveOut: L.state.haveOut || [], haveOutFmt: L.state.haveOutFmt || {}, boards: L.boardsAll, slideLink: '' }));
+    const r = L.TS.days[date][key]; if (!r.lineup) r.lineup = L.cur.slice(); r.boards = Object.assign({}, L.boardsAll, r.boards || {}); return r;
+  }
+  function bdHtml(date, key, firstCid){
+    const L = lineupInfo(date, key), fromLbl = L.from ? parse(L.from).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : '';
+    const status = L.changed ? 'Changed on this day' : L.from ? 'Same as ' + fromLbl : 'Starting setup';
+    const built = ['welcome', 'warmup', 'agenda', 'due', 'returned'].filter(id => !L.cur.includes(id));
+    const classBoards = Object.keys(L.boardsAll).filter(id => /^c-/.test(id) && !/^c-rep-/.test(id) && !L.cur.includes(id));
+    const lib = (L.TS.library || []).filter(x => !L.cur.includes('L-' + x.id));
+    return `<div class="bd-h"><b>Boards students see</b> <span class="lu-tag${L.changed ? ' ch' : ''}">${esc(status)}</span>${L.rec ? '<button class="btn quiet small" data-e="bdreset" type="button">Match the day before</button>' : ''}</div>
+      <ol class="bdlist">${L.cur.map((id, i) => `<li><span class="bn">${esc(L.name(id))}${/^L-/.test(id) ? ' <span class="muted small">(saved board)</span>' : ''}</span>
+        ${/^c-rep-/.test(id) ? '<span class="muted small">repeats on its own</span>' : `<label class="once small"><input type="checkbox" data-bdonce="${esc(id)}"${L.once.includes(id) ? ' checked' : ''}> Just this day</label>`}
+        <button class="btn quiet small" data-e="bdup" data-id="${esc(id)}" type="button" aria-label="Move up"${i ? '' : ' disabled'}>↑</button><button class="btn quiet small" data-e="bddown" data-id="${esc(id)}" type="button" aria-label="Move down"${i < L.cur.length - 1 ? '' : ' disabled'}>↓</button>
+        <button class="btn quiet small" data-e="bdedit" data-id="${esc(id)}" type="button">Edit</button><button class="btn quiet danger small" data-e="bdrm" data-id="${esc(id)}" type="button" aria-label="Remove ${esc(L.name(id))} from this day">×</button></li>`).join('')}</ol>
+      <div class="bar"><select data-bdadd aria-label="Add a board"><option value="">Add a board…</option>
+        ${lib.length ? `<optgroup label="My boards">${lib.map(x => `<option value="L-${esc(x.id)}">${esc(x.name)}</option>`).join('')}</optgroup>` : ''}
+        ${classBoards.length ? `<optgroup label="This class's other boards">${classBoards.map(id => `<option value="${esc(id)}">${esc(L.name(id))}</option>`).join('')}</optgroup>` : ''}
+        ${built.length ? `<optgroup label="Built-in boards">${built.map(id => `<option value="${id}">${BOARD_NAMES[id]}</option>`).join('')}</optgroup>` : ''}
+        <optgroup label="New"><option value="__new">New board…</option></optgroup></select>
+        <span class="hint" style="margin:0">Boards carry forward to the next days unless marked "Just this day."</span></div>`;
   }
   const linesToText = lines => (lines || []).map(l => '-'.repeat(Math.min(2, l.level || 0)) + (l.level ? ' ' : '') + (l.reveal ? '? ' : '') + (l.text || '').trim()).join('\n');
   function textToLines(txt, old){
@@ -246,6 +277,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       <p class="hintline" style="margin-top:0">A Google Slides link here also becomes the lesson slides on the Today screen.</p>
       <div id="ed-mats"></div>
       <div class="bar" style="margin-top:6px"><button class="btn small" data-e="addlink">Add a link</button><label class="btn small">Attach a file<input type="file" id="ed-file" multiple hidden></label></div>
+      ${Suite.isOffice() ? '' : `<section class="bdsec" id="bdsec">${bdHtml(dateKey, target)}</section>`}
       <details class="students subsec"><summary>For the sub</summary>
         <p class="hintline">Notes, links, and files only the sub sees, for ${esc(classOnly ? (r.classes.find(c => c.id === classOnly) || {}).name || '' : r.name)} on this day. The plan above and its links and files print in the sub packet automatically. Changes here save right away.</p>
         <div id="subitems"></div>
@@ -253,8 +285,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
           <button class="btn quiet small" data-e="subfrom" type="button">Copy from another day</button><button class="btn quiet small" data-e="subto" type="button">Copy to other days</button></div>
       </details>
       <details class="students"${boardHasText(todayRec(dateKey, target)) || ((todayRec(dateKey, target) || {}).slideLink) ? ' open' : ''}><summary>Students see (Today screen)</summary>
-        ${(() => { const L = lineupInfo(dateKey, target); return `<div class="lineup"><div class="lu-h"><b>Boards students see</b> <span class="lu-tag${L.rec ? ' ch' : ''}" id="lu-tag">${L.rec ? 'Changed for this day' : 'Your usual boards'}</span>${L.rec ? '<button class="btn quiet small" data-e="lureset" type="button">Reset to usual boards</button>' : ''}</div>
-          <div class="lu-list">${L.all.map(id => `<label class="rv"><input type="checkbox" data-lu="${esc(id)}"${L.cur.includes(id) ? ' checked' : ''}> ${esc(L.name(id))}</label>`).join('')}</div></div>`; })()}
+
         <p class="hintline">What goes on this day's Today screen. Leave a box empty to use the usual one. One line per bullet: start a line with <b>-</b> for a sub-point (<b>--</b> for a third level) and with <b>?</b> to keep it hidden until you click, like a warm-up answer. Due and Agenda come from the plan above.</p>
         <label class="lb" for="st-deck">Lesson deck for ${esc(r.name)} <span class="muted small">(set once; it stays for the whole year)</span></label>
         <input class="field" id="st-deck" style="width:100%" value="${esc(Suite.decks()[r.key] || '')}" placeholder="Paste your published deck link (File → Share → Publish to the web)">
@@ -264,7 +295,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         ${[['agenda', "Today's agenda", 'the agenda steps above'], ['due', 'Things that are due', 'the homework above']].map(([id, label, from]) => { const bd = (((todayRec(dateKey, target) || {}).boards) || {})[id] || {}, custom = bd.source === 'custom';
           return `<label class="lb" for="st-src-${id}">${label}</label><select id="st-src-${id}" data-src="${id}"><option value="plan"${custom ? '' : ' selected'}>Show ${from}</option><option value="custom"${custom ? ' selected' : ''}>Write a student version</option></select>
             <textarea id="st-${id}" rows="3" data-sb="${id}" ${custom ? '' : 'hidden'} placeholder="What students should see">${esc(custom ? linesToText(bd.lines) : '')}</textarea>`; }).join('')}
-        <label class="lb" for="st-have">Have out <span class="muted small">(comma between items; empty uses the usual list)</span></label>
+        <label class="lb" for="st-have">Have out <span class="muted small">(comma between items; empty keeps the day before\'s list)</span></label>
         <input class="field" id="st-have" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).haveOut || []).join(', '))}" placeholder="Pen or pencil, Notebook">
         <div id="st-custom">${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id)).map(([id, bd]) => `<div class="stc"><input class="field" data-hh="${id}" value="${esc(String(bd.heading || '').replace(/<[^>]+>/g, ''))}" placeholder="Board heading" aria-label="Board heading"><textarea rows="3" data-sb="${id}">${esc(linesToText(bd.lines))}</textarea></div>`).join('')}</div>
         <div class="bar" style="margin-top:6px"><button class="btn small" data-e="stadd" type="button">Add a board</button><a class="btn small" href="today.html#date=${dateKey}&class=${encodeURIComponent((r.classes[0] || {}).id || '')}" title="See this day's Today screen">Open in Today</a></div>
@@ -352,13 +383,16 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     }
     q('ed-target').focus();
     const one2 = back.querySelector('#ed-one'); if (one2) one2.addEventListener('change', () => { if (one2.value) { close(); openEditor(rowKey, dateKey, one2.value); } });
-    back.addEventListener('change', ev => { const cb = ev.target.closest('[data-lu]'); if (!cb) return;
-      const TS = Suite.get('today', {}) || {}, L = lineupInfo(dateKey, target); TS.days = TS.days || {}; TS.days[dateKey] = TS.days[dateKey] || {};
-      const rec = TS.days[dateKey][target] = TS.days[dateKey][target] || { lineup: L.cur.slice(), haveOut: (L.u.haveOut || []).slice(), boards: {}, slideLink: '' };
-      const on = new Set(rec.lineup || L.cur); if (cb.checked) on.add(cb.dataset.lu); else on.delete(cb.dataset.lu);
-      rec.lineup = L.all.filter(id => on.has(id)); Suite.set('today', TS);
-      const tg = back.querySelector('#lu-tag'); if (tg) { tg.textContent = 'Changed for this day'; tg.classList.add('ch'); }
-      Suite.toast(cb.checked ? 'Shown this day' : 'Hidden this day'); });
+    
+    back.addEventListener('change', async ev => {
+      const sel = ev.target.closest('[data-bdadd]'), oc = ev.target.closest('[data-bdonce]'); if (!sel && !oc) return;
+      const L = lineupInfo(dateKey, target);
+      if (oc) { const r = ensureRec(L, dateKey, target); r.once = (r.once || []).filter(x => x !== oc.dataset.bdonce); if (oc.checked) r.once.push(oc.dataset.bdonce); Suite.set('today', L.TS); back.querySelector('#bdsec').innerHTML = bdHtml(dateKey, target); render(); Suite.toast(oc.checked ? 'Just this day: it won\'t carry over' : 'It will carry over to the next days'); return; }
+      let id = sel.value; if (!id) return;
+      if (id === '__new') { const nm = await Suite.dialog({ title: 'New board', body: 'A name for the board. You can change its wording here under Students see, or with Edit.', input: 'Reminders', ok: 'Add board' }); if (!nm || !nm.trim()) { sel.value = ''; return; }
+        const L2 = lineupInfo(dateKey, target), r2 = ensureRec(L2, dateKey, target); id = 'c-' + Suite.uid(); r2.boards[id] = { name: nm.trim(), heading: nm.trim().toUpperCase(), lines: [] }; r2.lineup.push(id); Suite.set('today', L2.TS); back.querySelector('#bdsec').innerHTML = bdHtml(dateKey, target); render(); Suite.toast('Board added'); return; }
+      const r = ensureRec(L, dateKey, target); if (!r.lineup.includes(id)) r.lineup.push(id); Suite.set('today', L.TS); back.querySelector('#bdsec').innerHTML = bdHtml(dateKey, target); render(); Suite.toast('Board added to this day');
+    });
     back.addEventListener('click', async ev => {
       if (ev.target === back) return back._soft();
       const b = ev.target.closest('[data-e]'); if (!b) return;
@@ -382,21 +416,24 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         Suite.dialog({ title: 'No class this day', body: 'Today shows a "No class" screen during this period instead of the boards, and roster sheets and sub plans skip it. Why?', input: 'Field trip', ok: 'Mark no class' }).then(why => {
           if (!why) return; const a2 = Suite.get('noclass', {}) || {}; a2[dateKey] = a2[dateKey] || {}; a2[dateKey][target] = why.trim() || 'No class'; Suite.set('noclass', a2); clearDraft(); close(); render(); Suite.toast('Marked: no class that day'); });
       }
-      else if (k === 'lureset') {
-        Suite.dialog({ title: 'Reset to your usual boards?', body: 'This day goes back to your usual Today setup: its boards, wording, Have Out, and any boards made just for this day are removed. The plan itself stays.', ok: 'Reset' }).then(ok => { if (!ok) return;
-          const snap = Suite.snapshot(['today']), TS = Suite.get('today', {}) || {}; if (TS.days && TS.days[dateKey]) { delete TS.days[dateKey][target]; if (!Object.keys(TS.days[dateKey]).length) delete TS.days[dateKey]; } Suite.set('today', TS);
-          clearDraft(); close(); render(); openEditor(rowKey, dateKey, classOnly); Suite.undoToast('Back to your usual boards', snap); });
+      else if (['bdup', 'bddown', 'bdrm', 'bdreset', 'bdedit'].includes(k)) {
+        const L = lineupInfo(dateKey, target), id = b.dataset.id;
+        if (k === 'bdreset') { const snap = Suite.snapshot(['today']); if (L.TS.days && L.TS.days[dateKey]) { delete L.TS.days[dateKey][target]; if (!Object.keys(L.TS.days[dateKey]).length) delete L.TS.days[dateKey]; } Suite.set('today', L.TS); back.querySelector('#bdsec').innerHTML = bdHtml(dateKey, target); render(); Suite.undoToast('This day now matches the day before', snap); return; }
+        if (k === 'bdedit') { const cid0 = (rows().find(x => x.key === rowKey) || {}).classes ? rows().find(x => x.key === rowKey).classes[0].id : target;
+          let url;
+          if (/^L-/.test(id)) url = 'today.html#studio=' + encodeURIComponent('lib|' + id.slice(2));
+          else if (/^c-/.test(id)) { ensureRec(L, dateKey, target); Suite.set('today', L.TS); url = 'today.html#studio=' + encodeURIComponent('day|' + dateKey + '|' + target + '|' + id); }
+          else url = `today.html#date=${dateKey}&class=${encodeURIComponent(cid0)}&board=${encodeURIComponent(id)}&edit=1`;
+          window.open(url, '_blank'); return; }
+        const r = ensureRec(L, dateKey, target), at = r.lineup.indexOf(id);
+        if (k === 'bdrm') { r.lineup.splice(at, 1); r.once = (r.once || []).filter(x => x !== id); }
+        else if (k === 'bdup' && at > 0) [r.lineup[at - 1], r.lineup[at]] = [r.lineup[at], r.lineup[at - 1]];
+        else if (k === 'bddown' && at > -1 && at < r.lineup.length - 1) [r.lineup[at + 1], r.lineup[at]] = [r.lineup[at], r.lineup[at + 1]];
+        Suite.set('today', L.TS); back.querySelector('#bdsec').innerHTML = bdHtml(dateKey, target); render();
+        if (k === 'bdrm') Suite.toast('Removed from this day (and the days after, unless they\'re already set up)');
       }
       else if (k === 'prev') {
-        const pickHow = () => new Promise(res => { const back = document.createElement('div'); back.className = 'suite-dialog-back'; const last = Suite.get('copyBoards', true);
-          back.innerHTML = `<div class="suite-dialog" role="dialog" aria-modal="true"><h2>Copy from the day before</h2><p>What should come along?</p>
-            <label class="rv" style="display:flex;gap:6px"><input type="radio" name="cpw" value="plan"${last ? '' : ' checked'}> <span><b>Plan only</b><br><span class="muted small">This day keeps your usual boards.</span></span></label>
-            <label class="rv" style="display:flex;gap:6px;margin-top:6px"><input type="radio" name="cpw" value="both"${last ? ' checked' : ''}> <span><b>Plan and boards</b><br><span class="muted small">Also copies that day's boards, Have Out, and day-only boards.</span></span></label>
-            <div class="suite-dialog-actions"><button class="btn" data-r="no">Cancel</button><button class="btn primary" data-r="yes">Copy</button></div></div>`;
-          document.body.appendChild(back);
-          back.addEventListener('click', ev => { if (ev.target === back || ev.target.closest('[data-r="no"]')) { back.remove(); res(null); } else if (ev.target.closest('[data-r="yes"]')) { const v = back.querySelector('input[name="cpw"]:checked').value === 'both'; back.remove(); Suite.set('copyBoards', v); res(v); } }); });
-        const withBoards = await pickHow(); if (withBoards === null) return;
-        const res = Suite.copyPrevDay(target, dateKey, { boards: withBoards });
+const res = Suite.copyPrevDay(target, dateKey, { boards: false });   // boards carry forward on their own
         if (!res) { Suite.toast('No earlier day to copy from'); return; }
         clearDraft(); close(); render(); openEditor(rowKey, dateKey, classOnly);
         const what = [res.plan && 'the plan', res.boards && "what students see on Today"].filter(Boolean).join(' and ');
