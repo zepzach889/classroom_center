@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Limelight&family=Jost:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="shared/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="shared/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="stylesheet" href="shared/style.css?v=2026-11-19b">
-<script src="shared/core.js?v=2026-11-19b"></script>
-<script>window.PAGE_VERSION = '2026-11-19b';</script>
+<link rel="stylesheet" href="shared/style.css?v=2026-11-19c">
+<script src="shared/core.js?v=2026-11-19c"></script>
+<script>window.PAGE_VERSION = '2026-11-19c';</script>
 <style>
 .wrap{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -170,7 +170,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       }).join('')}</tr>`).join('');
     const BUG = Suite.isOffice() ? [] : bugDays();
     $('#app').innerHTML = `
-      ${BUG.length ? `<div class="bugfix noprint"><b>Some days picked up extra boards because of a bug</b> (it's fixed now): ${[...new Set(BUG.map(x => parse(x.d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })))].slice(0, 8).join(', ')}${BUG.length > 8 ? '…' : ''}. <button class="btn small primary" data-a="bugfix">Fix them</button> <span class="small">This removes the boards that came back by mistake. Anything else on those days stays.</span></div>` : ''}
+      ${BUG.length ? `<div class="bugfix noprint"><b>Some days' boards were changed by a bug</b> (it's fixed now): ${[...new Set(BUG.map(x => parse(x.d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })))].slice(0, 8).join(', ')}${BUG.length > 8 ? '…' : ''}. <button class="btn small primary" data-a="bugfix">Fix them</button> <span class="small">This removes boards that came back by mistake and restores text that was erased, from the day before. Anything else on those days stays.</span></div>` : ''}
       <div class="toolbar noprint"><h1>Planner</h1>
         <div class="weeknav"><button class="btn" data-a="prev" aria-label="Previous week">‹ Previous</button><span class="wk">${esc(label)}</span><button class="btn" data-a="next" aria-label="Next week">Next ›</button><button class="btn quiet" data-a="now">This week</button></div>
         ${Suite.isOffice() ? '<div class="bar"><button class="btn" data-a="daysoff">Days off</button><button class="btn primary" data-a="print">Print this week</button></div>' : ''}<div class="bar"${Suite.isOffice() ? ' hidden' : ''}><button class="btn" data-a="copyweek" title="Copy this week's plans to another week">Copy week…</button><button class="btn" data-a="units">Units</button><button class="btn" data-a="subprint" title="Print sub plans for the days you're out this week">Print sub plans</button><button class="btn" data-a="daysoff">Days off</button><button class="btn" data-a="courses">Courses</button><button class="btn primary" data-a="print">Print this week</button></div></div>
@@ -198,6 +198,8 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
     const changed = !!rec && (JSON.stringify(cur) !== JSON.stringify(st.carried.lineup || []) || Object.keys(rec.boards || {}).some(id => JSON.stringify(rec.boards[id]) !== JSON.stringify((st.carried.boards || {})[id])) || (rec.haveOut && JSON.stringify(rec.haveOut) !== JSON.stringify(st.carried.haveOut || [])));
     return { TS, u, rec, cur, once, boardsAll, name, from: st.from, state: st.state, changed };
   }
+  const effOf = (date, key) => { const L = lineupInfo(date, key); return { boards: L.boardsAll, haveOut: L.state.haveOut || [], slideLink: (todayRec(date, key) || {}).slideLink || '' }; };
+  const WELCOME_START = [{ text: 'Find your seat and get settled.', level: 0 }, { text: 'Get out the materials listed under Have Out.', level: 0 }, { text: 'Start the warm-up when you are ready.', level: 0 }];
   function ensureRec(L, date, key){
     L.TS.days = L.TS.days || {}; L.TS.days[date] = L.TS.days[date] || {};
     const pick = ids => { const o = {}; ids.forEach(t => { if (L.boardsAll[t]) o[t] = L.boardsAll[t]; }); return o; };
@@ -213,7 +215,9 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       const before = Suite.dayState(TS, d, [key], u).carried.lineup || [];
       const earlier = id => Object.keys(days).some(d2 => d2 < d && (days[d2][key] || {}).boards && days[d2][key].boards[id]) || (u.boards || {})[id];
       const extra = rec.lineup.filter(id => /^c-/.test(id) && !/^c-rep-/.test(id) && !before.includes(id) && earlier(id));
-      if (extra.length >= 2) out.push({ d, key, extra });
+      const carried = Suite.dayState(TS, d, [key], u).carried.boards || {};
+      const emptied = Object.keys(rec.boards || {}).filter(id => Suite.BUILT_IN_BOARDS.includes(id) && Array.isArray(rec.boards[id].lines) && !rec.boards[id].lines.length && carried[id] && (carried[id].lines || []).length);
+      if (extra.length >= 2 || emptied.length) out.push({ d, key, extra: extra.length >= 2 ? extra : [], emptied });
     }));
     return out;
   }
@@ -256,10 +260,11 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       if (custom && cur && cur.heading !== heading) { cur.heading = heading; changed = true; }
       if (txt.trim() === before.trim() && !(custom && !cur && txt.trim())) return;
       if (!cur && !txt.trim()) return;
+      if (!String(txt).trim() && !custom) { rec.boards[id] = Object.assign({ heading }, cur || {}, { lines: id === 'welcome' ? JSON.parse(JSON.stringify(WELCOME_START)) : [] }); changed = true; return; }
       rec.boards[id] = Object.assign({ heading }, cur || {}, { lines: textToLines(txt, cur && cur.lines) }); changed = true; if (!cur || !before.trim()) touched.add(id);
     });
     if (extra) {
-      const have = extra.haveOut.split(',').map(x => x.trim()).filter(Boolean), had = rec.haveOut || [];
+      const have = extra.haveOut === null ? (rec.haveOut || []) : extra.haveOut.split(',').map(x => x.trim()).filter(Boolean), had = rec.haveOut || [];
       if (have.join('|') !== had.join('|')) { if (have.length) rec.haveOut = have; else delete rec.haveOut; changed = true; }
       Object.entries(extra.sources || {}).forEach(([id, v]) => { const cur = rec.boards[id]; if ((cur && cur.source || 'plan') !== v) { rec.boards[id] = Object.assign({ heading: id === 'due' ? 'THINGS THAT ARE DUE' : "TODAY'S AGENDA", lines: [] }, cur || {}, { source: v }); changed = true; } });
       if ((extra.slideLink || '') !== (rec.slideLink || '')) { if (extra.slideLink) rec.slideLink = extra.slideLink; else delete rec.slideLink; changed = true; }
@@ -309,17 +314,17 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
         <input class="field" id="st-deck" style="width:100%" value="${esc(Suite.decks()[r.key] || '')}" placeholder="Paste your published deck link (File → Share → Publish to the web)">
         <label class="lb" for="st-slide">Start at slide <span class="muted small">(optional, this day only: copy the address while that slide is selected in Google Slides)</span></label>
         <input class="field" id="st-slide" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).slideLink || '').includes('/d/e/') ? '' : (todayRec(dateKey, target) || {}).slideLink || '')}" placeholder="Leave empty to open the deck where it starts">
-        ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="${id === 'welcome' ? 2 : 3}" data-sb="${id}" placeholder="${id === 'welcome' ? 'Empty: the usual Welcome board' : ''}">${esc(linesToText(((todayRec(dateKey, target) || {}).boards || {})[id] && todayRec(dateKey, target).boards[id].lines))}</textarea>`).join('')}
+        ${TODAY_BOARDS.map(([id, label]) => `<label class="lb" for="st-${id}">${label}</label><textarea id="st-${id}" rows="${id === 'welcome' ? 2 : 3}" data-sb="${id}" placeholder="${id === 'welcome' ? 'Empty: the usual Welcome board' : ''}">${esc(linesToText(((effOf(dateKey, target) || {}).boards || {})[id] && effOf(dateKey, target).boards[id].lines))}</textarea>`).join('')}
         ${[['agenda', "Today's agenda", 'the agenda steps above'], ['due', 'Things that are due', 'the homework above']].map(([id, label, from]) => { const bd = (((todayRec(dateKey, target) || {}).boards) || {})[id] || {}, custom = bd.source === 'custom';
           return `<label class="lb" for="st-src-${id}">${label}</label><select id="st-src-${id}" data-src="${id}"><option value="plan"${custom ? '' : ' selected'}>Show ${from}</option><option value="custom"${custom ? ' selected' : ''}>Write a student version</option></select>
             <textarea id="st-${id}" rows="3" data-sb="${id}" ${custom ? '' : 'hidden'} placeholder="What students should see">${esc(custom ? linesToText(bd.lines) : '')}</textarea>`; }).join('')}
         <label class="lb" for="st-have">Have out <span class="muted small">(comma between items; empty keeps the day before\'s list)</span></label>
-        <input class="field" id="st-have" style="width:100%" value="${esc(((todayRec(dateKey, target) || {}).haveOut || []).join(', '))}" placeholder="Pen or pencil, Notebook">
-        <div id="st-custom">${Object.entries(((todayRec(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id) && !/^c-rep-/.test(id) && lineupInfo(dateKey, target).cur.includes(id)).map(([id, bd]) => `<div class="stc"><input class="field" data-hh="${id}" value="${esc(String(bd.heading || '').replace(/<[^>]+>/g, ''))}" placeholder="Board heading" aria-label="Board heading"><textarea rows="3" data-sb="${id}">${esc(linesToText(bd.lines))}</textarea></div>`).join('')}</div>
+        <input class="field" id="st-have" style="width:100%" value="${esc(((effOf(dateKey, target) || {}).haveOut || []).join(', '))}" placeholder="Pen or pencil, Notebook">
+        <div id="st-custom">${Object.entries(((effOf(dateKey, target) || {}).boards) || {}).filter(([id]) => /^c-|^custom$/.test(id) && !/^c-rep-/.test(id) && lineupInfo(dateKey, target).cur.includes(id)).map(([id, bd]) => `<div class="stc"><input class="field" data-hh="${id}" value="${esc(String(bd.heading || '').replace(/<[^>]+>/g, ''))}" placeholder="Board heading" aria-label="Board heading"><textarea rows="3" data-sb="${id}">${esc(linesToText(bd.lines))}</textarea></div>`).join('')}</div>
         <div class="bar" style="margin-top:6px"><button class="btn small" data-e="stadd" type="button">Add a board</button><a class="btn small" href="today.html#date=${dateKey}&class=${encodeURIComponent((r.classes[0] || {}).id || '')}" title="See this day's Today screen">Open in Today</a></div>
       </details>
       <div class="suite-dialog-actions" style="justify-content:space-between;flex-wrap:wrap">
-        <span class="bar"><button class="btn quiet small" data-e="prev">Copy from the day before</button><button class="btn quiet small" data-e="nocls">${Suite.noClassKey(dateKey, target) ? 'Class meets after all' : 'No class this day…'}</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
+        <span class="bar"><button class="btn quiet small" data-e="prev">Copy the plan from the day before</button><button class="btn quiet small" data-e="nocls">${Suite.noClassKey(dateKey, target) ? 'Class meets after all' : 'No class this day…'}</button><button class="btn quiet danger small" data-e="clear">Clear</button></span>
         <span class="bar"><button class="btn quiet" data-e="repeat" title="Save, then copy this plan to the same weekday each week">Repeat weekly…</button><button class="btn" data-e="cancel">Cancel</button><button class="btn primary" data-e="save">Save</button></span></div></div>`;
     document.body.appendChild(back);
     const close = () => { back.remove(); document.removeEventListener('keydown', onKey, true); };
@@ -421,7 +426,7 @@ td.today .cellbtn{box-shadow:inset 0 3px 0 var(--land)}
       else if (k === 'subrm') { const id = b.closest('[data-sid]').dataset.sid, S = SUBS(), M = S.materials[dateKey] || [], i = M.findIndex(x => x.id === id); if (i < 0) return; const m = M.splice(i, 1)[0]; subSave(S); if (m.kind === 'file' && m.file && !Suite.fileInUse(m.file.id)) Suite.files.del(m.file.id).catch(() => {}); }
       else if (k === 'subfrom') subCopy('from');
       else if (k === 'subto') subCopy('to');
-      else if (k === 'stadd') { const id = 'c-' + Suite.uid(), d = document.createElement('div'); d.className = 'stc'; d.innerHTML = `<input class="field" data-hh="${id}" placeholder="Board heading, like REMINDERS" aria-label="Board heading"><textarea rows="3" data-sb="${id}" placeholder="One line per bullet"></textarea>`; back.querySelector('#st-custom').appendChild(d); d.querySelector('input').focus(); }
+      else if (k === 'stadd') { const id = 'c-' + Suite.uid(), d = document.createElement('div'); d.className = 'stc'; d.innerHTML = `<input class="field" data-hh="${id}" placeholder="Board heading, like REMINDERS" aria-label="Board heading"><textarea rows="3" data-sb="${id}" data-new="1" placeholder="One line per bullet"></textarea>`; back.querySelector('#st-custom').appendChild(d); d.querySelector('input').focus(); }
       else if (k === 'addlink') { mats.push({ id: Suite.uid(), kind: 'link', title: '', url: '' }); drawMats(); const f = back.querySelector('.mrow:last-child input'); if (f) f.focus(); }
       else if (k === 'mrm') { const m = mats.splice(+b.dataset.i, 1)[0]; if (m && m.kind === 'file') removed.push(m.file.id); drawMats(); }
       else if (k === 'course') { close(); openEditor(rowKey, dateKey, null); }
@@ -464,8 +469,8 @@ const res = Suite.copyPrevDay(target, dateKey, { boards: false });   // boards c
         { const deck = q('st-deck').value.trim(), slide = q('st-slide').value.trim();
           if (/\/presentation\/d\/e\//.test(slide)) { Suite.setDeck(r.key, slide); q('st-slide').value = ''; }   // a published link pasted here is the deck
           else if (deck !== (Suite.decks()[r.key] || '')) Suite.setDeck(r.key, deck); }
-        saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].filter(t => !t.hidden).map(t => { const hh = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return [t.dataset.sb, hh ? (hh.value.trim() ? esc(hh.value.trim()) : 'MY BOARD') : (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || BOARD_HEADS[t.dataset.sb] || 'MY BOARD', t.value, !!hh]; }),
-          { haveOut: back.querySelector('#st-have').value, slideLink: back.querySelector('#st-slide').value.trim(), sources: Object.fromEntries([...back.querySelectorAll('[data-src]')].map(x => [x.dataset.src, x.value])) });
+        saveStudents(dateKey, target, [...back.querySelectorAll('textarea[data-sb]')].filter(t => !t.hidden && (t.value !== t.defaultValue || t.dataset.new || (() => { const h2 = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return h2 && h2.value !== h2.defaultValue; })())).map(t => { const hh = back.querySelector(`[data-hh="${t.dataset.sb}"]`); return [t.dataset.sb, hh ? (hh.value.trim() ? esc(hh.value.trim()) : 'MY BOARD') : (TODAY_BOARDS.find(b => b[0] === t.dataset.sb) || [])[2] || BOARD_HEADS[t.dataset.sb] || 'MY BOARD', t.value, !!hh]; }),
+          { haveOut: back.querySelector('#st-have').value !== back.querySelector('#st-have').defaultValue ? back.querySelector('#st-have').value : null, slideLink: back.querySelector('#st-slide').value.trim(), sources: Object.fromEntries([...back.querySelectorAll('[data-src]')].map(x => [x.dataset.src, x.value])) });
         clearDraft(); close(); dropUnused(removed); render(); Suite.toast('Plan saved'); backToToday();
       }
     });
@@ -765,8 +770,8 @@ const res = Suite.copyPrevDay(target, dateKey, { boards: false });   // boards c
     else if (a === 'courses') openCourses();
     else if (a === 'daysoff') openDaysOff();
     else if (a === 'bugfix') { const snap = Suite.snapshot(['today']), TS = Suite.get('today', {}) || {}; let n = 0;
-      bugDays().forEach(x => { const r = TS.days[x.d][x.key]; r.lineup = r.lineup.filter(id => !x.extra.includes(id)); n += x.extra.length; });
-      Suite.set('today', TS); render(); Suite.undoToast(`Removed ${n} board${n === 1 ? '' : 's'} that came back by mistake`, snap); }
+      bugDays().forEach(x => { const r = TS.days[x.d][x.key]; r.lineup = r.lineup.filter(id => !x.extra.includes(id)); x.emptied.forEach(id => { delete r.boards[id]; }); n += x.extra.length + x.emptied.length; });
+      Suite.set('today', TS); render(); Suite.undoToast(`Fixed ${n} board${n === 1 ? '' : 's'}`, snap); }
     else if (a === 'sched') pickSchedule(el.dataset.date);
     else if (a === 'units') openUnits();
     else if (a === 'copyweek') openCopyWeek();

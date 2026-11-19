@@ -44,7 +44,7 @@
 
   const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   const emit = detail => window.dispatchEvent(new CustomEvent('suite:change', { detail }));
-  const VERSION = '2026-11-19b';   // bump with every build; pages check they match
+  const VERSION = '2026-11-19c';   // bump with every build; pages check they match
   const S = { PALETTE, NAV, VERSION };
 
   S.uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -1114,7 +1114,8 @@ body.pop{margin:0;padding:12px 14px;background:var(--paper);font-family:var(--sa
   setInterval(periodClock, 1000);
   // A short "What's new" note, shown once after an update (not to brand-new users, who get the setup guide).
   const NEWS = { id: '2026-11-19b', items: [
-    'Fixed: saving in the Planner could turn old boards back on. If any days were affected, the Planner shows a notice with a Fix them button.',
+    'Fixed: saving in the Planner could turn old boards back on or erase a board\'s text. If any days were affected, the Planner shows a notice with a Fix them button.',
+    'The Planner\'s Students see fields now show the wording students will actually see, including wording carried over from earlier days.',
     'Today boards now carry forward: each day starts with the day before\'s boards and wording, so small changes stick without copying. Mark a board "Just this day" to keep it from carrying over.',
     'Planner: each day has a Boards section below the plan. Add saved boards, the class\'s other boards, built-in boards, or a new board; reorder, edit, or remove them; or Match the day before.',
     'Copy from the day before now copies just the plan, since boards carry over on their own.'] };
